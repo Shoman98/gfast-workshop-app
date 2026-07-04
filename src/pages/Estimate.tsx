@@ -110,14 +110,34 @@ export default function EstimatePage() {
   const totalPrice = parts.reduce((sum, p) => sum + (p.price || 0), 0)
 
   return (
-    <div className="min-h-screen bg-gray-50 rtl" dir="rtl">
+    <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', direction: 'rtl' }}>
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-600">تحرير التقدير</h1>
+      <div style={{
+        backgroundColor: 'white',
+        borderBottom: '1px solid #e5e7eb',
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
+      }}>
+        <div style={{
+          maxWidth: '80rem',
+          margin: '0 auto',
+          padding: '1rem 1.5rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2563eb' }}>تحرير التقدير</h1>
           <button
             onClick={() => navigate('/dashboard')}
-            className="text-blue-600 hover:underline font-medium"
+            style={{
+              color: '#2563eb',
+              fontWeight: '500',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+            }}
           >
             ← العودة
           </button>
@@ -125,75 +145,115 @@ export default function EstimatePage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-xl shadow-lg p-8">
+      <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '2rem 1.5rem' }}>
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '0.75rem',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          padding: '2rem',
+        }}>
           {error && (
-            <div className="mb-6 p-4 bg-red-100 border-r-4 border-red-500 text-red-700 rounded-lg font-medium">
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '1rem',
+              backgroundColor: '#fee2e2',
+              borderRight: '4px solid #ef4444',
+              borderRadius: '0.5rem',
+              color: '#991b1b',
+              fontWeight: '500',
+            }}>
               ⚠️ {error}
             </div>
           )}
 
           {/* Parts Table */}
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-6 text-gray-800">قائمة الأجزاء</h2>
+          <div style={{ marginBottom: '2rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>قائمة الأجزاء</h2>
 
             {parts.length > 0 ? (
-              <div className="overflow-x-auto mb-6">
-                <table className="w-full">
+              <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
+                <table style={{ width: '100%', textAlign: 'right' }}>
                   <thead>
-                    <tr className="border-b-2 border-gray-300 bg-gray-50">
-                      <th className="text-right py-4 px-6 font-bold text-gray-700">الجزء</th>
-                      <th className="text-right py-4 px-6 font-bold text-gray-700">نوع الضرر</th>
-                      <th className="text-right py-4 px-6 font-bold text-gray-700">الحالة</th>
-                      <th className="text-right py-4 px-6 font-bold text-gray-700">السعر</th>
-                      <th className="text-center py-4 px-6 font-bold text-gray-700">حذف</th>
+                    <tr style={{ borderBottom: '2px solid #d1d5db', backgroundColor: '#f9fafb' }}>
+                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>الجزء</th>
+                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>نوع الضرر</th>
+                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>الحالة</th>
+                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>السعر</th>
+                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>حذف</th>
                     </tr>
                   </thead>
                   <tbody>
                     {parts.map((part, idx) => (
-                      <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
-                        <td className="py-4 px-6">
-                          <div className="font-semibold text-gray-900">{part.part_name_ar}</div>
+                      <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                        <td style={{ padding: '1rem 1.5rem' }}>
+                          <div style={{ fontWeight: '600', color: '#111827' }}>{part.part_name_ar}</div>
                           {part.confidence && (
-                            <div className="text-xs text-gray-500 mt-1">
+                            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
                               {Math.round(part.confidence * 100)}% ثقة
                             </div>
                           )}
                         </td>
-                        <td className="py-4 px-6">
+                        <td style={{ padding: '1rem 1.5rem' }}>
                           <input
                             type="text"
                             value={part.damage_type}
                             onChange={(e) => updatePart(idx, 'damage_type', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded text-right"
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '0.375rem',
+                              textAlign: 'right',
+                              outline: 'none',
+                            }}
                           />
                         </td>
-                        <td className="py-4 px-6">
+                        <td style={{ padding: '1rem 1.5rem' }}>
                           <select
                             value={part.severity_label}
                             onChange={(e) =>
                               updatePart(idx, 'severity_label', e.target.value as any)
                             }
-                            className="w-full px-3 py-2 border border-gray-300 rounded text-right"
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '0.375rem',
+                              textAlign: 'right',
+                              outline: 'none',
+                            }}
                           >
                             <option value="Repair">إصلاح</option>
                             <option value="Replace">استبدال</option>
                           </select>
                         </td>
-                        <td className="py-4 px-6">
+                        <td style={{ padding: '1rem 1.5rem' }}>
                           <input
                             type="number"
                             value={part.price}
                             onChange={(e) =>
                               updatePart(idx, 'price', parseFloat(e.target.value) || 0)
                             }
-                            className="w-full px-3 py-2 border border-gray-300 rounded text-right"
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem 0.75rem',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '0.375rem',
+                              textAlign: 'right',
+                              outline: 'none',
+                            }}
                           />
                         </td>
-                        <td className="py-4 px-6 text-center">
+                        <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
                           <button
                             onClick={() => removePart(idx)}
-                            className="text-red-600 hover:text-red-800 font-bold"
+                            style={{
+                              color: '#dc2626',
+                              fontWeight: 'bold',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                            }}
                           >
                             ❌
                           </button>
@@ -204,44 +264,76 @@ export default function EstimatePage() {
                 </table>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-600">
+              <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
                 لا توجد أجزاء بعد
               </div>
             )}
 
             {/* Total */}
-            <div className="p-6 bg-blue-50 rounded-lg flex justify-between items-center border-r-4 border-blue-600">
-              <span className="text-lg font-bold text-gray-700">الإجمالي:</span>
-              <span className="text-3xl font-bold text-blue-600">
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: '#eff6ff',
+              borderRight: '4px solid #2563eb',
+              borderRadius: '0.5rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <span style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#374151' }}>الإجمالي:</span>
+              <span style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#2563eb' }}>
                 {totalPrice.toLocaleString()} ج.م
               </span>
             </div>
           </div>
 
           {/* Add New Part */}
-          <div className="mb-8 p-6 bg-gray-50 rounded-lg border-2 border-gray-200">
-            <h3 className="text-lg font-bold mb-6 text-gray-800">إضافة جزء جديد</h3>
-            <div className="grid grid-cols-4 gap-4 mb-4">
+          <div style={{
+            marginBottom: '2rem',
+            padding: '1.5rem',
+            backgroundColor: '#f9fafb',
+            borderRadius: '0.5rem',
+            border: '2px solid #e5e7eb',
+          }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>إضافة جزء جديد</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
               <input
                 type="text"
                 placeholder="الجزء (عربي)"
                 value={newPart.part_name_ar}
                 onChange={(e) => setNewPart({ ...newPart, part_name_ar: e.target.value })}
-                className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 text-right"
+                style={{
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  textAlign: 'right',
+                  outline: 'none',
+                }}
               />
               <input
                 type="text"
                 placeholder="نوع الضرر"
                 value={newPart.damage_type}
                 onChange={(e) => setNewPart({ ...newPart, damage_type: e.target.value })}
-                className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 text-right"
+                style={{
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  textAlign: 'right',
+                  outline: 'none',
+                }}
               />
               <select
                 value={newPart.severity_label}
                 onChange={(e) =>
                   setNewPart({ ...newPart, severity_label: e.target.value as any })
                 }
-                className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 text-right"
+                style={{
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  textAlign: 'right',
+                  outline: 'none',
+                }}
               >
                 <option value="Repair">إصلاح</option>
                 <option value="Replace">استبدال</option>
@@ -251,29 +343,61 @@ export default function EstimatePage() {
                 placeholder="السعر"
                 value={newPart.price}
                 onChange={(e) => setNewPart({ ...newPart, price: parseFloat(e.target.value) || 0 })}
-                className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 text-right"
+                style={{
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  textAlign: 'right',
+                  outline: 'none',
+                }}
               />
             </div>
             <button
               onClick={addPart}
-              className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors"
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                backgroundColor: '#16a34a',
+                color: 'white',
+                borderRadius: '0.5rem',
+                fontWeight: 'bold',
+                border: 'none',
+                cursor: 'pointer',
+              }}
             >
               ➕ إضافة الجزء
             </button>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-4">
+          <div style={{ display: 'flex', gap: '1rem' }}>
             <button
               onClick={handleConfirm}
               disabled={confirming || parts.length === 0}
-              className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+              style={{
+                flex: 1,
+                padding: '1rem 1.5rem',
+                backgroundColor: confirming || parts.length === 0 ? '#9ca3af' : '#2563eb',
+                color: 'white',
+                borderRadius: '0.5rem',
+                fontWeight: 'bold',
+                fontSize: '1.125rem',
+                border: 'none',
+                cursor: confirming || parts.length === 0 ? 'not-allowed' : 'pointer',
+              }}
             >
               {confirming ? '⏳ جاري...' : '✅ تأكيد التقدير'}
             </button>
             <button
               onClick={() => navigate('/dashboard')}
-              className="px-6 py-4 border-2 border-gray-300 rounded-lg font-bold hover:bg-gray-50 transition-colors"
+              style={{
+                padding: '1rem 1.5rem',
+                border: '2px solid #d1d5db',
+                borderRadius: '0.5rem',
+                fontWeight: 'bold',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+              }}
             >
               ← إلغاء
             </button>

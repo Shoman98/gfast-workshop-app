@@ -54,27 +54,19 @@ export default function DashboardPage() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'draft':
-        return 'مسودة'
-      case 'confirmed':
-        return 'مؤكد'
-      case 'exported':
-        return 'مصدر'
-      default:
-        return status
+      case 'draft': return 'مسودة'
+      case 'confirmed': return 'مؤكد'
+      case 'exported': return 'مصدر'
+      default: return status
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'confirmed':
-        return 'bg-green-100 text-green-800'
-      case 'exported':
-        return 'bg-blue-100 text-blue-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
+      case 'draft': return { bg: '#fef3c7', text: '#92400e' }
+      case 'confirmed': return { bg: '#dcfce7', text: '#166534' }
+      case 'exported': return { bg: '#dbeafe', text: '#0c4a6e' }
+      default: return { bg: '#f3f4f6', text: '#374151' }
     }
   }
 
@@ -88,17 +80,38 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 rtl" dir="rtl">
+    <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', direction: 'rtl' }}>
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+      <div style={{
+        backgroundColor: 'white',
+        borderBottom: '1px solid #e5e7eb',
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
+      }}>
+        <div style={{
+          maxWidth: '80rem',
+          margin: '0 auto',
+          padding: '1rem 1.5rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
           <div>
-            <h1 className="text-2xl font-bold text-blue-600">جي-فاست</h1>
-            {workshop && <p className="text-sm text-gray-600 mt-1">{workshop.workshop_name}</p>}
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2563eb' }}>جي-فاست</h1>
+            {workshop && <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.25rem' }}>{workshop.workshop_name}</p>}
           </div>
           <button
             onClick={handleLogout}
-            className="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors"
+            style={{
+              padding: '0.5rem 1.25rem',
+              backgroundColor: '#dc2626',
+              color: 'white',
+              borderRadius: '0.5rem',
+              fontWeight: '500',
+              border: 'none',
+              cursor: 'pointer',
+            }}
           >
             🚪 خروج
           </button>
@@ -106,91 +119,146 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '2rem 1.5rem' }}>
         {/* New Estimate Button */}
         <button
           onClick={() => navigate('/analysis')}
-          className="mb-8 px-6 py-3 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          style={{
+            marginBottom: '2rem',
+            padding: '0.75rem 1.5rem',
+            backgroundColor: '#2563eb',
+            color: 'white',
+            borderRadius: '0.5rem',
+            fontWeight: 'bold',
+            fontSize: '1.125rem',
+            border: 'none',
+            cursor: 'pointer',
+          }}
         >
           ➕ تقدير جديد
         </button>
 
         {/* Estimates Section */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">التقديرات الأخيرة</h2>
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '0.75rem',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          padding: '2rem',
+        }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>
+            التقديرات الأخيرة
+          </h2>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-100 border-r-4 border-red-500 text-red-700 rounded-lg font-medium">
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '1rem',
+              backgroundColor: '#fee2e2',
+              borderRight: '4px solid #ef4444',
+              borderRadius: '0.5rem',
+              color: '#991b1b',
+              fontWeight: '500',
+            }}>
               ⚠️ {error}
             </div>
           )}
 
           {loading ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600">⏳ جاري التحميل...</p>
+            <div style={{ textAlign: 'center', paddingTop: '3rem', paddingBottom: '3rem' }}>
+              <p style={{ color: '#4b5563' }}>⏳ جاري التحميل...</p>
             </div>
           ) : estimates.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600 mb-6 text-lg">لا توجد تقديرات بعد</p>
+            <div style={{ textAlign: 'center', paddingTop: '3rem', paddingBottom: '3rem' }}>
+              <p style={{ color: '#4b5563', marginBottom: '1.5rem', fontSize: '1.125rem' }}>لا توجد تقديرات بعد</p>
               <button
                 onClick={() => navigate('/analysis')}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700"
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#2563eb',
+                  color: 'white',
+                  borderRadius: '0.5rem',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
               >
                 ➕ إنشاء تقدير جديد
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', textAlign: 'right' }}>
                 <thead>
-                  <tr className="border-b-2 border-gray-300">
-                    <th className="text-right py-4 px-6 font-bold text-gray-700">المركبة</th>
-                    <th className="text-right py-4 px-6 font-bold text-gray-700">الأجزاء</th>
-                    <th className="text-right py-4 px-6 font-bold text-gray-700">التكلفة</th>
-                    <th className="text-right py-4 px-6 font-bold text-gray-700">الحالة</th>
-                    <th className="text-right py-4 px-6 font-bold text-gray-700">التاريخ</th>
-                    <th className="text-center py-4 px-6 font-bold text-gray-700">إجراء</th>
+                  <tr style={{ borderBottom: '2px solid #d1d5db' }}>
+                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>المركبة</th>
+                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>الأجزاء</th>
+                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>التكلفة</th>
+                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>الحالة</th>
+                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>التاريخ</th>
+                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>إجراء</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {estimates.map((estimate) => (
-                    <tr
-                      key={estimate.estimate_id}
-                      className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="py-4 px-6">
-                        <div className="font-semibold text-gray-900">
-                          {estimate.vehicle_year} {estimate.vehicle_make} {estimate.vehicle_model}
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 text-gray-600">
-                        {estimate.parts?.length || 0} أجزاء
-                      </td>
-                      <td className="py-4 px-6 font-semibold text-gray-900">
-                        {estimate.total_cost_max ? `${estimate.total_cost_max.toLocaleString()} ج.م` : '—'}
-                      </td>
-                      <td className="py-4 px-6">
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(
-                            estimate.status
-                          )}`}
-                        >
-                          {getStatusLabel(estimate.status)}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 text-gray-600 text-sm">
-                        {formatDate(estimate.created_at)}
-                      </td>
-                      <td className="py-4 px-6 text-center">
-                        <button
-                          onClick={() => navigate(`/estimate/${estimate.estimate_id}`)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-sm transition-colors"
-                        >
-                          عرض
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {estimates.map((estimate) => {
+                    const statusColor = getStatusColor(estimate.status)
+                    return (
+                      <tr
+                        key={estimate.estimate_id}
+                        style={{
+                          borderBottom: '1px solid #e5e7eb',
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <td style={{ padding: '1rem 1.5rem' }}>
+                          <div style={{ fontWeight: '600', color: '#111827' }}>
+                            {estimate.vehicle_year} {estimate.vehicle_make} {estimate.vehicle_model}
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem 1.5rem', color: '#4b5563' }}>
+                          {estimate.parts?.length || 0} أجزاء
+                        </td>
+                        <td style={{ padding: '1rem 1.5rem', fontWeight: '600', color: '#111827' }}>
+                          {estimate.total_cost_max ? `${estimate.total_cost_max.toLocaleString()} ج.م` : '—'}
+                        </td>
+                        <td style={{ padding: '1rem 1.5rem' }}>
+                          <span
+                            style={{
+                              padding: '0.25rem 0.75rem',
+                              backgroundColor: statusColor.bg,
+                              color: statusColor.text,
+                              borderRadius: '0.25rem',
+                              fontSize: '0.875rem',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            {getStatusLabel(estimate.status)}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem 1.5rem', color: '#4b5563', fontSize: '0.875rem' }}>
+                          {formatDate(estimate.created_at)}
+                        </td>
+                        <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
+                          <button
+                            onClick={() => navigate(`/estimate/${estimate.estimate_id}`)}
+                            style={{
+                              padding: '0.5rem 1rem',
+                              backgroundColor: '#2563eb',
+                              color: 'white',
+                              borderRadius: '0.5rem',
+                              fontWeight: 'bold',
+                              fontSize: '0.875rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            عرض
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
