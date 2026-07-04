@@ -57,4 +57,13 @@ export const ar = {
   draft: 'مسودة',
   confirmed: 'مؤكد',
   exported: 'مُصدَّر',
+
+  // Additional
+  action: 'إجراء',
+  confident: 'واثق',
+  sessionExpired: 'انتهت جلستك. يرجى تسجيل الدخول مجددا.',
+  partNameRequired: 'مطلوب اسم الجزء',
+  atLeastOnePart: 'مطلوب جزء واحد على الأقل',
+  vehicleInfoRequired: 'مطلوبة معلومات المركبة',
+  operationFailed: 'فشلت العملية',
 };

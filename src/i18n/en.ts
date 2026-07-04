@@ -57,4 +57,13 @@ export const en = {
   draft: 'Draft',
   confirmed: 'Confirmed',
   exported: 'Exported',
+
+  // Additional
+  action: 'Action',
+  confident: 'Confident',
+  sessionExpired: 'Session expired. Please login again.',
+  partNameRequired: 'Part name required',
+  atLeastOnePart: 'At least one part required',
+  vehicleInfoRequired: 'Vehicle info required',
+  operationFailed: 'Operation failed',
 };
