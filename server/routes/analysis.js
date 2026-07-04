@@ -4,7 +4,10 @@
 
 import express from 'express';
 import { authenticate } from '../middleware/auth.js';
-import { runAnalysisPipeline, enrichDamageData } from '@gfast/analysis-core';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { runAnalysisPipeline, enrichDamageData } = require('@gfast/analysis-core');
 
 const router = express.Router();
 
