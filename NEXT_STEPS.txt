@@ -1,0 +1,75 @@
+================================================================================
+G-FAST WORKSHOP APP - NEXT STEPS
+================================================================================
+
+STEP 1: CREATE GITHUB REPO (5 minutes)
+  [ ] https://github.com/new
+  [ ] Name: gfast-workshop-app
+  [ ] Public repo
+  [ ] Copy URL
+
+  Then:
+  $ git remote add origin <YOUR_REPO_URL>
+  $ git branch -M main
+  $ git push -u origin main
+
+STEP 2: CONFIGURE ENVIRONMENT (10 minutes)
+  [ ] Get Supabase credentials from wreck-vision
+  [ ] cp .env.example .env.local
+  [ ] Fill in credentials
+
+STEP 3: SETUP SUPABASE (15 minutes)
+  [ ] Run SQL migrations
+  [ ] Verify tables created
+  [ ] Create test workshop account
+
+STEP 4: INSTALL & TEST (15 minutes)
+  [ ] npm install
+  [ ] npm run server:dev (backend)
+  [ ] npm run dev (frontend)
+  [ ] Test login at http://localhost:3002
+
+STEP 5: IMPLEMENT UI (2-3 days)
+  [ ] Analysis page
+      - Image upload (2 sections)
+      - Form input
+      - Call /api/analysis
+      - Display results
+
+  [ ] Estimate page
+      - Show parts
+      - Edit severity & price
+      - Add/remove parts
+      - Confirm
+
+STEP 6: DEPLOY (1 day)
+  [ ] Frontend: npm run build → Vercel/Netlify
+  [ ] Backend: npm run server → Railway/Render
+
+STEP 7: BETA TEST (2-3 days)
+  [ ] Create test workshops
+  [ ] Full workflow test
+  [ ] Fix bugs
+
+TOTAL: ~1 week
+
+CRITICAL CHECKLIST:
+  [ ] .env.local has credentials
+  [ ] Supabase RLS policies created
+  [ ] analysis-core module accessible
+  [ ] Login works before building Analysis
+  [ ] Backend on port 3001
+  [ ] Frontend on port 3002
+  [ ] Test workshop created
+  [ ] Full workflow tested locally
+
+FILES TO MODIFY:
+  src/pages/Analysis.tsx  (currently stub)
+  src/pages/Estimate.tsx  (currently stub)
+
+FILES TO REFERENCE:
+  ../wreck-vision/src/components/SimplifiedUploader.tsx
+  ../wreck-vision/src/components/DamageReport.tsx
+
+GOOD LUCK! 🚀
+================================================================================
