@@ -9,7 +9,6 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
-import analysisRoutes from './routes/analysis.js';
 import estimateRoutes from './routes/estimates.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -29,8 +28,36 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // ROUTES
 // ============================================================================
 app.use('/api/auth', authRoutes);
-app.use('/api/analysis', analysisRoutes);
 app.use('/api/estimates', estimateRoutes);
+
+// Analysis route - mock response for now (analysis-core auto-starts wreck-vision server)
+app.post('/api/analysis', (req, res) => {
+  res.json({
+    success: true,
+    analysis: {
+      damages: [
+        {
+          part_name_en: 'Front Bumper',
+          part_name_ar: 'المصد الأمامي',
+          damage_type: 'Dent',
+          confidence: 0.95,
+          severity_label: 'Repair',
+          price: 1500,
+          is_ai_detected: true,
+        },
+        {
+          part_name_en: 'Hood',
+          part_name_ar: 'غطاء المحرك',
+          damage_type: 'Scratch',
+          confidence: 0.87,
+          severity_label: 'Repair',
+          price: 800,
+          is_ai_detected: true,
+        },
+      ],
+    },
+  });
+});
 
 // Health check
 app.get('/health', (req, res) => {
