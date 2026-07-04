@@ -44,59 +44,152 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4 rtl" dir="rtl">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
-        <div className="text-center mb-10">
-          <h1 className="text-5xl font-bold text-blue-600 mb-2">جي-فاست</h1>
-          <p className="text-gray-600 text-lg font-medium">منصة تقييم أضرار المركبات</p>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(to bottom right, #2563eb, #1e40af)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem',
+      direction: 'rtl',
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '28rem',
+        backgroundColor: 'white',
+        borderRadius: '1rem',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+        padding: '2rem',
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <h1 style={{
+            fontSize: '3rem',
+            fontWeight: 'bold',
+            color: '#2563eb',
+            marginBottom: '0.5rem',
+          }}>جي-فاست</h1>
+          <p style={{
+            color: '#4b5563',
+            fontSize: '1.125rem',
+            fontWeight: '500',
+          }}>منصة تقييم أضرار المركبات</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-100 border-r-4 border-red-500 text-red-700 rounded-lg text-sm font-medium">
+          <div style={{
+            marginBottom: '1.5rem',
+            padding: '1rem',
+            backgroundColor: '#fee2e2',
+            borderRight: '4px solid #ef4444',
+            borderRadius: '0.5rem',
+            color: '#991b1b',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+          }}>
             ⚠️ {error}
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: 'bold',
+              color: '#374151',
+              marginBottom: '0.5rem',
+            }}>
               رقم الورشة
             </label>
             <input
               type="text"
               value={workshopId}
               onChange={(e) => setWorkshopId(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 text-right text-lg transition-colors"
               placeholder="مثال: test-workshop-1"
               disabled={loading}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                border: '2px solid #d1d5db',
+                borderRadius: '0.5rem',
+                textAlign: 'right',
+                fontSize: '1.125rem',
+                outline: 'none',
+                transition: 'border-color 0.2s',
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: 'bold',
+              color: '#374151',
+              marginBottom: '0.5rem',
+            }}>
               الرمز السري
             </label>
             <input
               type="password"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 text-right text-lg transition-colors"
               placeholder="••••"
               disabled={loading}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                border: '2px solid #d1d5db',
+                borderRadius: '0.5rem',
+                textAlign: 'right',
+                fontSize: '1.125rem',
+                outline: 'none',
+                transition: 'border-color 0.2s',
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors mt-6"
+            style={{
+              width: '100%',
+              backgroundColor: loading ? '#9ca3af' : '#2563eb',
+              color: 'white',
+              padding: '0.75rem',
+              borderRadius: '0.5rem',
+              fontWeight: 'bold',
+              fontSize: '1.125rem',
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              marginTop: '1.5rem',
+              transition: 'background-color 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) e.currentTarget.style.backgroundColor = '#1d4ed8'
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) e.currentTarget.style.backgroundColor = '#2563eb'
+            }}
           >
             {loading ? '⏳ جاري التحميل...' : '🔐 دخول'}
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-          <p className="text-xs text-gray-500">جي-فاست • نسخة تجريبية 1.0</p>
+        <div style={{
+          marginTop: '2rem',
+          paddingTop: '1.5rem',
+          borderTop: '1px solid #e5e7eb',
+          textAlign: 'center',
+        }}>
+          <p style={{
+            fontSize: '0.75rem',
+            color: '#6b7280',
+          }}>جي-فاست • نسخة تجريبية 1.0</p>
         </div>
       </div>
     </div>

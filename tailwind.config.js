@@ -22,6 +22,9 @@ export default {
       borderRadius: {
         '2lg': '14px',
       },
+      fontFamily: {
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+      },
     },
   },
   plugins: [],
