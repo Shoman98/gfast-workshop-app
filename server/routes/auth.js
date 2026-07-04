@@ -4,7 +4,7 @@
 
 import express from 'express';
 import { supabase } from '../db/supabase.js';
-import { generateToken } from '../middleware/auth.js';
+import { generateToken, verifyToken } from '../middleware/auth.js';
 import bcrypt from 'bcrypt';
 
 const router = express.Router();

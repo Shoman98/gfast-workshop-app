@@ -84,16 +84,19 @@ router.get('/:estimateId', authenticate, async (req, res, next) => {
 router.post('/', authenticate, async (req, res, next) => {
   try {
     const workshopId = req.workshop_id;
-    const { vehicleYear, vehicleMake, vehicleModel, parts } = req.body;
+    const { vehicleYear, vehicleMake, vehicleModel, vehicle_year, vehicle_make, vehicle_model, parts } = req.body;
+    const year = vehicleYear || vehicle_year;
+    const make = vehicleMake || vehicle_make;
+    const model = vehicleModel || vehicle_model;
 
     // Create estimate
     const { data: estimate, error: estimateError } = await supabase
       .from('workshop_app.estimates')
       .insert({
         workshop_id: workshopId,
-        vehicle_year: vehicleYear,
-        vehicle_make: vehicleMake,
-        vehicle_model: vehicleModel,
+        vehicle_year: year,
+        vehicle_make: make,
+        vehicle_model: model,
         status: 'draft',
       })
       .select()
