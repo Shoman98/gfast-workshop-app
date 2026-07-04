@@ -18,10 +18,11 @@ STEP 2: CONFIGURE ENVIRONMENT (10 minutes)
   [ ] cp .env.example .env.local
   [ ] Fill in credentials
 
-STEP 3: SETUP SUPABASE (15 minutes)
-  [ ] Run SQL migrations
-  [ ] Verify tables created
-  [ ] Create test workshop account
+STEP 3: SETUP SUPABASE (15 minutes) ⏸️ DEFERRED
+  [ ] (Dev engineer will handle)
+  [ ] Run SQL migrations: supabase-migrations.sql
+  [ ] Verify workshop_app schema created
+  [ ] Create test workshop account with bcrypt PIN
 
 STEP 4: INSTALL & TEST (15 minutes)
   [ ] npm install

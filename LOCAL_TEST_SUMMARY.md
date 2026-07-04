@@ -35,14 +35,15 @@ Database: Pending (needs real Supabase credentials)
 Deployment: Ready (all code in place, no blockers)
 ```
 
-## Next: Real Supabase Setup
+## Next: Deferred to Dev Engineer ⏸️
 
-To complete the setup, you need:
-1. Real Supabase project credentials (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY)
-2. Run SQL migrations from `supabase-migrations.sql`
-3. Create test workshop account in Supabase
-4. Start frontend: `npm run dev` (port 3002)
-5. Test login flow
+The following will be handled by the dev engineer:
+1. ⏸️ **Supabase Credentials** — Get real credentials from Supabase dashboard
+2. ⏸️ **SQL Migrations** — Run migrations from `supabase-migrations.sql` in SQL Editor
+3. ⏸️ **Test Workshop** — Create test account with bcrypt PIN hash
+4. ⏸️ **Frontend Test** — Start `npm run dev` and test login flow
+
+All scaffolding and backend code is ready. Just waiting for Supabase setup.
 
 ## Files Modified
 - `package.json` — Cleaned up dependencies
