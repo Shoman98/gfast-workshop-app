@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useLanguage } from '@/contexts/LanguageContext'
 import { useParams, useNavigate } from 'react-router-dom'
 
 interface Part {
@@ -14,7 +13,6 @@ interface Part {
 }
 
 export default function EstimatePage() {
-  const { t, lang } = useLanguage()
   const { estimateId } = useParams()
   const navigate = useNavigate()
   const [parts, setParts] = useState<Part[]>([])
@@ -30,7 +28,6 @@ export default function EstimatePage() {
   const [confirming, setConfirming] = useState(false)
 
   useEffect(() => {
-    // Load from sessionStorage if "new" estimate
     if (estimateId === 'new') {
       const analysisResult = sessionStorage.getItem('analysisResult')
       if (analysisResult) {
@@ -38,35 +35,8 @@ export default function EstimatePage() {
         setParts(analysis.damages || [])
         sessionStorage.removeItem('analysisResult')
       }
-    } else {
-      // Load existing estimate from API
-      loadEstimate()
     }
   }, [estimateId])
-
-  const loadEstimate = async () => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      navigate('/login')
-      return
-    }
-
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/estimates/${estimateId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      if (!response.ok) throw new Error('Failed to load estimate')
-
-      const data = await response.json()
-      setParts(data.estimate.parts || [])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load estimate')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const updatePart = (index: number, field: keyof Part, value: any) => {
     const updated = [...parts]
@@ -79,8 +49,8 @@ export default function EstimatePage() {
   }
 
   const addPart = () => {
-    if (!newPart.part_name_en.trim()) {
-      setError('Part name required')
+    if (!newPart.part_name_ar.trim()) {
+      setError('يرجى إدخال اسم الجزء')
       return
     }
     setParts([...parts, { ...newPart }])
@@ -91,11 +61,12 @@ export default function EstimatePage() {
       severity_label: 'Repair',
       price: 0,
     })
+    setError('')
   }
 
   const handleConfirm = async () => {
     if (parts.length === 0) {
-      setError('At least one part required')
+      setError('يرجى إضافة جزء واحد على الأقل')
       return
     }
 
@@ -110,7 +81,6 @@ export default function EstimatePage() {
       setError('')
 
       if (estimateId === 'new') {
-        // Create new estimate
         const response = await fetch('/api/estimates', {
           method: 'POST',
           headers: {
@@ -125,135 +95,107 @@ export default function EstimatePage() {
           }),
         })
 
-        if (!response.ok) throw new Error('Failed to create estimate')
+        if (!response.ok) throw new Error('فشل إنشاء التقدير')
 
         const data = await response.json()
-        navigate(`/estimate/${data.estimate_id}`)
-      } else {
-        // Confirm existing estimate
-        const response = await fetch(`/api/estimates/${estimateId}/confirm`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        })
-
-        if (!response.ok) throw new Error('Failed to confirm estimate')
-
         navigate('/dashboard')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Operation failed')
+      setError(err instanceof Error ? err.message : 'فشلت العملية')
     } finally {
       setConfirming(false)
     }
   }
 
-  if (loading) {
-    return (
-      <div className={`min-h-screen p-8 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
-        <p className="text-center text-gfast-g500">{t('loading')}</p>
-      </div>
-    )
-  }
-
   const totalPrice = parts.reduce((sum, p) => sum + (p.price || 0), 0)
 
   return (
-    <div className={`min-h-screen p-8 bg-gfast-g50 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
+    <div className="min-h-screen bg-gray-50 rtl" dir="rtl">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-blue-600">تحرير التقدير</h1>
           <button
             onClick={() => navigate('/dashboard')}
-            className="text-gfast-blue hover:underline mb-4"
+            className="text-blue-600 hover:underline font-medium"
           >
-            ← {t('dashboard')}
+            ← العودة
           </button>
-          <h1 className="text-3xl font-bold">{t('estimate')}</h1>
         </div>
+      </div>
 
-        <div className="bg-white rounded-2lg shadow-lg p-8">
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="bg-white rounded-xl shadow-lg p-8">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              {error}
+            <div className="mb-6 p-4 bg-red-100 border-r-4 border-red-500 text-red-700 rounded-lg font-medium">
+              ⚠️ {error}
             </div>
           )}
 
           {/* Parts Table */}
           <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4">{t('parts')}</h2>
+            <h2 className="text-xl font-bold mb-6 text-gray-800">قائمة الأجزاء</h2>
+
             {parts.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+              <div className="overflow-x-auto mb-6">
+                <table className="w-full">
                   <thead>
-                    <tr className="border-b-2 border-gfast-g200">
-                      <th className="text-left py-3 px-4 font-semibold text-gfast-g700">
-                        {lang === 'ar' ? 'الجزء' : 'Part'}
-                      </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gfast-g700">
-                        {t('damageType')}
-                      </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gfast-g700">
-                        {t('severity')}
-                      </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gfast-g700">
-                        {t('price')}
-                      </th>
-                      <th className="text-center py-3 px-4 font-semibold text-gfast-g700">
-                        {t('delete')}
-                      </th>
+                    <tr className="border-b-2 border-gray-300 bg-gray-50">
+                      <th className="text-right py-4 px-6 font-bold text-gray-700">الجزء</th>
+                      <th className="text-right py-4 px-6 font-bold text-gray-700">نوع الضرر</th>
+                      <th className="text-right py-4 px-6 font-bold text-gray-700">الحالة</th>
+                      <th className="text-right py-4 px-6 font-bold text-gray-700">السعر</th>
+                      <th className="text-center py-4 px-6 font-bold text-gray-700">حذف</th>
                     </tr>
                   </thead>
                   <tbody>
                     {parts.map((part, idx) => (
-                      <tr key={idx} className="border-b border-gfast-g100 hover:bg-gfast-g50">
-                        <td className="py-3 px-4">
-                          <div className="font-medium">
-                            {lang === 'ar' ? part.part_name_ar : part.part_name_en}
-                          </div>
+                      <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="py-4 px-6">
+                          <div className="font-semibold text-gray-900">{part.part_name_ar}</div>
                           {part.confidence && (
-                            <div className="text-sm text-gfast-g500">
-                              {Math.round(part.confidence * 100)}% confident
+                            <div className="text-xs text-gray-500 mt-1">
+                              {Math.round(part.confidence * 100)}% ثقة
                             </div>
                           )}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-4 px-6">
                           <input
                             type="text"
                             value={part.damage_type}
                             onChange={(e) => updatePart(idx, 'damage_type', e.target.value)}
-                            className="w-full px-2 py-1 border border-gfast-g300 rounded"
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-right"
                           />
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-4 px-6">
                           <select
                             value={part.severity_label}
                             onChange={(e) =>
                               updatePart(idx, 'severity_label', e.target.value as any)
                             }
-                            className="w-full px-2 py-1 border border-gfast-g300 rounded"
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-right"
                           >
-                            <option value="Repair">{t('repair')}</option>
-                            <option value="Replace">{t('replace')}</option>
+                            <option value="Repair">إصلاح</option>
+                            <option value="Replace">استبدال</option>
                           </select>
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-4 px-6">
                           <input
                             type="number"
                             value={part.price}
                             onChange={(e) =>
                               updatePart(idx, 'price', parseFloat(e.target.value) || 0)
                             }
-                            className="w-full px-2 py-1 border border-gfast-g300 rounded"
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-right"
                           />
                         </td>
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-4 px-6 text-center">
                           <button
                             onClick={() => removePart(idx)}
-                            className="text-gfast-red hover:font-bold"
+                            className="text-red-600 hover:text-red-800 font-bold"
                           >
-                            ✕
+                            ❌
                           </button>
                         </td>
                       </tr>
@@ -262,58 +204,61 @@ export default function EstimatePage() {
                 </table>
               </div>
             ) : (
-              <div className="text-center text-gfast-g500 py-8">
-                {t('loading')}...
+              <div className="text-center py-8 text-gray-600">
+                لا توجد أجزاء بعد
               </div>
             )}
 
             {/* Total */}
-            <div className="mt-6 p-4 bg-gfast-g50 rounded-lg flex justify-between items-center">
-              <span className="text-lg font-semibold">{t('total')}:</span>
-              <span className="text-2xl font-bold text-gfast-blue">
-                {totalPrice.toLocaleString()} {lang === 'ar' ? 'جنيه' : 'EGP'}
+            <div className="p-6 bg-blue-50 rounded-lg flex justify-between items-center border-r-4 border-blue-600">
+              <span className="text-lg font-bold text-gray-700">الإجمالي:</span>
+              <span className="text-3xl font-bold text-blue-600">
+                {totalPrice.toLocaleString()} ج.م
               </span>
             </div>
           </div>
 
           {/* Add New Part */}
-          <div className="mb-8 p-6 bg-gfast-g50 rounded-lg">
-            <h3 className="text-lg font-bold mb-4">{t('addPart')}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="mb-8 p-6 bg-gray-50 rounded-lg border-2 border-gray-200">
+            <h3 className="text-lg font-bold mb-6 text-gray-800">إضافة جزء جديد</h3>
+            <div className="grid grid-cols-4 gap-4 mb-4">
               <input
                 type="text"
-                placeholder={t('carBrand')}
-                value={newPart.part_name_en}
-                onChange={(e) => setNewPart({ ...newPart, part_name_en: e.target.value })}
-                className="px-4 py-2 border border-gfast-g300 rounded-lg focus:outline-none focus:border-gfast-blue"
-              />
-              <input
-                type="text"
-                placeholder="Part (Arabic)"
+                placeholder="الجزء (عربي)"
                 value={newPart.part_name_ar}
                 onChange={(e) => setNewPart({ ...newPart, part_name_ar: e.target.value })}
-                className="px-4 py-2 border border-gfast-g300 rounded-lg focus:outline-none focus:border-gfast-blue"
+                className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 text-right"
               />
               <input
                 type="text"
-                placeholder={t('damageType')}
+                placeholder="نوع الضرر"
                 value={newPart.damage_type}
                 onChange={(e) => setNewPart({ ...newPart, damage_type: e.target.value })}
-                className="px-4 py-2 border border-gfast-g300 rounded-lg focus:outline-none focus:border-gfast-blue"
+                className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 text-right"
               />
+              <select
+                value={newPart.severity_label}
+                onChange={(e) =>
+                  setNewPart({ ...newPart, severity_label: e.target.value as any })
+                }
+                className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 text-right"
+              >
+                <option value="Repair">إصلاح</option>
+                <option value="Replace">استبدال</option>
+              </select>
               <input
                 type="number"
-                placeholder={t('price')}
+                placeholder="السعر"
                 value={newPart.price}
                 onChange={(e) => setNewPart({ ...newPart, price: parseFloat(e.target.value) || 0 })}
-                className="px-4 py-2 border border-gfast-g300 rounded-lg focus:outline-none focus:border-gfast-blue"
+                className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 text-right"
               />
             </div>
             <button
               onClick={addPart}
-              className="w-full px-4 py-2 bg-gfast-blue text-white rounded-lg font-semibold hover:bg-gfast-blue-dark"
+              className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors"
             >
-              + {t('addPart')}
+              ➕ إضافة الجزء
             </button>
           </div>
 
@@ -322,15 +267,15 @@ export default function EstimatePage() {
             <button
               onClick={handleConfirm}
               disabled={confirming || parts.length === 0}
-              className="flex-1 px-6 py-3 bg-gfast-blue text-white rounded-lg font-semibold hover:bg-gfast-blue-dark disabled:bg-gfast-g400 transition-colors"
+              className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
             >
-              {confirming ? t('loading') : t('confirmEstimate')}
+              {confirming ? '⏳ جاري...' : '✅ تأكيد التقدير'}
             </button>
             <button
               onClick={() => navigate('/dashboard')}
-              className="px-6 py-3 border border-gfast-g300 rounded-lg font-semibold hover:bg-gfast-g50"
+              className="px-6 py-4 border-2 border-gray-300 rounded-lg font-bold hover:bg-gray-50 transition-colors"
             >
-              {t('cancel')}
+              ← إلغاء
             </button>
           </div>
         </div>

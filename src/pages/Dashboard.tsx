@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useLanguage } from '@/contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 
 interface Estimate {
@@ -15,13 +14,17 @@ interface Estimate {
 }
 
 export default function DashboardPage() {
-  const { t, lang } = useLanguage()
   const navigate = useNavigate()
   const [estimates, setEstimates] = useState<Estimate[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [workshop, setWorkshop] = useState<any>(null)
 
   useEffect(() => {
+    const workshopData = localStorage.getItem('workshop')
+    if (workshopData) {
+      setWorkshop(JSON.parse(workshopData))
+    }
     loadEstimates()
   }, [])
 
@@ -38,135 +41,152 @@ export default function DashboardPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
 
-      if (!response.ok) throw new Error('Failed to load estimates')
+      if (!response.ok) throw new Error('فشل تحميل التقديرات')
 
       const data = await response.json()
       setEstimates(data.estimates || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load estimates')
+      setError(err instanceof Error ? err.message : 'فشل تحميل التقديرات')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return 'مسودة'
+      case 'confirmed':
+        return 'مؤكد'
+      case 'exported':
+        return 'مصدر'
+      default:
+        return status
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft':
-        return 'bg-gfast-g200 text-gfast-g700'
+        return 'bg-yellow-100 text-yellow-800'
       case 'confirmed':
-        return 'bg-blue-200 text-gfast-blue'
+        return 'bg-green-100 text-green-800'
       case 'exported':
-        return 'bg-green-200 text-green-700'
+        return 'bg-blue-100 text-blue-800'
       default:
-        return 'bg-gfast-g100 text-gfast-g700'
+        return 'bg-gray-100 text-gray-800'
     }
   }
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')
+    return new Date(dateStr).toLocaleDateString('ar-EG')
+  }
+
+  const handleLogout = () => {
+    localStorage.clear()
+    navigate('/login')
   }
 
   return (
-    <div className={`min-h-screen p-8 bg-gfast-g50 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">{t('dashboard')}</h1>
+    <div className="min-h-screen bg-gray-50 rtl" dir="rtl">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-blue-600">جي-فاست</h1>
+            {workshop && <p className="text-sm text-gray-600 mt-1">{workshop.workshop_name}</p>}
+          </div>
           <button
-            onClick={() => {
-              localStorage.clear()
-              navigate('/login')
-            }}
-            className="px-4 py-2 bg-gfast-red text-white rounded-lg hover:bg-red-700 font-semibold"
+            onClick={handleLogout}
+            className="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors"
           >
-            {t('logout')}
+            🚪 خروج
           </button>
         </div>
+      </div>
 
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* New Estimate Button */}
         <button
           onClick={() => navigate('/analysis')}
-          className="mb-8 px-6 py-3 bg-gfast-blue text-white rounded-lg font-semibold hover:bg-gfast-blue-dark transition-colors"
+          className="mb-8 px-6 py-3 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
-          + {t('newEstimate')}
+          ➕ تقدير جديد
         </button>
 
-        <div className="bg-white rounded-2lg shadow-lg p-8">
-          <h2 className="text-xl font-bold mb-6">{t('recentEstimates')}</h2>
+        {/* Estimates Section */}
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          <h2 className="text-2xl font-bold mb-6 text-gray-800">التقديرات الأخيرة</h2>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              {error}
+            <div className="mb-6 p-4 bg-red-100 border-r-4 border-red-500 text-red-700 rounded-lg font-medium">
+              ⚠️ {error}
             </div>
           )}
 
           {loading ? (
-            <p className="text-center text-gfast-g500 py-8">{t('loading')}</p>
+            <div className="text-center py-12">
+              <p className="text-gray-600">⏳ جاري التحميل...</p>
+            </div>
           ) : estimates.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gfast-g500 mb-4">
-                {lang === 'ar' ? 'لا توجد تقديرات' : 'No estimates yet'}
-              </p>
+              <p className="text-gray-600 mb-6 text-lg">لا توجد تقديرات بعد</p>
               <button
                 onClick={() => navigate('/analysis')}
-                className="inline-block px-6 py-2 bg-gfast-blue text-white rounded-lg font-semibold hover:bg-gfast-blue-dark"
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700"
               >
-                + {t('newEstimate')}
+                ➕ إنشاء تقدير جديد
               </button>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b-2 border-gfast-g200">
-                    <th className="text-left py-3 px-4 font-semibold text-gfast-g700">
-                      {t('vehicle')}
-                    </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gfast-g700">
-                      {lang === 'ar' ? 'الأجزاء' : 'Parts'}
-                    </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gfast-g700">
-                      {t('total')}
-                    </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gfast-g700">
-                      {t('status')}
-                    </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gfast-g700">
-                      {t('createdAt')}
-                    </th>
-                    <th className="text-center py-3 px-4 font-semibold text-gfast-g700">
-                      {lang === 'ar' ? 'إجراء' : 'Action'}
-                    </th>
+                  <tr className="border-b-2 border-gray-300">
+                    <th className="text-right py-4 px-6 font-bold text-gray-700">المركبة</th>
+                    <th className="text-right py-4 px-6 font-bold text-gray-700">الأجزاء</th>
+                    <th className="text-right py-4 px-6 font-bold text-gray-700">التكلفة</th>
+                    <th className="text-right py-4 px-6 font-bold text-gray-700">الحالة</th>
+                    <th className="text-right py-4 px-6 font-bold text-gray-700">التاريخ</th>
+                    <th className="text-center py-4 px-6 font-bold text-gray-700">إجراء</th>
                   </tr>
                 </thead>
                 <tbody>
                   {estimates.map((estimate) => (
-                    <tr key={estimate.estimate_id} className="border-b border-gfast-g100 hover:bg-gfast-g50">
-                      <td className="py-3 px-4">
-                        <div className="font-medium">
+                    <tr
+                      key={estimate.estimate_id}
+                      className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="py-4 px-6">
+                        <div className="font-semibold text-gray-900">
                           {estimate.vehicle_year} {estimate.vehicle_make} {estimate.vehicle_model}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gfast-g600">
-                        {estimate.parts?.length || 0} {lang === 'ar' ? 'أجزاء' : 'parts'}
+                      <td className="py-4 px-6 text-gray-600">
+                        {estimate.parts?.length || 0} أجزاء
                       </td>
-                      <td className="py-3 px-4 font-semibold">
-                        {estimate.total_cost_max
-                          ? `${estimate.total_cost_max.toLocaleString()} ${lang === 'ar' ? 'جنيه' : 'EGP'}`
-                          : '-'}
+                      <td className="py-4 px-6 font-semibold text-gray-900">
+                        {estimate.total_cost_max ? `${estimate.total_cost_max.toLocaleString()} ج.م` : '—'}
                       </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(estimate.status)}`}>
-                          {t(estimate.status)}
+                      <td className="py-4 px-6">
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(
+                            estimate.status
+                          )}`}
+                        >
+                          {getStatusLabel(estimate.status)}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gfast-g600">
+                      <td className="py-4 px-6 text-gray-600 text-sm">
                         {formatDate(estimate.created_at)}
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-4 px-6 text-center">
                         <button
                           onClick={() => navigate(`/estimate/${estimate.estimate_id}`)}
-                          className="px-4 py-1 bg-gfast-blue text-white rounded hover:bg-gfast-blue-dark text-sm font-semibold"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-sm transition-colors"
                         >
-                          {t('edit')}
+                          عرض
                         </button>
                       </td>
                     </tr>

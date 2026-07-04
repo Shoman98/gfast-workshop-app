@@ -1,26 +1,7 @@
 import { useState, useRef } from 'react'
-import { useLanguage } from '@/contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 
-interface AnalysisResult {
-  success: boolean
-  duration: number
-  analysis: {
-    damages: Array<{
-      part_name_en: string
-      part_name_ar: string
-      damage_type: string
-      confidence: number
-      severity_label: string
-      price: number
-      is_ai_detected: boolean
-    }>
-    needs_check_parts: Array<string>
-  }
-}
-
 export default function AnalysisPage() {
-  const { t, lang } = useLanguage()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [generalImages, setGeneralImages] = useState<File[]>([])
@@ -83,36 +64,33 @@ export default function AnalysisPage() {
     setError('')
 
     if (generalImages.length === 0 && damageImages.length === 0) {
-      setError(t('error') + ': ' + t('uploadImages'))
+      setError('يرجى رفع صور للمركبة')
       return
     }
 
     if (!year || !make || !model) {
-      setError(t('error') + ': Vehicle info required')
+      setError('يرجى إدخال معلومات المركبة')
       return
     }
 
     setAnalyzing(true)
 
     try {
-      // Compress images
       const allImages = [...generalImages, ...damageImages]
       const compressedImages: string[] = []
 
       for (const file of allImages) {
         const compressed = await compressImage(file)
-        compressedImages.push(compressed.split(',')[1]) // Get base64 without data URI prefix
+        compressedImages.push(compressed.split(',')[1])
       }
 
-      // Get token from localStorage
       const token = localStorage.getItem('token')
       if (!token) {
-        setError('Session expired. Please login again.')
+        setError('انتهت جلستك. يرجى تسجيل الدخول مجددا')
         navigate('/login')
         return
       }
 
-      // Call analysis endpoint
       const response = await fetch('/api/analysis', {
         method: 'POST',
         headers: {
@@ -131,127 +109,126 @@ export default function AnalysisPage() {
         }),
       })
 
-      const data: AnalysisResult = await response.json()
+      const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Analysis failed')
+        throw new Error(data.error || 'فشل التحليل')
       }
 
       if (data.success && data.analysis) {
-        // Store analysis result in sessionStorage
         sessionStorage.setItem('analysisResult', JSON.stringify(data.analysis))
-        // Navigate to estimate page to confirm
         navigate('/estimate/new')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Analysis failed')
+      setError(err instanceof Error ? err.message : 'فشل التحليل')
     } finally {
       setAnalyzing(false)
     }
   }
 
   return (
-    <div className={`min-h-screen p-8 bg-gfast-g50 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
+    <div className="min-h-screen bg-gray-50 rtl" dir="rtl">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-blue-600">تحليل المركبة</h1>
           <button
             onClick={() => navigate('/dashboard')}
-            className="text-gfast-blue hover:underline mb-4"
+            className="text-blue-600 hover:underline font-medium"
           >
-            ← {t('dashboard')}
+            ← العودة
           </button>
-          <h1 className="text-3xl font-bold">{t('analysis')}</h1>
         </div>
+      </div>
 
-        <div className="bg-white rounded-2lg shadow-lg p-8 space-y-8">
-          {/* Vehicle Information */}
-          <div className="border-b pb-6">
-            <h2 className="text-xl font-bold mb-4">{t('vehicle')}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Content */}
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          {/* Vehicle Info Section */}
+          <div className="mb-8 pb-8 border-b border-gray-200">
+            <h2 className="text-xl font-bold mb-6 text-gray-800">معلومات المركبة</h2>
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gfast-g700 mb-2">
-                  {t('year')}
-                </label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">السنة</label>
                 <input
                   type="number"
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
                   placeholder="2023"
-                  className="w-full px-4 py-2 border border-gfast-g300 rounded-lg focus:outline-none focus:border-gfast-blue"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 text-right"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gfast-g700 mb-2">
-                  {t('carBrand')}
-                </label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">الماركة</label>
                 <input
                   type="text"
                   value={make}
                   onChange={(e) => setMake(e.target.value)}
-                  placeholder="Toyota"
-                  className="w-full px-4 py-2 border border-gfast-g300 rounded-lg focus:outline-none focus:border-gfast-blue"
+                  placeholder="تويوتا"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 text-right"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gfast-g700 mb-2">
-                  {t('carModel')}
-                </label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">الموديل</label>
                 <input
                   type="text"
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  placeholder="Corolla"
-                  className="w-full px-4 py-2 border border-gfast-g300 rounded-lg focus:outline-none focus:border-gfast-blue"
+                  placeholder="كامري"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 text-right"
                 />
               </div>
             </div>
           </div>
 
-          {/* General Images */}
-          <div className="border-b pb-6">
-            <h2 className="text-lg font-bold mb-4">{t('generalImages')}</h2>
+          {/* General Images Section */}
+          <div className="mb-8 pb-8 border-b border-gray-200">
+            <h2 className="text-xl font-bold mb-6 text-gray-800">الصور العامة</h2>
             <div className="space-y-4">
               <button
                 onClick={() => {
-                  fileInputRef.current?.click()
+                  const input = document.createElement('input')
+                  input.type = 'file'
+                  input.multiple = true
+                  input.accept = 'image/*'
+                  input.onchange = (e) => {
+                    const evt = e as any
+                    handleImageSelect(evt, 'general')
+                  }
+                  input.click()
                 }}
-                className="w-full px-6 py-4 border-2 border-dashed border-gfast-g300 rounded-lg hover:border-gfast-blue hover:bg-blue-50 transition-colors"
+                className="w-full px-6 py-8 border-2 border-dashed border-gray-400 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors text-gray-700 font-bold"
               >
-                + {t('uploadImages')}
+                📷 اضغط لاختيار صور
               </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*"
-                hidden
-                onChange={(e) => handleImageSelect(e, 'general')}
-              />
               {generalImages.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   {generalImages.map((img, idx) => (
                     <div key={idx} className="relative group">
                       <img
                         src={URL.createObjectURL(img)}
-                        alt={`General ${idx}`}
+                        alt={`صورة ${idx}`}
                         className="w-full h-24 object-cover rounded-lg"
                       />
                       <button
                         onClick={() => removeImage(idx, 'general')}
                         className="absolute inset-0 bg-black bg-opacity-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold"
                       >
-                        ✕
+                        ❌
                       </button>
                     </div>
                   ))}
                 </div>
               )}
+              <p className="text-sm text-gray-500">
+                {generalImages.length} صور مختارة
+              </p>
             </div>
           </div>
 
-          {/* Damage Images */}
-          <div className="border-b pb-6">
-            <h2 className="text-lg font-bold mb-4">{t('damageImages')}</h2>
+          {/* Damage Images Section */}
+          <div className="mb-8">
+            <h2 className="text-xl font-bold mb-6 text-gray-800">صور الأضرار</h2>
             <div className="space-y-4">
               <button
                 onClick={() => {
@@ -265,53 +242,56 @@ export default function AnalysisPage() {
                   }
                   input.click()
                 }}
-                className="w-full px-6 py-4 border-2 border-dashed border-gfast-g300 rounded-lg hover:border-gfast-blue hover:bg-blue-50 transition-colors"
+                className="w-full px-6 py-8 border-2 border-dashed border-gray-400 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors text-gray-700 font-bold"
               >
-                + {t('uploadImages')}
+                📸 اضغط لاختيار صور الأضرار
               </button>
               {damageImages.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   {damageImages.map((img, idx) => (
                     <div key={idx} className="relative group">
                       <img
                         src={URL.createObjectURL(img)}
-                        alt={`Damage ${idx}`}
+                        alt={`صورة ضرر ${idx}`}
                         className="w-full h-24 object-cover rounded-lg"
                       />
                       <button
                         onClick={() => removeImage(idx, 'damage')}
                         className="absolute inset-0 bg-black bg-opacity-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold"
                       >
-                        ✕
+                        ❌
                       </button>
                     </div>
                   ))}
                 </div>
               )}
+              <p className="text-sm text-gray-500">
+                {damageImages.length} صور مختارة
+              </p>
             </div>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              {error}
+            <div className="mb-6 p-4 bg-red-100 border-r-4 border-red-500 text-red-700 rounded-lg font-medium">
+              ⚠️ {error}
             </div>
           )}
 
-          {/* Analyze Button */}
+          {/* Action Buttons */}
           <div className="flex gap-4">
             <button
               onClick={handleAnalyze}
               disabled={analyzing}
-              className="flex-1 px-6 py-3 bg-gfast-blue text-white rounded-lg font-semibold hover:bg-gfast-blue-dark disabled:bg-gfast-g400 transition-colors"
+              className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
             >
-              {analyzing ? t('analyzing') : t('analyzeButton')}
+              {analyzing ? '⏳ جاري التحليل...' : '🔍 تحليل المركبة'}
             </button>
             <button
               onClick={() => navigate('/dashboard')}
-              className="px-6 py-3 border border-gfast-g300 rounded-lg font-semibold hover:bg-gfast-g50"
+              className="px-6 py-4 border-2 border-gray-300 rounded-lg font-bold hover:bg-gray-50 transition-colors"
             >
-              {t('cancel')}
+              ← إلغاء
             </button>
           </div>
         </div>
