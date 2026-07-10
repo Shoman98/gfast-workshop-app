@@ -22,6 +22,12 @@ interface AuditLog {
   new_value?: string
 }
 
+interface Labor {
+  id?: string
+  labor_name_ar: string
+  price: number
+}
+
 export default function EstimatePage() {
   const { estimateId } = useParams()
   const navigate = useNavigate()
@@ -37,6 +43,11 @@ export default function EstimatePage() {
   const [error, setError] = useState('')
   const [confirming, setConfirming] = useState(false)
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
+  const [labors, setLabors] = useState<Labor[]>([])
+  const [newLabor, setNewLabor] = useState<Labor>({
+    labor_name_ar: '',
+    price: 0,
+  })
 
   useEffect(() => {
     if (estimateId === 'new') {
@@ -128,6 +139,44 @@ export default function EstimatePage() {
     logAudit('remove_part', `تم حذف القطعة: ${part.part_name_ar}`, undefined, JSON.stringify(part))
   }
 
+  const addLabor = () => {
+    if (!newLabor.labor_name_ar.trim()) {
+      setError('يرجى إدخال اسم العمل')
+      return
+    }
+    if (newLabor.price <= 0) {
+      setError('يرجى إدخال سعر صحيح')
+      return
+    }
+    const labor = { ...newLabor, id: Date.now().toString() }
+    setLabors([...labors, labor])
+    logAudit('add_labor', `تم إضافة عمل جديد: ${newLabor.labor_name_ar} (السعر: ${newLabor.price})`)
+    setNewLabor({ labor_name_ar: '', price: 0 })
+    setError('')
+  }
+
+  const removeLabor = (index: number) => {
+    const labor = labors[index]
+    setLabors(labors.filter((_, i) => i !== index))
+    logAudit('remove_labor', `تم حذف العمل: ${labor.labor_name_ar}`)
+  }
+
+  const updateLabor = (index: number, field: keyof Labor, value: any) => {
+    const labor = labors[index]
+    const oldValue = String(labor[field] || '')
+    const newValue = String(value || '')
+
+    if (oldValue === newValue) return
+
+    const updated = [...labors]
+    updated[index] = { ...updated[index], [field]: value }
+    setLabors(updated)
+
+    if (field === 'price') {
+      logAudit('edit_labor', `تم تغيير السعر من ${oldValue || '0'} إلى ${newValue} للعمل ${labor.labor_name_ar}`, 'price', oldValue, newValue)
+    }
+  }
+
   const addPart = () => {
     if (!newPart.part_name_ar.trim()) {
       setError('يرجى إدخال اسم الجزء')
@@ -173,6 +222,7 @@ export default function EstimatePage() {
             vehicle_make: 'Unknown',
             vehicle_model: 'Unknown',
             parts,
+            labors,
           }),
         })
 
@@ -448,6 +498,130 @@ export default function EstimatePage() {
             >
               ➕ إضافة الجزء
             </button>
+          </div>
+
+          {/* Labor Section */}
+          <div style={{
+            marginBottom: '2rem',
+            padding: '1.5rem',
+            backgroundColor: '#fef3c7',
+            borderRadius: '0.5rem',
+            border: '2px solid #f59e0b',
+          }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#92400e' }}>
+              إضافة الأعمال (اختياري)
+            </h3>
+
+            {/* Labor List */}
+            {labors.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <table style={{ width: '100%', textAlign: 'right', marginBottom: '1rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #f59e0b' }}>
+                      <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#92400e' }}>اسم العمل</th>
+                      <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#92400e' }}>التكلفة</th>
+                      <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#92400e', textAlign: 'center' }}>إجراء</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {labors.map((labor, idx) => (
+                      <tr key={labor.id || idx} style={{ borderBottom: '1px solid #fde68a' }}>
+                        <td style={{ padding: '0.75rem' }}>{labor.labor_name_ar}</td>
+                        <td style={{ padding: '0.75rem' }}>
+                          <input
+                            type="number"
+                            value={labor.price}
+                            onChange={(e) => updateLabor(idx, 'price', parseFloat(e.target.value) || 0)}
+                            style={{
+                              width: '100px',
+                              padding: '0.5rem',
+                              border: '1px solid #f59e0b',
+                              borderRadius: '0.375rem',
+                              textAlign: 'center',
+                            }}
+                          />
+                        </td>
+                        <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                          <button
+                            onClick={() => removeLabor(idx)}
+                            style={{
+                              padding: '0.375rem 0.75rem',
+                              backgroundColor: '#ef4444',
+                              color: 'white',
+                              borderRadius: '0.375rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: '0.875rem',
+                            }}
+                          >
+                            ❌ حذف
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: '#fef3c7',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 'bold',
+                  color: '#92400e',
+                  textAlign: 'right',
+                }}>
+                  إجمالي تكلفة الأعمال: {labors.reduce((sum, l) => sum + l.price, 0).toLocaleString()} ج.م
+                </div>
+              </div>
+            )}
+
+            {/* Add Labor Form */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px auto', gap: '0.75rem' }}>
+              <input
+                type="text"
+                value={newLabor.labor_name_ar}
+                onChange={(e) => setNewLabor({ ...newLabor, labor_name_ar: e.target.value })}
+                placeholder="اسم العمل (مثال: أعمال الدهان)"
+                style={{
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #f59e0b',
+                  borderRadius: '0.5rem',
+                  textAlign: 'right',
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                }}
+              />
+              <input
+                type="number"
+                value={newLabor.price}
+                onChange={(e) => setNewLabor({ ...newLabor, price: parseFloat(e.target.value) || 0 })}
+                placeholder="السعر"
+                min="0"
+                style={{
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #f59e0b',
+                  borderRadius: '0.5rem',
+                  textAlign: 'center',
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                }}
+              />
+              <button
+                onClick={addLabor}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#f59e0b',
+                  color: 'white',
+                  borderRadius: '0.5rem',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                ➕ إضافة عمل
+              </button>
+            </div>
           </div>
 
           {/* Activity Log */}

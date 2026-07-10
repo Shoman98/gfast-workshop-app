@@ -85,7 +85,7 @@ router.get('/:estimateId', authenticate, async (req, res, next) => {
 router.post('/', authenticate, async (req, res, next) => {
   try {
     const workshopId = req.workshop_id;
-    const { vehicleYear, vehicleMake, vehicleModel, vehicle_year, vehicle_make, vehicle_model, parts } = req.body;
+    const { vehicleYear, vehicleMake, vehicleModel, vehicle_year, vehicle_make, vehicle_model, parts, labors } = req.body;
     const year = vehicleYear || vehicle_year;
     const make = vehicleMake || vehicle_make;
     const model = vehicleModel || vehicle_model;
@@ -99,6 +99,7 @@ router.post('/', authenticate, async (req, res, next) => {
         vehicle_make: make,
         vehicle_model: model,
         status: 'draft',
+        labors: labors || [],
       })
       .select()
       .single();
