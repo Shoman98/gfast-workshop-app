@@ -5,15 +5,28 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const [workshopId, setWorkshopId] = useState('')
   const [pin, setPin] = useState('')
+  const [workshopName, setWorkshopName] = useState('')
+  const [location, setLocation] = useState('')
+  const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const validatePhone = (phoneNum: string): boolean => {
+    const egyptianPhoneRegex = /^01[0-9]{8}$/
+    return egyptianPhoneRegex.test(phoneNum.replace(/[\s\-()]/g, ''))
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!workshopId || !pin) {
+    if (!workshopId || !pin || !workshopName || !location || !phone) {
       setError('يرجى إدخال جميع البيانات')
+      return
+    }
+
+    if (!validatePhone(phone)) {
+      setError('رقم الهاتف غير صحيح (يجب أن يبدأ برقم 01)')
       return
     }
 
@@ -23,7 +36,13 @@ export default function LoginPage() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workshop_id: workshopId, pin }),
+        body: JSON.stringify({
+          workshop_id: workshopId,
+          pin,
+          workshop_name: workshopName,
+          location,
+          phone,
+        }),
       })
 
       const data = await response.json()
@@ -137,6 +156,99 @@ export default function LoginPage() {
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               placeholder="••••"
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                border: '2px solid #d1d5db',
+                borderRadius: '0.5rem',
+                textAlign: 'right',
+                fontSize: '1.125rem',
+                outline: 'none',
+                transition: 'border-color 0.2s',
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+            />
+          </div>
+
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: 'bold',
+              color: '#374151',
+              marginBottom: '0.5rem',
+            }}>
+              اسم الورشة
+            </label>
+            <input
+              type="text"
+              value={workshopName}
+              onChange={(e) => setWorkshopName(e.target.value)}
+              placeholder="مثال: ورشة محمد للسيارات"
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                border: '2px solid #d1d5db',
+                borderRadius: '0.5rem',
+                textAlign: 'right',
+                fontSize: '1.125rem',
+                outline: 'none',
+                transition: 'border-color 0.2s',
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+            />
+          </div>
+
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: 'bold',
+              color: '#374151',
+              marginBottom: '0.5rem',
+            }}>
+              العنوان
+            </label>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="مثال: القاهرة، حي النيل"
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                border: '2px solid #d1d5db',
+                borderRadius: '0.5rem',
+                textAlign: 'right',
+                fontSize: '1.125rem',
+                outline: 'none',
+                transition: 'border-color 0.2s',
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+            />
+          </div>
+
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: 'bold',
+              color: '#374151',
+              marginBottom: '0.5rem',
+            }}>
+              رقم الهاتف
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="مثال: 01001234567"
               disabled={loading}
               style={{
                 width: '100%',

@@ -16,7 +16,7 @@ const router = express.Router();
  */
 router.post('/login', async (req, res, next) => {
   try {
-    const { workshop_id, pin } = req.body;
+    const { workshop_id, pin, workshop_name, location, phone } = req.body;
 
     if (!workshop_id || !pin) {
       return res.status(400).json({ error: 'workshop_id and pin required' });
@@ -46,19 +46,37 @@ router.post('/login', async (req, res, next) => {
       return res.status(403).json({ error: 'Workshop account is inactive' });
     }
 
+    // Update workshop profile with user-provided data (if provided)
+    if (workshop_name || location || phone) {
+      const { error: updateError } = await supabase
+        .from('workshop_app.workshops')
+        .update({
+          ...(workshop_name && { workshop_name }),
+          ...(location && { city: location }),
+          ...(phone && { phone }),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('workshop_id', workshop_id);
+
+      if (updateError) {
+        console.warn('⚠️  Failed to update workshop profile:', updateError.message);
+      }
+    }
+
     // Generate JWT token
     const token = generateToken(workshop_id);
 
-    console.log(`✅ Login successful: ${workshop.workshop_name} (${workshop_id})`);
+    console.log(`✅ Login successful: ${workshop_name || workshop.workshop_name} (${workshop_id})`);
 
     res.json({
       success: true,
       token,
       workshop: {
         workshop_id: workshop.workshop_id,
-        workshop_name: workshop.workshop_name,
+        workshop_name: workshop_name || workshop.workshop_name,
         category: workshop.category,
-        city: workshop.city,
+        city: location || workshop.city,
+        phone: phone || workshop.phone,
       },
     });
   } catch (err) {
