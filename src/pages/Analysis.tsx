@@ -65,8 +65,8 @@ export default function AnalysisPage() {
 
     const totalImages = generalImages.length + damageImages.length
 
-    if (totalImages < 6 || totalImages > 30) {
-      setError('يجب رفع من ٦ إلى ٣٠ صورة')
+    if (totalImages < 1) {
+      setError('يجب رفع صورة واحدة على الأقل')
       return
     }
 
@@ -362,21 +362,21 @@ export default function AnalysisPage() {
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button
               onClick={handleAnalyze}
-              disabled={analyzing || generalImages.length + damageImages.length < 6 || generalImages.length + damageImages.length > 30}
+              disabled={analyzing || generalImages.length + damageImages.length < 1}
               style={{
                 flex: 1,
                 padding: '1rem 1.5rem',
-                backgroundColor: (analyzing || generalImages.length + damageImages.length < 6 || generalImages.length + damageImages.length > 30) ? '#9ca3af' : '#2563eb',
+                backgroundColor: (analyzing || generalImages.length + damageImages.length < 1) ? '#9ca3af' : '#2563eb',
                 color: 'white',
                 borderRadius: '0.5rem',
                 fontWeight: 'bold',
                 fontSize: '1.125rem',
                 border: 'none',
-                cursor: (analyzing || generalImages.length + damageImages.length < 6 || generalImages.length + damageImages.length > 30) ? 'not-allowed' : 'pointer',
+                cursor: (analyzing || generalImages.length + damageImages.length < 1) ? 'not-allowed' : 'pointer',
               }}
-              title={generalImages.length + damageImages.length < 6 ? 'يجب رفع 6 صور على الأقل' : generalImages.length + damageImages.length > 30 ? 'الحد الأقصى 30 صورة' : ''}
+              title={generalImages.length + damageImages.length < 1 ? 'يجب رفع صورة واحدة على الأقل' : ''}
             >
-              {analyzing ? '⏳ جاري التحليل...' : `🔍 تحليل المركبة (${generalImages.length + damageImages.length}/6-30)`}
+              {analyzing ? '⏳ جاري التحليل...' : `🔍 تحليل المركبة (${generalImages.length + damageImages.length})`}
             </button>
             <button
               onClick={() => navigate('/dashboard')}

@@ -12,8 +12,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   const validatePhone = (phoneNum: string): boolean => {
-    const egyptianPhoneRegex = /^01[0-9]{8}$/
-    return egyptianPhoneRegex.test(phoneNum.replace(/[\s\-()]/g, ''))
+    const cleaned = phoneNum.replace(/[\s\-()]/g, '')
+    // Accept Egyptian phone numbers: 10-13 digits starting with 01 or 2001
+    return /^01[0-9]{8,10}$/.test(cleaned) || /^2001[0-9]{8,10}$/.test(cleaned)
   }
 
   const handleLogin = async (e: React.FormEvent) => {
