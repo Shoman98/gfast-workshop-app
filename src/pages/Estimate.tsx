@@ -48,6 +48,8 @@ export default function EstimatePage() {
     labor_name_ar: '',
     price: 0,
   })
+  const [estimateStatus, setEstimateStatus] = useState<'draft' | 'confirmed'>('draft')
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   useEffect(() => {
     if (estimateId === 'new') {
@@ -116,6 +118,8 @@ export default function EstimatePage() {
   }
 
   const updatePart = (index: number, field: keyof Part, value: any) => {
+    if (estimateStatus === 'confirmed') return
+
     const part = parts[index]
     const oldValue = String(part[field] || '')
     const newValue = String(value || '')
@@ -134,12 +138,15 @@ export default function EstimatePage() {
   }
 
   const removePart = (index: number) => {
+    if (estimateStatus === 'confirmed') return
+
     const part = parts[index]
     setParts(parts.filter((_, i) => i !== index))
     logAudit('remove_part', `تم حذف القطعة: ${part.part_name_ar}`, undefined, JSON.stringify(part))
   }
 
   const addLabor = () => {
+    if (estimateStatus === 'confirmed') return
     if (!newLabor.labor_name_ar.trim()) {
       setError('يرجى إدخال اسم العمل')
       return
@@ -156,12 +163,15 @@ export default function EstimatePage() {
   }
 
   const removeLabor = (index: number) => {
+    if (estimateStatus === 'confirmed') return
+
     const labor = labors[index]
     setLabors(labors.filter((_, i) => i !== index))
     logAudit('remove_labor', `تم حذف العمل: ${labor.labor_name_ar}`)
   }
 
   const updateLabor = (index: number, field: keyof Labor, value: any) => {
+    if (estimateStatus === 'confirmed') return
     const labor = labors[index]
     const oldValue = String(labor[field] || '')
     const newValue = String(value || '')
@@ -178,6 +188,8 @@ export default function EstimatePage() {
   }
 
   const addPart = () => {
+    if (estimateStatus === 'confirmed') return
+
     if (!newPart.part_name_ar.trim()) {
       setError('يرجى إدخال اسم الجزء')
       return
@@ -194,12 +206,16 @@ export default function EstimatePage() {
     setError('')
   }
 
-  const handleConfirm = async () => {
+  const confirmEstimate = async () => {
     if (parts.length === 0) {
       setError('يرجى إضافة جزء واحد على الأقل')
       return
     }
 
+    setShowConfirmDialog(true)
+  }
+
+  const handleConfirmDialog = async () => {
     const token = localStorage.getItem('token')
     if (!token) {
       navigate('/login')
@@ -209,6 +225,7 @@ export default function EstimatePage() {
     try {
       setConfirming(true)
       setError('')
+      setShowConfirmDialog(false)
 
       if (estimateId === 'new') {
         const response = await fetch('/api/estimates', {
@@ -223,12 +240,14 @@ export default function EstimatePage() {
             vehicle_model: 'Unknown',
             parts,
             labors,
+            status: 'confirmed',
           }),
         })
 
         if (!response.ok) throw new Error('فشل إنشاء التقدير')
 
         const data = await response.json()
+        setEstimateStatus('confirmed')
         navigate('/dashboard')
       }
     } catch (err) {
@@ -365,6 +384,7 @@ export default function EstimatePage() {
                             onChange={(e) =>
                               updatePart(idx, 'price', parseFloat(e.target.value) || 0)
                             }
+                            disabled={estimateStatus === 'confirmed'}
                             style={{
                               width: '100%',
                               padding: '0.5rem 0.75rem',
@@ -372,18 +392,22 @@ export default function EstimatePage() {
                               borderRadius: '0.375rem',
                               textAlign: 'right',
                               outline: 'none',
+                              opacity: estimateStatus === 'confirmed' ? 0.6 : 1,
+                              cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'text',
                             }}
                           />
                         </td>
                         <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
                           <button
                             onClick={() => removePart(idx)}
+                            disabled={estimateStatus === 'confirmed'}
                             style={{
                               color: '#dc2626',
                               fontWeight: 'bold',
                               background: 'none',
                               border: 'none',
-                              cursor: 'pointer',
+                              cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
+                              opacity: estimateStatus === 'confirmed' ? 0.5 : 1,
                             }}
                           >
                             ❌
@@ -485,15 +509,16 @@ export default function EstimatePage() {
             </div>
             <button
               onClick={addPart}
+              disabled={estimateStatus === 'confirmed'}
               style={{
                 width: '100%',
                 padding: '0.75rem 1rem',
-                backgroundColor: '#16a34a',
+                backgroundColor: estimateStatus === 'confirmed' ? '#9ca3af' : '#16a34a',
                 color: 'white',
                 borderRadius: '0.5rem',
                 fontWeight: 'bold',
                 border: 'none',
-                cursor: 'pointer',
+                cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
               }}
             >
               ➕ إضافة الجزء
@@ -532,25 +557,30 @@ export default function EstimatePage() {
                             type="number"
                             value={labor.price}
                             onChange={(e) => updateLabor(idx, 'price', parseFloat(e.target.value) || 0)}
+                            disabled={estimateStatus === 'confirmed'}
                             style={{
                               width: '100px',
                               padding: '0.5rem',
                               border: '1px solid #f59e0b',
                               borderRadius: '0.375rem',
                               textAlign: 'center',
+                              opacity: estimateStatus === 'confirmed' ? 0.6 : 1,
+                              cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'text',
                             }}
                           />
                         </td>
                         <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                           <button
                             onClick={() => removeLabor(idx)}
+                            disabled={estimateStatus === 'confirmed'}
                             style={{
                               padding: '0.375rem 0.75rem',
                               backgroundColor: '#ef4444',
                               color: 'white',
                               borderRadius: '0.375rem',
                               border: 'none',
-                              cursor: 'pointer',
+                              cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
+                              opacity: estimateStatus === 'confirmed' ? 0.5 : 1,
                               fontSize: '0.875rem',
                             }}
                           >
@@ -608,14 +638,15 @@ export default function EstimatePage() {
               />
               <button
                 onClick={addLabor}
+                disabled={estimateStatus === 'confirmed'}
                 style={{
                   padding: '0.75rem 1.5rem',
-                  backgroundColor: '#f59e0b',
+                  backgroundColor: estimateStatus === 'confirmed' ? '#9ca3af' : '#f59e0b',
                   color: 'white',
                   borderRadius: '0.5rem',
                   fontWeight: 'bold',
                   border: 'none',
-                  cursor: 'pointer',
+                  cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -659,21 +690,21 @@ export default function EstimatePage() {
           {/* Actions */}
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button
-              onClick={handleConfirm}
-              disabled={confirming || parts.length === 0}
+              onClick={confirmEstimate}
+              disabled={confirming || parts.length === 0 || estimateStatus === 'confirmed'}
               style={{
                 flex: 1,
                 padding: '1rem 1.5rem',
-                backgroundColor: confirming || parts.length === 0 ? '#9ca3af' : '#2563eb',
+                backgroundColor: confirming || parts.length === 0 || estimateStatus === 'confirmed' ? '#9ca3af' : '#2563eb',
                 color: 'white',
                 borderRadius: '0.5rem',
                 fontWeight: 'bold',
                 fontSize: '1.125rem',
                 border: 'none',
-                cursor: confirming || parts.length === 0 ? 'not-allowed' : 'pointer',
+                cursor: confirming || parts.length === 0 || estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
               }}
             >
-              {confirming ? '⏳ جاري...' : '✅ تأكيد التقدير'}
+              {estimateStatus === 'confirmed' ? '✅ مؤكد' : confirming ? '⏳ جاري...' : '✅ تأكيد التقدير'}
             </button>
             <button
               onClick={() => navigate('/dashboard')}
@@ -689,6 +720,68 @@ export default function EstimatePage() {
               ← إلغاء
             </button>
           </div>
+
+          {/* Confirmation Dialog */}
+          {showConfirmDialog && (
+            <div style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 50,
+            }}>
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '0.75rem',
+                padding: '2rem',
+                maxWidth: '400px',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+              }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#111827' }}>
+                  تأكيد التقدير
+                </h3>
+                <p style={{ color: '#6b7280', marginBottom: '2rem', lineHeight: 1.6 }}>
+                  بعد التأكيد لن تتمكن من تعديل أي بيانات
+                </p>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <button
+                    onClick={handleConfirmDialog}
+                    disabled={confirming}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: confirming ? '#9ca3af' : '#2563eb',
+                      color: 'white',
+                      borderRadius: '0.5rem',
+                      fontWeight: 'bold',
+                      border: 'none',
+                      cursor: confirming ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {confirming ? '⏳ جاري...' : 'تأكيد'}
+                  </button>
+                  <button
+                    onClick={() => setShowConfirmDialog(false)}
+                    disabled={confirming}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: 'white',
+                      color: '#6b7280',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '0.5rem',
+                      fontWeight: 'bold',
+                      cursor: confirming ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
