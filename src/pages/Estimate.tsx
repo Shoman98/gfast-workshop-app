@@ -57,6 +57,10 @@ export default function EstimatePage() {
       const analysisResult = sessionStorage.getItem('analysisResult')
       if (analysisResult) {
         const analysis = JSON.parse(analysisResult)
+        console.log('📋 Estimate page loaded analysis:', {
+          damages: analysis.damages?.length || 0,
+          needs_check: analysis.needs_check_parts?.length || 0
+        });
         setParts(analysis.damages || [])
         setNeedsCheckParts(analysis.needs_check_parts || [])
         sessionStorage.removeItem('analysisResult')

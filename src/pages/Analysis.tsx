@@ -118,6 +118,11 @@ export default function AnalysisPage() {
       }
 
       if (data.success && data.analysis) {
+        console.log('✅ Analysis received:', {
+          damages: data.analysis.damages?.length || 0,
+          needs_check: data.analysis.needs_check_parts?.length || 0,
+          full_response: data.analysis
+        });
         sessionStorage.setItem('analysisResult', JSON.stringify(data.analysis))
         navigate('/estimate/new')
       }
