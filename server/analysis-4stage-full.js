@@ -400,68 +400,39 @@ Answer with ONLY:
 }
 
 function buildStage2BPrompt(visibleAreas, stage1Result) {
-  const areaMap = buildAreaToPartsMap();
-  const damageRef = generateDamageDescriptionsReference();
+  return `You are a vehicle damage detection AI. Analyze these vehicle images and detect ALL visible damage.
 
-  let validPartsSection = 'VALID PARTS FOR VISIBLE AREAS:\n';
-  visibleAreas.forEach(area => {
-    const parts = areaMap[area] || [];
-    if (parts.length > 0) {
-      validPartsSection += `  ${area}: ${parts.join(', ')}\n`;
-    }
-  });
+TASK: Return ONLY valid JSON with damage details. If no damage, return empty arrays.
 
-  return `You are a vehicle damage detection system.
-Photo quality: ${stage1Result?.photoQuality || 'Good'}
-
-CRITICAL CONSTRAINT — YOU MAY ONLY REPORT DAMAGE ON PARTS VISIBLE IN THESE AREAS:
-${JSON.stringify(visibleAreas)}
-
-${validPartsSection}
-
-If you detect damage on a part NOT listed above, DISCARD IT — that area is not visible.
-
-${damageRef}
-
-FALSE POSITIVE PREVENTION:
-- Many vehicles are PERFECTLY undamaged. Do NOT hallucinate.
-- If vehicle appears clean, return EMPTY arrays. This is CORRECT.
-- Do NOT confuse reflections, shadows, panel gaps, trim seams, or normal wear with damage.
-- NEVER combine parts with "/" or "and" → emit SEPARATE entries per part.
-- For paired parts, report only the SPECIFIC damaged side.
-- Confidence >= 0.70 → "damages", < 0.70 → "needs_check_parts"
-- If no damage visible → return empty arrays
-
-DETECTION RULES:
-1. Report ONLY visible damage — never guess
-2. Use exact snake_case part names from valid parts list above
-3. LEFT/RIGHT from DRIVER'S perspective (driver left = viewer's right on front photo)
-4. Cross-reference multiple images to confirm damage
-5. If no damage → return empty arrays — do NOT fabricate findings
-
-Part Taxonomy (snake_case):
-hood, front_windshield, front_left_headlight, front_right_headlight, upper_bumper,
-front_left_fender, front_right_fender, front_left_door, front_right_door,
-rear_left_door, rear_right_door, left_mirror, right_mirror, roof, trunk_door,
-rear_bumper_upper, grille, front_car_logo, lower_bumper, left_rocker_panel,
-left_quarter_panel, rear_right_quarter_panel, a_pillars, b_pillar, c_pillar
-
-Return this exact JSON:
-\`\`\`json
+RETURN THIS JSON ONLY (no other text):
 {
   "damages": [
     {
-      "part_name": "exact part name from taxonomy",
-      "damage_type": "Dent|Scratch|Crack|Broken|Missing|Deformation|Misalignment|Rust|Buckled|Puncture",
-      "description": "specific visual evidence",
-      "confidence": 0.85
+      "part_name_en": "hood",
+      "part_name_ar": "كبوت",
+      "damage_type": "Dent",
+      "confidence": 0.95
     }
   ],
-  "needs_check_parts": [],
-  "overall_confidence_score": 0.90,
-  "summary": "brief summary or 'No damage detected'"
+  "needs_check_parts": []
 }
-\`\`\``;
+
+RULES:
+1. Detect ALL visible damage (dents, scratches, cracks, broken parts, missing pieces, deformation)
+2. Each part: one JSON object with part_name_en, part_name_ar, damage_type, confidence (0.0-1.0)
+3. confidence >= 0.70 goes to "damages", < 0.70 goes to "needs_check_parts"
+4. If NO damage visible, return { "damages": [], "needs_check_parts": [] }
+5. DO NOT hallucinate - only report what you clearly see
+6. LEFT/RIGHT from driver's perspective
+
+COMMON PARTS:
+hood, roof, trunk_door, grille, upper_bumper, lower_bumper, front_windshield,
+front_left_headlight, front_right_headlight, front_left_fender, front_right_fender,
+front_left_door, front_right_door, rear_left_door, rear_right_door, left_quarter_panel,
+rear_right_quarter_panel, left_mirror, right_mirror, front_left_door_window,
+front_right_door_window, rear_left_door_window, rear_right_door_window
+
+Return ONLY the JSON object. No markdown, no explanation.`;
 }
 
 // ============================================================================
@@ -549,13 +520,15 @@ export async function analyzeVehicleDamage(images, vehicleInfo, geminiApiKey) {
     const detectedDamages = stage2bResult.damages || [];
     const mappedDamages = detectedDamages
       .map(damage => {
-        const matchedPart = findBestMatchPart(damage.part_name);
+        // Gemini returns part_name_en, match it to PARTS_DATABASE
+        const partKey = damage.part_name_en?.toLowerCase().replace(/\s+/g, '_') || '';
+        const matchedPart = PARTS_DATABASE[partKey];
         const severityDecision = getSeverityDecision(damage.damage_type);
 
         if (matchedPart) {
           return {
-            part_name_en: matchedPart.nameEn,
-            part_name_ar: matchedPart.nameAr,
+            part_name_en: damage.part_name_en || matchedPart.nameEn,
+            part_name_ar: damage.part_name_ar || matchedPart.nameAr,
             damage_type: damage.damage_type || 'Unknown',
             confidence: damage.confidence || 0.8,
             severity_label: severityDecision.decision,
