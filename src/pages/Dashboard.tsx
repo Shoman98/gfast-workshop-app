@@ -279,21 +279,41 @@ export default function DashboardPage() {
                           {formatDate(estimate.created_at)}
                         </td>
                         <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                          <button
-                            onClick={() => navigate(`/estimate/${estimate.estimate_id}`)}
-                            style={{
-                              padding: '0.5rem 1rem',
-                              backgroundColor: '#2563eb',
-                              color: 'white',
-                              borderRadius: '0.5rem',
-                              fontWeight: 'bold',
-                              fontSize: '0.875rem',
-                              border: 'none',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            عرض
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                            {estimate.status === 'confirmed' ? (
+                              <button
+                                onClick={() => navigate(`/report/${estimate.estimate_id}`)}
+                                style={{
+                                  padding: '0.5rem 1rem',
+                                  backgroundColor: '#16a34a',
+                                  color: 'white',
+                                  borderRadius: '0.5rem',
+                                  fontWeight: 'bold',
+                                  fontSize: '0.875rem',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                📄 التقرير
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => navigate(`/estimate/${estimate.estimate_id}`)}
+                                style={{
+                                  padding: '0.5rem 1rem',
+                                  backgroundColor: '#2563eb',
+                                  color: 'white',
+                                  borderRadius: '0.5rem',
+                                  fontWeight: 'bold',
+                                  fontSize: '0.875rem',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                ✏️ تعديل
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     )
