@@ -329,7 +329,6 @@ export default function EstimatePage() {
                   <thead>
                     <tr style={{ borderBottom: '2px solid #d1d5db', backgroundColor: '#f9fafb' }}>
                       <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>الجزء</th>
-                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>نوع الضرر</th>
                       <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>الحالة</th>
                       <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>السعر</th>
                       <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>حذف</th>
@@ -345,21 +344,6 @@ export default function EstimatePage() {
                               {Math.round(part.confidence * 100)}% ثقة
                             </div>
                           )}
-                        </td>
-                        <td style={{ padding: '1rem 1.5rem' }}>
-                          <input
-                            type="text"
-                            value={part.damage_type}
-                            onChange={(e) => updatePart(idx, 'damage_type', e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '0.5rem 0.75rem',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '0.375rem',
-                              textAlign: 'right',
-                              outline: 'none',
-                            }}
-                          />
                         </td>
                         <td style={{ padding: '1rem 1.5rem' }}>
                           <select
