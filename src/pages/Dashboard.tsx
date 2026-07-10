@@ -19,6 +19,12 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [workshop, setWorkshop] = useState<any>(null)
+  const [searchBrand, setSearchBrand] = useState('')
+
+  const filteredEstimates = estimates.filter((est) => {
+    const brandMatch = est.vehicle_make.toLowerCase().includes(searchBrand.toLowerCase())
+    return brandMatch
+  })
 
   useEffect(() => {
     const workshopData = localStorage.getItem('workshop')
@@ -149,6 +155,35 @@ export default function DashboardPage() {
             التقديرات الأخيرة
           </h2>
 
+          {/* Search Bar */}
+          {estimates.length > 0 && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <input
+                type="text"
+                value={searchBrand}
+                onChange={(e) => setSearchBrand(e.target.value)}
+                placeholder="ابحث عن ماركة المركبة..."
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem',
+                  textAlign: 'right',
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+                onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+              />
+              {searchBrand && (
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
+                  عدد النتائج: {filteredEstimates.length}
+                </p>
+              )}
+            </div>
+          )}
+
           {error && (
             <div style={{
               marginBottom: '1.5rem',
@@ -185,6 +220,10 @@ export default function DashboardPage() {
                 ➕ إنشاء تقدير جديد
               </button>
             </div>
+          ) : filteredEstimates.length === 0 ? (
+            <div style={{ textAlign: 'center', paddingTop: '2rem', paddingBottom: '2rem' }}>
+              <p style={{ color: '#4b5563', fontSize: '1rem' }}>لم يتم العثور على نتائج لـ "{searchBrand}"</p>
+            </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', textAlign: 'right' }}>
@@ -199,7 +238,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {estimates.map((estimate) => {
+                  {filteredEstimates.map((estimate) => {
                     const statusColor = getStatusColor(estimate.status)
                     return (
                       <tr
