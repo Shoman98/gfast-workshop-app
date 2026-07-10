@@ -248,7 +248,10 @@ export default function EstimatePage() {
 
         const data = await response.json()
         setEstimateStatus('confirmed')
-        navigate('/dashboard')
+        // Redirect to report after 1.5s
+        setTimeout(() => {
+          navigate(`/report/${data.estimate.estimate_id || estimateId}`)
+        }, 1500)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'فشلت العملية')
