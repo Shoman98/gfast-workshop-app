@@ -32,6 +32,7 @@ export default function EstimatePage() {
   const { estimateId } = useParams()
   const navigate = useNavigate()
   const [parts, setParts] = useState<Part[]>([])
+  const [needsCheckParts, setNeedsCheckParts] = useState<Part[]>([])
   const [newPart, setNewPart] = useState<Part>({
     part_name_en: '',
     part_name_ar: '',
@@ -57,6 +58,7 @@ export default function EstimatePage() {
       if (analysisResult) {
         const analysis = JSON.parse(analysisResult)
         setParts(analysis.damages || [])
+        setNeedsCheckParts(analysis.needs_check_parts || [])
         sessionStorage.removeItem('analysisResult')
       }
     } else if (estimateId) {
@@ -143,6 +145,23 @@ export default function EstimatePage() {
     const part = parts[index]
     setParts(parts.filter((_, i) => i !== index))
     logAudit('remove_part', `تم حذف القطعة: ${part.part_name_ar}`, undefined, JSON.stringify(part))
+  }
+
+  const approveNeedsCheckPart = (index: number) => {
+    if (estimateStatus === 'confirmed') return
+
+    const part = needsCheckParts[index]
+    setParts([...parts, part])
+    setNeedsCheckParts(needsCheckParts.filter((_, i) => i !== index))
+    logAudit('approve_needs_check', `تمت الموافقة على القطعة المحتاجة للفحص: ${part.part_name_ar}`, undefined, undefined, JSON.stringify(part))
+  }
+
+  const rejectNeedsCheckPart = (index: number) => {
+    if (estimateStatus === 'confirmed') return
+
+    const part = needsCheckParts[index]
+    setNeedsCheckParts(needsCheckParts.filter((_, i) => i !== index))
+    logAudit('reject_needs_check', `تم رفض القطعة المحتاجة للفحص: ${part.part_name_ar}`, undefined, JSON.stringify(part))
   }
 
   const addLabor = () => {
@@ -427,6 +446,89 @@ export default function EstimatePage() {
               </span>
             </div>
           </div>
+
+          {/* Needs Check Parts Section */}
+          {needsCheckParts.length > 0 && (
+            <div style={{ marginBottom: '2rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#dc2626' }}>
+                ⚠️ أجزاء تحتاج فحص يدوي ({needsCheckParts.length})
+              </h2>
+              <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
+                <table style={{ width: '100%', textAlign: 'right' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #fecaca', backgroundColor: '#fee2e2' }}>
+                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#991b1b' }}>الجزء</th>
+                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#991b1b' }}>الحالة المقترحة</th>
+                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#991b1b' }}>الإجراء</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {needsCheckParts.map((part, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid #fecaca', backgroundColor: '#fef2f2' }}>
+                        <td style={{ padding: '1rem 1.5rem' }}>
+                          <div style={{ fontWeight: '600', color: '#991b1b' }}>{part.part_name_ar}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#dc2626', marginTop: '0.25rem' }}>
+                            {Math.round(part.confidence * 100)}% ثقة (منخفضة)
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem 1.5rem' }}>
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '0.375rem 0.75rem',
+                            backgroundColor: part.severity_label === 'Repair' ? '#dbeafe' : '#fee2e2',
+                            color: part.severity_label === 'Repair' ? '#1e40af' : '#991b1b',
+                            borderRadius: '0.375rem',
+                            fontWeight: '600',
+                            fontSize: '0.875rem',
+                          }}>
+                            {part.severity_label === 'Repair' ? 'إصلاح' : 'استبدال'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem 1.5rem' }}>
+                          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                            <button
+                              onClick={() => approveNeedsCheckPart(idx)}
+                              disabled={estimateStatus === 'confirmed'}
+                              style={{
+                                padding: '0.5rem 1rem',
+                                backgroundColor: '#10b981',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                fontWeight: '600',
+                                cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
+                                opacity: estimateStatus === 'confirmed' ? 0.5 : 1,
+                              }}
+                              title="إضافة إلى الأجزاء المؤكدة"
+                            >
+                              ✅ موافق
+                            </button>
+                            <button
+                              onClick={() => rejectNeedsCheckPart(idx)}
+                              disabled={estimateStatus === 'confirmed'}
+                              style={{
+                                padding: '0.5rem 1rem',
+                                backgroundColor: '#6b7280',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                fontWeight: '600',
+                                cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
+                                opacity: estimateStatus === 'confirmed' ? 0.5 : 1,
+                              }}
+                              title="رفض هذا الجزء"
+                            >
+                              ❌ رفض
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Add New Part */}
           <div style={{

@@ -461,11 +461,12 @@ function normalizePartName(rawName) {
 }
 
 export function enrichDamageData(rawAnalysis, vehicleInfo) {
-  if (!rawAnalysis || !rawAnalysis.damages) {
-    return { damages: [] };
+  if (!rawAnalysis) {
+    return { damages: [], needs_check_parts: [] };
   }
 
-  const enriched = rawAnalysis.damages.map(damage => {
+  // Enrich confirmed damages (confidence >= 0.70)
+  const enriched = (rawAnalysis.damages || []).map(damage => {
     const partKey = normalizePartName(damage.part_name_en);
     const partInfo = PARTS_DATABASE[partKey] || {};
 
@@ -483,5 +484,24 @@ export function enrichDamageData(rawAnalysis, vehicleInfo) {
     };
   });
 
-  return { damages: enriched };
+  // Enrich parts needing manual verification (confidence < 0.70)
+  const needsCheck = (rawAnalysis.needs_check_parts || []).map(part => {
+    const partKey = normalizePartName(part.part_name_en);
+    const partInfo = PARTS_DATABASE[partKey] || {};
+
+    return {
+      part_name_en: part.part_name_en || partInfo.nameEn || 'Unknown Part',
+      part_name_ar: part.part_name_ar || partInfo.nameAr || 'قطعة غير معروفة',
+      damage_type: part.damage_type || 'unknown',
+      severity_label: part.severity_label || getSeverityDecision(part.damage_type).decision,
+      confidence: part.confidence || 0.5,
+      is_ai_detected: part.is_ai_detected !== false,
+      price: partInfo.price || 0,
+      partId: partInfo.partId || null,
+      category: partInfo.category || 'exterior',
+      isUnmapped: !PARTS_DATABASE[partKey],
+    };
+  });
+
+  return { damages: enriched, needs_check_parts: needsCheck };
 }
