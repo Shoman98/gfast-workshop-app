@@ -32,6 +32,16 @@ app.use('/api/estimates', estimateRoutes);
 
 // Analysis route - mock response for now (analysis-core auto-starts wreck-vision server)
 app.post('/api/analysis', (req, res) => {
+  const { images } = req.body;
+  const imageCount = images?.length || 0;
+
+  if (imageCount < 6 || imageCount > 30) {
+    return res.status(400).json({
+      success: false,
+      error: 'يجب رفع من ٦ إلى ٣٠ صورة',
+    });
+  }
+
   res.json({
     success: true,
     analysis: {
