@@ -3,6 +3,7 @@
  */
 
 import express from 'express';
+import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../db/supabase.js';
 import { authenticate } from '../middleware/auth.js';
 
@@ -271,6 +272,86 @@ router.post('/:estimateId/confirm', authenticate, async (req, res, next) => {
       success: true,
       estimate: confirmed,
       message: 'Estimate confirmed and locked',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/estimates/:estimateId/audit-logs
+ * Log an audit action (part edit, labor change, etc.)
+ */
+router.post('/:estimateId/audit-logs', authenticate, async (req, res, next) => {
+  try {
+    const { estimateId } = req.params;
+    const workshopId = req.workshop_id;
+    const { action_type, target_type, field, old_value, new_value, action_description_ar } = req.body;
+
+    if (!action_type || !action_description_ar) {
+      return res.status(400).json({ error: 'action_type and action_description_ar required' });
+    }
+
+    const logId = uuidv4();
+    const timestamp = new Date().toISOString();
+
+    const logEntry = {
+      id: logId,
+      estimate_id: estimateId,
+      workshop_id: workshopId,
+      action_type,
+      target_type: target_type || null,
+      field: field || null,
+      old_value: old_value || null,
+      new_value: new_value || null,
+      action_description_ar,
+      timestamp,
+      created_at: timestamp,
+    };
+
+    const { data: log, error } = await supabase
+      .from('workshop_app.estimate_audit_logs')
+      .insert([logEntry]);
+
+    if (error) {
+      console.warn('Failed to insert audit log:', error);
+      // Still return success even if audit log fails
+    }
+
+    res.json({
+      success: true,
+      logId,
+      timestamp,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/estimates/:estimateId/audit-logs
+ * Fetch all audit logs for an estimate
+ */
+router.get('/:estimateId/audit-logs', authenticate, async (req, res, next) => {
+  try {
+    const { estimateId } = req.params;
+    const workshopId = req.workshop_id;
+
+    const { data: logs, error } = await supabase
+      .from('workshop_app.estimate_audit_logs')
+      .select('*')
+      .eq('estimate_id', estimateId)
+      .eq('workshop_id', workshopId)
+      .order('timestamp', { ascending: true });
+
+    if (error) {
+      console.warn('Failed to fetch audit logs:', error);
+      return res.json({ logs: [] }); // Return empty logs if fetch fails
+    }
+
+    res.json({
+      success: true,
+      logs: logs || [],
     });
   } catch (err) {
     next(err);

@@ -12,6 +12,16 @@ interface Part {
   is_ai_detected?: boolean
 }
 
+interface AuditLog {
+  id: string
+  action_type: string
+  action_description_ar: string
+  timestamp: string
+  field?: string
+  old_value?: string
+  new_value?: string
+}
+
 export default function EstimatePage() {
   const { estimateId } = useParams()
   const navigate = useNavigate()
@@ -26,6 +36,7 @@ export default function EstimatePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [confirming, setConfirming] = useState(false)
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
 
   useEffect(() => {
     if (estimateId === 'new') {
@@ -35,17 +46,86 @@ export default function EstimatePage() {
         setParts(analysis.damages || [])
         sessionStorage.removeItem('analysisResult')
       }
+    } else if (estimateId) {
+      // Load existing audit logs for this estimate
+      const loadAuditLogs = async () => {
+        try {
+          const token = localStorage.getItem('token')
+          const response = await fetch(`/api/estimates/${estimateId}/audit-logs`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (response.ok) {
+            const data = await response.json()
+            setAuditLogs(data.logs || [])
+          }
+        } catch (err) {
+          console.error('Failed to load audit logs:', err)
+        }
+      }
+      loadAuditLogs()
     }
   }, [estimateId])
 
+  const logAudit = async (action_type: string, action_description_ar: string, field?: string, old_value?: string, new_value?: string) => {
+    if (!estimateId || estimateId === 'new') return
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/estimates/${estimateId}/audit-logs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action_type,
+          action_description_ar,
+          field: field || null,
+          old_value: old_value || null,
+          new_value: new_value || null,
+        }),
+      })
+
+      if (response.ok) {
+        const log = await response.json()
+        const newLog: AuditLog = {
+          id: log.logId,
+          action_type,
+          action_description_ar,
+          timestamp: log.timestamp,
+          field,
+          old_value,
+          new_value,
+        }
+        setAuditLogs([...auditLogs, newLog])
+      }
+    } catch (err) {
+      console.error('Failed to log audit:', err)
+    }
+  }
+
   const updatePart = (index: number, field: keyof Part, value: any) => {
+    const part = parts[index]
+    const oldValue = String(part[field] || '')
+    const newValue = String(value || '')
+
+    if (oldValue === newValue) return
+
     const updated = [...parts]
     updated[index] = { ...updated[index], [field]: value }
     setParts(updated)
+
+    if (field === 'price') {
+      logAudit('edit_part', `تم تغيير السعر من ${oldValue || '0'} إلى ${newValue} لقطعة ${part.part_name_ar}`, 'price', oldValue, newValue)
+    } else if (field === 'severity_label') {
+      logAudit('toggle_severity', `تم تغيير نوع الإصلاح من ${oldValue} إلى ${newValue} لقطعة ${part.part_name_ar}`, 'severity_label', oldValue, newValue)
+    }
   }
 
   const removePart = (index: number) => {
+    const part = parts[index]
     setParts(parts.filter((_, i) => i !== index))
+    logAudit('remove_part', `تم حذف القطعة: ${part.part_name_ar}`, undefined, JSON.stringify(part))
   }
 
   const addPart = () => {
@@ -54,6 +134,7 @@ export default function EstimatePage() {
       return
     }
     setParts([...parts, { ...newPart }])
+    logAudit('add_part', `تم إضافة قطعة جديدة: ${newPart.part_name_ar} (السعر: ${newPart.price})`, undefined, undefined, JSON.stringify(newPart))
     setNewPart({
       part_name_en: '',
       part_name_ar: '',
@@ -367,6 +448,38 @@ export default function EstimatePage() {
             >
               ➕ إضافة الجزء
             </button>
+          </div>
+
+          {/* Activity Log */}
+          <div style={{
+            marginTop: '2rem',
+            padding: '1.5rem',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '0.5rem',
+            border: '1px solid #e5e7eb',
+          }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1rem', color: '#111827' }}>سجل الأنشطة</h3>
+            {auditLogs.length === 0 ? (
+              <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>لم تقم بأي تعديلات بعد</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto' }}>
+                {auditLogs.map((log) => (
+                  <div key={log.id} style={{
+                    padding: '0.75rem',
+                    backgroundColor: 'white',
+                    borderRadius: '0.375rem',
+                    borderRight: '3px solid #2563eb',
+                  }}>
+                    <p style={{ margin: '0 0 0.25rem 0', color: '#111827', fontSize: '0.875rem', fontWeight: '500' }}>
+                      {log.action_description_ar}
+                    </p>
+                    <p style={{ margin: 0, color: '#6b7280', fontSize: '0.75rem' }}>
+                      {new Date(log.timestamp).toLocaleTimeString('ar-EG')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Actions */}

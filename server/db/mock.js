@@ -12,6 +12,7 @@ const db = {
   'workshop_app.estimates': new Map(),
   'workshop_app.estimate_parts': new Map(),
   'workshop_app.estimate_edits': new Map(),
+  'workshop_app.estimate_audit_logs': new Map(),
 };
 
 // Initialize with test data
