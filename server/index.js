@@ -88,11 +88,31 @@ app.post('/api/analysis', async (req, res, next) => {
           is_ai_detected: true,
         },
       ],
+      needs_check_parts: [
+        {
+          part_name_en: 'Left Door',
+          part_name_ar: 'الباب الأيسر الأمامي',
+          damage_type: 'Dent',
+          severity_label: 'Repair',
+          confidence: 0.65,
+          is_ai_detected: true,
+        },
+        {
+          part_name_en: 'Left Fender',
+          part_name_ar: 'الرفرف الأيسر',
+          damage_type: 'Paint Damage',
+          severity_label: 'Replace',
+          confidence: 0.58,
+          is_ai_detected: true,
+        },
+      ],
     };
 
-    console.log(`📌 Mock analysis: ${mockAnalysis.damages.length} damages (API fallback)`);
+    console.log(`📌 Mock analysis: ${mockAnalysis.damages.length} damages, ${mockAnalysis.needs_check_parts?.length || 0} needs_check (API fallback)`);
+    console.log(`📝 Before enrich:`, JSON.stringify({damages: mockAnalysis.damages.length, needs_check: mockAnalysis.needs_check_parts?.length}));
     // Enrich with PARTS_DATABASE and pricing
     const enriched = enrichDamageData(mockAnalysis, vehicleInfo);
+    console.log(`✅ Enriched analysis: ${enriched.damages.length} damages, ${enriched.needs_check_parts?.length || 0} needs_check`);
     res.json({
       success: true,
       analysis: enriched,

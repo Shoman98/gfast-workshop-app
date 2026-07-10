@@ -573,8 +573,16 @@ export async function analyzeVehicleDamage(images, vehicleInfo, geminiApiKey) {
     console.log(`  ✓ Mapped ${mappedDamages.length} damages to taxonomy`);
     console.log(`  ✓ Filtered out unknown parts\n`);
 
+    // Split into confirmed damages (confidence >= 0.70) and needs_check (< 0.70)
+    const confirmedDamages = mappedDamages.filter(d => (d.confidence || 0.7) >= 0.70);
+    const needsCheckDamages = mappedDamages.filter(d => (d.confidence || 0.7) < 0.70);
+
+    console.log(`  ✓ Confirmed damages (≥70%): ${confirmedDamages.length}`);
+    console.log(`  ⚠️  Needs check (<70%): ${needsCheckDamages.length}\n`);
+
     return {
-      damages: mappedDamages,
+      damages: confirmedDamages,
+      needs_check_parts: needsCheckDamages,
       vehicleInfo,
       timestamp: new Date().toISOString(),
       analysisMethod: '4-stage-full-structure',

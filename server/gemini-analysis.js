@@ -503,5 +503,6 @@ export function enrichDamageData(rawAnalysis, vehicleInfo) {
     };
   });
 
+  console.log(`📊 enrichDamageData: ${enriched.length} damages, ${needsCheck.length} needs_check`);
   return { damages: enriched, needs_check_parts: needsCheck };
 }
