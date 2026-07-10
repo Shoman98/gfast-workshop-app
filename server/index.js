@@ -47,79 +47,32 @@ app.post('/api/analysis', async (req, res, next) => {
 
     console.log(`📊 Analysis starting: ${imageCount} image(s), ${vehicleInfo.year} ${vehicleInfo.make} ${vehicleInfo.model}`);
 
-    // Try real Gemini with complete 4-stage analysis pipeline
+    let imagesToAnalyze = images;
     try {
-      let imagesToAnalyze = images;
-      try {
-        imagesToAnalyze = await compressImages(images, 75, 1920);
-      } catch (error) {
-        console.log(`⚠️ Image compression error: ${error.message}, using original images`);
-      }
-
-      // Use complete 4-stage analysis pipeline from wreck-vision (byte-identical)
-      const analysisData = await analyzeVehicleDamage(imagesToAnalyze, vehicleInfo, process.env.WORKSHOP_GEMINI_API_KEY);
-
-      console.log(`✅ 4-Stage analysis complete: ${analysisData.damages?.length || 0} damages found`);
-      // Enrich with PARTS_DATABASE and pricing
-      const enriched = enrichDamageData(analysisData, vehicleInfo);
-      return res.json({ success: true, analysis: enriched });
-    } catch (geminiError) {
-      console.log(`⚠️ Gemini API unavailable: ${geminiError.message}`);
-      console.log('📌 Using MOCK analysis (for testing - replace with valid API key for production)');
+      imagesToAnalyze = await compressImages(images, 75, 1920);
+    } catch (error) {
+      console.log(`⚠️ Image compression error: ${error.message}, using original images`);
     }
 
-    // Fallback: Mock analysis with wreck-vision structure
-    const mockAnalysis = {
-      damages: [
-        {
-          part_name_en: 'Front Bumper',
-          part_name_ar: 'المصد الأمامي',
-          damage_type: 'Dent',
-          severity_label: 'Repair',
-          confidence: 0.95,
-          is_ai_detected: true,
-        },
-        {
-          part_name_en: 'Hood',
-          part_name_ar: 'غطاء المحرك',
-          damage_type: 'Scratch',
-          severity_label: 'Repair',
-          confidence: 0.87,
-          is_ai_detected: true,
-        },
-      ],
-      needs_check_parts: [
-        {
-          part_name_en: 'Left Door',
-          part_name_ar: 'الباب الأيسر الأمامي',
-          damage_type: 'Dent',
-          severity_label: 'Repair',
-          confidence: 0.65,
-          is_ai_detected: true,
-        },
-        {
-          part_name_en: 'Left Fender',
-          part_name_ar: 'الرفرف الأيسر',
-          damage_type: 'Paint Damage',
-          severity_label: 'Replace',
-          confidence: 0.58,
-          is_ai_detected: true,
-        },
-      ],
-    };
+    // Use complete 4-stage analysis pipeline from wreck-vision (byte-identical)
+    const analysisData = await analyzeVehicleDamage(imagesToAnalyze, vehicleInfo, process.env.WORKSHOP_GEMINI_API_KEY);
 
-    console.log(`📌 Mock analysis: ${mockAnalysis.damages.length} damages, ${mockAnalysis.needs_check_parts?.length || 0} needs_check (API fallback)`);
-    console.log(`📝 Before enrich:`, JSON.stringify({damages: mockAnalysis.damages.length, needs_check: mockAnalysis.needs_check_parts?.length}));
+    console.log(`✅ 4-Stage analysis complete: ${analysisData.damages?.length || 0} damages found, ${analysisData.needs_check_parts?.length || 0} needs_check`);
+
     // Enrich with PARTS_DATABASE and pricing
-    const enriched = enrichDamageData(mockAnalysis, vehicleInfo);
-    console.log(`✅ Enriched analysis: ${enriched.damages.length} damages, ${enriched.needs_check_parts?.length || 0} needs_check`);
-    res.json({
+    const enriched = enrichDamageData(analysisData, vehicleInfo);
+
+    return res.json({
       success: true,
-      analysis: enriched,
+      analysis: enriched
     });
   } catch (err) {
     console.error('❌ Analysis error:', err.message);
-    next(err);
+    return res.status(500).json({
+      success: false,
+      error: err.message || 'تحليل فشل - يرجى المحاولة مجددا',
+      timestamp: new Date().toISOString(),
+    });
   }
 });
 
