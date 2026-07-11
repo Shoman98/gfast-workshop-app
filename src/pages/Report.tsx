@@ -9,6 +9,8 @@ interface ReportData {
   vehicle_model: string
   confirmed_at: string
   parts: any[]
+  estimate_parts?: any[]
+  estimate_labors?: any[]
   labors: any[]
   workshop: {
     workshop_name: string
@@ -67,12 +69,31 @@ export default function ReportPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const replaceParts = report?.parts?.filter((p) => p.severity_label === 'Replace') || []
-  const laborCosts = report?.labors || []
+  const replaceParts = report?.estimate_parts?.filter((p) => p.severity_label === 'Replace') || report?.parts?.filter((p) => p.severity_label === 'Replace') || []
+  const laborCosts = report?.estimate_labors?.filter((l) => (l.price || 0) > 0) || report?.labors?.filter((l) => (l.price || 0) > 0) || []
 
   const totalPartsCost = replaceParts.reduce((sum, p) => sum + (p.price || 0), 0)
   const totalLaborCost = laborCosts.reduce((sum, l) => sum + (l.price || 0), 0)
   const totalCost = totalPartsCost + totalLaborCost
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
+  }
+
+  const chunkParts = (parts: any[]) => {
+    const chunkSize = 10
+    const chunks = []
+    for (let i = 0; i < parts.length; i += chunkSize) {
+      chunks.push(parts.slice(i, i + chunkSize))
+    }
+    return chunks
+  }
+
+  const partColumns = chunkParts(replaceParts)
 
   if (loading) {
     return (
@@ -108,286 +129,238 @@ export default function ReportPage() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', padding: '2rem 1rem', direction: 'rtl' }}>
-      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        {/* Report Container */}
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        {/* Report Container - Excel Layout */}
         <div style={{
           backgroundColor: 'white',
-          borderRadius: '0.75rem',
+          borderRadius: '0.5rem',
           boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
           overflow: 'hidden',
+          padding: '2.5rem',
         }}>
-          {/* Header */}
-          <div style={{
-            backgroundColor: '#1e3a8a',
-            color: 'white',
-            padding: '2rem',
-            textAlign: 'center',
-          }}>
-            <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0, marginBottom: '0.5rem' }}>
-              مقايسة إصلاح سيارة
+          {/* Header - مقايسة إصلاح */}
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem', borderBottom: '3px solid #1e3a8a', paddingBottom: '1rem' }}>
+            <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0 0 1rem 0', color: '#1e3a8a' }}>
+              مقايسة إصلاح
             </h1>
-            <p style={{ margin: 0, opacity: 0.9, fontSize: '0.95rem' }}>
-              Repair Estimate Report
+            <p style={{ margin: 0, fontSize: '0.95rem', color: '#6b7280' }}>
+              التاريخ : {formatDate(report.confirmed_at)}
             </p>
           </div>
 
-          {/* Main Content */}
-          <div style={{ padding: '2rem' }}>
-            {/* Workshop Info Section */}
-            <div style={{
-              backgroundColor: '#f3f4f6',
-              padding: '1.5rem',
-              borderRadius: '0.5rem',
-              marginBottom: '2rem',
-              borderRight: '4px solid #1e3a8a',
-            }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#0f172a', marginTop: 0, marginBottom: '1rem' }}>
-                بيانات الورشة
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.9rem' }}>
-                <div>
-                  <p style={{ color: '#6b7280', margin: '0 0 0.25rem 0' }}>اسم الورشة</p>
-                  <p style={{ color: '#0f172a', fontWeight: '600', margin: 0 }}>{report.workshop.workshop_name}</p>
-                </div>
-                <div>
-                  <p style={{ color: '#6b7280', margin: '0 0 0.25rem 0' }}>التليفون</p>
-                  <p style={{ color: '#0f172a', fontWeight: '600', margin: 0 }}>{report.workshop.phone}</p>
-                </div>
-                <div>
-                  <p style={{ color: '#6b7280', margin: '0 0 0.25rem 0' }}>العنوان</p>
-                  <p style={{ color: '#0f172a', fontWeight: '600', margin: 0 }}>{report.workshop.city}</p>
-                </div>
-                <div>
-                  <p style={{ color: '#6b7280', margin: '0 0 0.25rem 0' }}>التاريخ</p>
-                  <p style={{ color: '#0f172a', fontWeight: '600', margin: 0 }}>
-                    {new Date(report.confirmed_at).toLocaleDateString('ar-EG')}
-                  </p>
-                </div>
+          {/* Workshop & Vehicle Info - 2 Columns */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2.5rem', fontSize: '0.9rem' }}>
+            {/* Left Column - Workshop Info */}
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+                <p style={{ color: '#6b7280', margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>اسم الورشه</p>
+                <p style={{ color: '#111827', margin: 0, fontWeight: '600' }}>{report.workshop.workshop_name}</p>
+              </div>
+              <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+                <p style={{ color: '#6b7280', margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>العنوان</p>
+                <p style={{ color: '#111827', margin: 0, fontWeight: '600' }}>{report.workshop.city}</p>
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <p style={{ color: '#6b7280', margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>التليفون</p>
+                <p style={{ color: '#111827', margin: 0, fontWeight: '600' }}>{report.workshop.phone}</p>
               </div>
             </div>
 
-            {/* Vehicle Info Section */}
-            <div style={{
-              backgroundColor: '#f3f4f6',
-              padding: '1.5rem',
-              borderRadius: '0.5rem',
-              marginBottom: '2rem',
-              borderRight: '4px solid #1e3a8a',
-            }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#0f172a', marginTop: 0, marginBottom: '1rem' }}>
-                بيانات المركبة
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', fontSize: '0.9rem' }}>
-                <div>
-                  <p style={{ color: '#6b7280', margin: '0 0 0.25rem 0' }}>الماركة</p>
-                  <p style={{ color: '#0f172a', fontWeight: '600', margin: 0 }}>{report.vehicle_make}</p>
-                </div>
-                <div>
-                  <p style={{ color: '#6b7280', margin: '0 0 0.25rem 0' }}>الموديل</p>
-                  <p style={{ color: '#0f172a', fontWeight: '600', margin: 0 }}>{report.vehicle_model}</p>
-                </div>
-                <div>
-                  <p style={{ color: '#6b7280', margin: '0 0 0.25rem 0' }}>السنة</p>
-                  <p style={{ color: '#0f172a', fontWeight: '600', margin: 0 }}>{report.vehicle_year}</p>
-                </div>
+            {/* Right Column - Vehicle Info */}
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+                <p style={{ color: '#6b7280', margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>ماركة السيارة</p>
+                <p style={{ color: '#111827', margin: 0, fontWeight: '600' }}>{report.vehicle_make}</p>
+              </div>
+              <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+                <p style={{ color: '#6b7280', margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>الموديل</p>
+                <p style={{ color: '#111827', margin: 0, fontWeight: '600' }}>{report.vehicle_model}</p>
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <p style={{ color: '#6b7280', margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>سنه الصنع</p>
+                <p style={{ color: '#111827', margin: 0, fontWeight: '600' }}>{report.vehicle_year}</p>
               </div>
             </div>
+          </div>
 
-            {/* Parts Section */}
-            {replaceParts.length > 0 && (
-              <div style={{ marginBottom: '2rem' }}>
-                <h3 style={{
-                  fontSize: '1.125rem',
-                  fontWeight: 'bold',
-                  color: '#0f172a',
-                  paddingBottom: '0.75rem',
-                  borderBottom: '3px solid #1e3a8a',
-                  marginBottom: '1rem',
-                }}>
-                  قطع الغيار
-                </h3>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', textAlign: 'right', fontSize: '0.9rem' }}>
-                    <thead>
-                      <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #d1d5db' }}>
-                        <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#0f172a', textAlign: 'right' }}>اسم القطعة</th>
-                        <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#0f172a', textAlign: 'center' }}>السعر</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {replaceParts.map((part, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                          <td style={{ padding: '0.75rem', color: '#111827' }}>{part.part_name_ar}</td>
-                          <td style={{ padding: '0.75rem', color: '#111827', textAlign: 'center', fontWeight: '600' }}>
-                            {part.price?.toLocaleString()} ج.م
-                          </td>
+          {/* Spare Parts - 3 Column Grid (Excel Layout) */}
+          {replaceParts.length > 0 && (
+            <div style={{ marginBottom: '2.5rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#1e3a8a', marginTop: 0, marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '2px solid #1e3a8a' }}>
+                قطع الغيار
+              </h3>
+
+              {/* 3-Column Parts Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem', marginBottom: '1.5rem' }}>
+                {partColumns.map((column, colIdx) => (
+                  <div key={colIdx}>
+                    <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #1e3a8a' }}>
+                          <th style={{ padding: '0.5rem', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', width: '30px' }}>م</th>
+                          <th style={{ padding: '0.5rem', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'right' }}>قطع الغيار</th>
+                          <th style={{ padding: '0.5rem', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', width: '80px' }}>السعر</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div style={{
-                  marginTop: '1rem',
-                  padding: '1rem',
-                  backgroundColor: '#dbeafe',
-                  borderRight: '4px solid #0284c7',
-                  borderRadius: '0.375rem',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}>
-                  <span style={{ fontWeight: 'bold', color: '#0c4a6e' }}>إجمالى تكلفة قطع الغيار</span>
-                  <span style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#0c4a6e' }}>
-                    {totalPartsCost.toLocaleString()} ج.م
-                  </span>
-                </div>
+                      </thead>
+                      <tbody>
+                        {column.map((part, rowIdx) => (
+                          <tr key={rowIdx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                            <td style={{ padding: '0.5rem', textAlign: 'center', color: '#6b7280' }}>{rowIdx + (colIdx * 10) + 1}</td>
+                            <td style={{ padding: '0.5rem', textAlign: 'right', color: '#111827' }}>{part.part_name_ar}</td>
+                            <td style={{ padding: '0.5rem', textAlign: 'center', color: '#111827', fontWeight: '600' }}>{part.price?.toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
               </div>
-            )}
 
-            {/* Labor Section */}
-            {laborCosts.length > 0 && (
-              <div style={{ marginBottom: '2rem' }}>
-                <h3 style={{
-                  fontSize: '1.125rem',
-                  fontWeight: 'bold',
-                  color: '#0f172a',
-                  paddingBottom: '0.75rem',
-                  borderBottom: '3px solid #1e3a8a',
-                  marginBottom: '1rem',
-                }}>
-                  وصف الأعمال
-                </h3>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', textAlign: 'right', fontSize: '0.9rem' }}>
-                    <thead>
-                      <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #d1d5db' }}>
-                        <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#0f172a', textAlign: 'right' }}>اسم العمل</th>
-                        <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#0f172a', textAlign: 'center' }}>التكلفة</th>
+              {/* Total Parts Cost */}
+              <div style={{
+                padding: '1rem',
+                backgroundColor: '#f0f9ff',
+                borderRight: '4px solid #1e3a8a',
+                borderRadius: '0.375rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginTop: '1.5rem',
+              }}>
+                <span style={{ fontWeight: 'bold', color: '#1e3a8a', fontSize: '0.95rem' }}>إجمالى تكلفة قطع الغيار</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#1e3a8a' }}>
+                  {totalPartsCost.toLocaleString()} ج.م
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Labor/Works Section - الأعمال */}
+          <div style={{ marginBottom: '2.5rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#1e3a8a', marginTop: 0, marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '2px solid #1e3a8a' }}>
+              وصف الأعمال
+            </h3>
+
+            {laborCosts.length > 0 ? (
+              <>
+                <table style={{ width: '100%', fontSize: '0.9rem', borderCollapse: 'collapse', marginBottom: '1rem' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #1e3a8a' }}>
+                      <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', width: '40px' }}>م</th>
+                      <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'right' }}>وصف الأعمال</th>
+                      <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', width: '100px' }}>التكلفة</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {laborCosts.map((labor, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                        <td style={{ padding: '0.75rem', textAlign: 'center', color: '#6b7280' }}>{idx + 1}</td>
+                        <td style={{ padding: '0.75rem', textAlign: 'right', color: '#111827' }}>{labor.labor_name_ar}</td>
+                        <td style={{ padding: '0.75rem', textAlign: 'center', color: '#111827', fontWeight: '600' }}>
+                          {labor.price?.toLocaleString()} ج.م
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {laborCosts.map((labor, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                          <td style={{ padding: '0.75rem', color: '#111827' }}>{labor.labor_name_ar}</td>
-                          <td style={{ padding: '0.75rem', color: '#111827', textAlign: 'center', fontWeight: '600' }}>
-                            {labor.price?.toLocaleString()} ج.م
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Total Labor Cost */}
                 <div style={{
-                  marginTop: '1rem',
                   padding: '1rem',
                   backgroundColor: '#fef3c7',
-                  borderRight: '4px solid #ca8a04',
+                  borderRight: '4px solid #f59e0b',
                   borderRadius: '0.375rem',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                 }}>
-                  <span style={{ fontWeight: 'bold', color: '#92400e' }}>إجمالى تكلفة الأعمال</span>
-                  <span style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#92400e' }}>
+                  <span style={{ fontWeight: 'bold', color: '#92400e', fontSize: '0.95rem' }}>إجمالى تكلفة الأعمال</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#92400e' }}>
                     {totalLaborCost.toLocaleString()} ج.م
                   </span>
                 </div>
-              </div>
+              </>
+            ) : (
+              <p style={{ color: '#6b7280', fontSize: '0.9rem', textAlign: 'center', margin: '1rem 0' }}>لم يتم إضافة أي أعمال</p>
             )}
+          </div>
 
-            {/* Total Cost */}
-            <div style={{
-              padding: '1.5rem',
-              backgroundColor: '#dcfce7',
-              borderRight: '4px solid #16a34a',
-              borderRadius: '0.5rem',
-              marginBottom: '2rem',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}>
-              <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#166534' }}>إجمالى التكلفة</span>
-              <span style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#16a34a' }}>
-                {totalCost.toLocaleString()} ج.م
-              </span>
-            </div>
+          {/* Grand Total - إجمالى التكلفة */}
+          <div style={{
+            padding: '1.5rem',
+            backgroundColor: '#dcfce7',
+            borderRight: '4px solid #16a34a',
+            borderRadius: '0.5rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '2rem',
+          }}>
+            <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#166534' }}>إجمالى التكلفة</span>
+            <span style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#16a34a' }}>
+              {totalCost.toLocaleString()} ج.م
+            </span>
+          </div>
 
-            {/* Share Section */}
-            <div style={{
-              backgroundColor: '#f3f4f6',
-              padding: '1.5rem',
-              borderRadius: '0.5rem',
-              marginBottom: '2rem',
-            }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#0f172a', marginTop: 0, marginBottom: '1rem' }}>
-                شارك التقرير
-              </h3>
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <input
-                  type="text"
-                  value={shareUrl}
-                  readOnly
-                  style={{
-                    flex: 1,
-                    padding: '0.75rem 1rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.85rem',
-                    color: '#6b7280',
-                    textAlign: 'right',
-                  }}
-                />
-                <button
-                  onClick={copyToClipboard}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: copied ? '#16a34a' : '#2563eb',
-                    color: 'white',
-                    borderRadius: '0.375rem',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 'bold',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {copied ? '✅ تم النسخ' : '📋 نسخ الرابط'}
-                </button>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button
-                onClick={() => window.print()}
+          {/* Share Section */}
+          <div style={{
+            backgroundColor: '#f3f4f6',
+            padding: '1.5rem',
+            borderRadius: '0.5rem',
+            marginBottom: '1rem',
+          }}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#0f172a', marginTop: 0, marginBottom: '1rem' }}>
+              شارك التقرير
+            </h3>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <input
+                type="text"
+                value={shareUrl}
+                readOnly
                 style={{
                   flex: 1,
+                  padding: '0.75rem 1rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.85rem',
+                  color: '#6b7280',
+                  textAlign: 'right',
+                }}
+              />
+              <button
+                onClick={copyToClipboard}
+                style={{
                   padding: '0.75rem 1.5rem',
-                  backgroundColor: '#1e40af',
+                  backgroundColor: copied ? '#16a34a' : '#2563eb',
                   color: 'white',
-                  borderRadius: '0.5rem',
-                  fontWeight: 'bold',
+                  borderRadius: '0.375rem',
                   border: 'none',
                   cursor: 'pointer',
-                }}
-              >
-                🖨️ طباعة
-              </button>
-              <button
-                onClick={() => navigate('/dashboard')}
-                style={{
-                  flex: 1,
-                  padding: '0.75rem 1.5rem',
-                  border: '2px solid #d1d5db',
-                  backgroundColor: 'white',
-                  borderRadius: '0.5rem',
                   fontWeight: 'bold',
-                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                ← العودة للتقديرات
+                {copied ? '✅ تم النسخ' : '📋 نسخ الرابط'}
               </button>
             </div>
           </div>
+
+          {/* Back Button */}
+          <button
+            onClick={() => navigate('/dashboard')}
+            style={{
+              width: '100%',
+              padding: '1rem',
+              backgroundColor: '#f3f4f6',
+              color: '#2563eb',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.375rem',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+            }}
+          >
+            ← العودة للتقديرات
+          </button>
         </div>
       </div>
     </div>

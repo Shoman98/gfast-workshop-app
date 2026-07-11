@@ -44,11 +44,14 @@ export default function EstimatePage() {
   const [error, setError] = useState('')
   const [confirming, setConfirming] = useState(false)
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
-  const [labors, setLabors] = useState<Labor[]>([])
-  const [newLabor, setNewLabor] = useState<Labor>({
-    labor_name_ar: '',
-    price: 0,
-  })
+  const fixedLabors = [
+    { id: '1', labor_name_ar: 'اعمال ميكانيكا', price: 0 },
+    { id: '2', labor_name_ar: 'اعمال سمكره', price: 0 },
+    { id: '3', labor_name_ar: 'اعمال دهان', price: 0 },
+    { id: '4', labor_name_ar: 'اعمال ايرباج و تابلوه', price: 0 },
+    { id: '5', labor_name_ar: 'اعمال فك و تركيب', price: 0 },
+  ]
+  const [labors, setLabors] = useState<Labor[]>(fixedLabors)
   const [estimateStatus, setEstimateStatus] = useState<'draft' | 'confirmed'>('draft')
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
@@ -618,7 +621,7 @@ export default function EstimatePage() {
             </button>
           </div>
 
-          {/* Labor Section */}
+          {/* Fixed Labor Section - 5 Labor Types */}
           <div style={{
             marginBottom: '2rem',
             padding: '1.5rem',
@@ -627,124 +630,58 @@ export default function EstimatePage() {
             border: '2px solid #f59e0b',
           }}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#92400e' }}>
-              إضافة الأعمال (اختياري)
+              الأعمال (اختياري - أضف أسعار العمل)
             </h3>
 
-            {/* Labor List */}
-            {labors.length > 0 && (
-              <div style={{ marginBottom: '1.5rem' }}>
-                <table style={{ width: '100%', textAlign: 'right', marginBottom: '1rem' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #f59e0b' }}>
-                      <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#92400e' }}>اسم العمل</th>
-                      <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#92400e' }}>التكلفة</th>
-                      <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#92400e', textAlign: 'center' }}>إجراء</th>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <table style={{ width: '100%', textAlign: 'right', marginBottom: '1rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #f59e0b' }}>
+                    <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#92400e' }}>م</th>
+                    <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#92400e' }}>وصف الأعمال</th>
+                    <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#92400e', textAlign: 'center' }}>التكلفة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {labors.map((labor, idx) => (
+                    <tr key={labor.id || idx} style={{ borderBottom: '1px solid #fde68a' }}>
+                      <td style={{ padding: '0.75rem', textAlign: 'center' }}>{idx + 1}</td>
+                      <td style={{ padding: '0.75rem' }}>{labor.labor_name_ar}</td>
+                      <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                        <input
+                          type="number"
+                          value={labor.price || 0}
+                          onChange={(e) => updateLabor(idx, 'price', parseFloat(e.target.value) || 0)}
+                          disabled={estimateStatus === 'confirmed'}
+                          placeholder="0"
+                          min="0"
+                          style={{
+                            width: '120px',
+                            padding: '0.5rem',
+                            border: '1px solid #f59e0b',
+                            borderRadius: '0.375rem',
+                            textAlign: 'center',
+                            opacity: estimateStatus === 'confirmed' ? 0.6 : 1,
+                            cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'text',
+                          }}
+                        />
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {labors.map((labor, idx) => (
-                      <tr key={labor.id || idx} style={{ borderBottom: '1px solid #fde68a' }}>
-                        <td style={{ padding: '0.75rem' }}>{labor.labor_name_ar}</td>
-                        <td style={{ padding: '0.75rem' }}>
-                          <input
-                            type="number"
-                            value={labor.price}
-                            onChange={(e) => updateLabor(idx, 'price', parseFloat(e.target.value) || 0)}
-                            disabled={estimateStatus === 'confirmed'}
-                            style={{
-                              width: '100px',
-                              padding: '0.5rem',
-                              border: '1px solid #f59e0b',
-                              borderRadius: '0.375rem',
-                              textAlign: 'center',
-                              opacity: estimateStatus === 'confirmed' ? 0.6 : 1,
-                              cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'text',
-                            }}
-                          />
-                        </td>
-                        <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                          <button
-                            onClick={() => removeLabor(idx)}
-                            disabled={estimateStatus === 'confirmed'}
-                            style={{
-                              padding: '0.375rem 0.75rem',
-                              backgroundColor: '#ef4444',
-                              color: 'white',
-                              borderRadius: '0.375rem',
-                              border: 'none',
-                              cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
-                              opacity: estimateStatus === 'confirmed' ? 0.5 : 1,
-                              fontSize: '0.875rem',
-                            }}
-                          >
-                            ❌ حذف
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div style={{
-                  padding: '0.75rem',
-                  backgroundColor: '#fef3c7',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.875rem',
-                  fontWeight: 'bold',
-                  color: '#92400e',
-                  textAlign: 'right',
-                }}>
-                  إجمالي تكلفة الأعمال: {labors.reduce((sum, l) => sum + l.price, 0).toLocaleString()} ج.م
-                </div>
+                  ))}
+                </tbody>
+              </table>
+              <div style={{
+                padding: '0.75rem',
+                backgroundColor: '#fef3c7',
+                borderRadius: '0.375rem',
+                fontSize: '0.95rem',
+                fontWeight: 'bold',
+                color: '#92400e',
+                textAlign: 'right',
+                borderTop: '2px solid #f59e0b',
+              }}>
+                إجمالي تكلفة الأعمال: {labors.reduce((sum, l) => sum + (l.price || 0), 0).toLocaleString()} ج.م
               </div>
-            )}
-
-            {/* Add Labor Form */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px auto', gap: '0.75rem' }}>
-              <input
-                type="text"
-                value={newLabor.labor_name_ar}
-                onChange={(e) => setNewLabor({ ...newLabor, labor_name_ar: e.target.value })}
-                placeholder="اسم العمل (مثال: أعمال الدهان)"
-                style={{
-                  padding: '0.75rem 1rem',
-                  border: '2px solid #f59e0b',
-                  borderRadius: '0.5rem',
-                  textAlign: 'right',
-                  fontSize: '0.875rem',
-                  outline: 'none',
-                }}
-              />
-              <input
-                type="number"
-                value={newLabor.price}
-                onChange={(e) => setNewLabor({ ...newLabor, price: parseFloat(e.target.value) || 0 })}
-                placeholder="السعر"
-                min="0"
-                style={{
-                  padding: '0.75rem 1rem',
-                  border: '2px solid #f59e0b',
-                  borderRadius: '0.5rem',
-                  textAlign: 'center',
-                  fontSize: '0.875rem',
-                  outline: 'none',
-                }}
-              />
-              <button
-                onClick={addLabor}
-                disabled={estimateStatus === 'confirmed'}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: estimateStatus === 'confirmed' ? '#9ca3af' : '#f59e0b',
-                  color: 'white',
-                  borderRadius: '0.5rem',
-                  fontWeight: 'bold',
-                  border: 'none',
-                  cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                ➕ إضافة عمل
-              </button>
             </div>
           </div>
 
