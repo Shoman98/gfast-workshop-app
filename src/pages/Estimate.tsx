@@ -284,9 +284,9 @@ export default function EstimatePage() {
         setEstimateStatus('confirmed')
         setShowSuccessMessage(true)
 
-        // Redirect to report after 2s (show success message)
+        // Redirect to dashboard after 2s (show success message)
         setTimeout(() => {
-          navigate(`/report/${data.estimate.estimate_id || estimateId}`)
+          navigate('/dashboard')
         }, 2000)
       }
     } catch (err) {
