@@ -349,6 +349,11 @@ function buildStage2BPrompt(visibleAreas, stage1Result) {
 
 TASK: Return ONLY valid JSON with damage details. Split into two arrays based on confidence.
 
+CONFIDENCE LEVELS (matching wreck-vision standard):
+- HIGH (>70%): Obvious, clear, unmistakable damage - use HIGH confidence words
+- MEDIUM (50-70%): Uncertain, possibly damage - use UNCERTAIN keywords: "Likely", "Possible", "Suspected", "Probable"
+- LOW (<50%): Very uncertain - mark as needs_check_parts
+
 RETURN THIS JSON ONLY (no other text):
 {
   "damages": [
@@ -363,7 +368,7 @@ RETURN THIS JSON ONLY (no other text):
     {
       "part_name_en": "bumper",
       "part_name_ar": "مصد",
-      "damage_type": "Scratch",
+      "damage_type": "Scratch (Likely bent reinforcement)",
       "confidence": 0.55
     }
   ]
@@ -371,18 +376,46 @@ RETURN THIS JSON ONLY (no other text):
 
 RULES:
 1. Detect ALL visible damage (dents, scratches, cracks, broken parts, missing pieces, deformation)
+
 2. For EACH damaged part, assess confidence level (0.0-1.0):
-   - 0.95-1.0: Clear, undeniable damage with sharp lines/deformation
-   - 0.80-0.94: Obvious damage but could be minor or hard to see completely
-   - 0.60-0.79: Visible anomaly that COULD be damage but might be lighting/reflection
-   - 0.40-0.59: Suspicious area that needs manual verification
-   - Below 0.40: Unlikely to be damage, probably artifact
-3. PUT in "damages" array: parts with confidence >= 0.70
-4. PUT in "needs_check_parts" array: parts with confidence < 0.70 (uncertain, needs user review)
-5. If NO damage visible, return { "damages": [], "needs_check_parts": [] }
+   === HIGH CONFIDENCE (≥ 0.70) - Obviously Damaged ===
+   - 0.95-1.0: Crystal clear damage. Sharp edges, obvious deformation, visible breaks/cracks
+   - 0.80-0.94: Undeniable damage. Obvious dents, clear cracks, unmistakable paint damage
+   - 0.71-0.79: Clear damage. Definite deformation, obvious physical change
+
+   === MEDIUM CONFIDENCE (50-70%) - Possibly Damaged ===
+   Use keywords: "Likely", "Possible", "Suspected", "Probable"
+   - 0.60-0.70: Visible anomaly that COULD be damage. "Possible dent", "Suspected crack"
+   - 0.50-0.59: Suspicious area needing verification. "Likely bent", "Probable damage"
+
+   === LOW CONFIDENCE (<50%) - Uncertain ===
+   - Below 0.50: Unlikely to be damage or too uncertain. Might be lighting, reflection, artifact
+
+3. PUT in "damages" array:
+   - ONLY parts with confidence >= 0.70
+   - Use assertive wording: "Clear dent", "Obvious crack", "Definite deformation"
+   - MUST be obviously damaged
+
+4. PUT in "needs_check_parts" array:
+   - Parts with confidence < 0.70 (uncertain, needs manual user review)
+   - Use uncertain keywords: "Likely", "Possible", "Suspected", "Probable"
+   - Example: "Likely bent reinforcement bar (<60% confidence)"
+
+5. CRITICAL RULES:
+   - If confidence < 0.70 → MUST be in needs_check_parts ONLY, NOT in damages
+   - If confidence >= 0.70 → MUST be in damages ONLY, NOT in needs_check_parts
+   - No part should appear in both arrays
+   - If NO damage visible, return { "damages": [], "needs_check_parts": [] }
+
 6. DO NOT hallucinate - only report what you clearly see in the images
+
 7. LEFT/RIGHT from driver's perspective
-8. IMPORTANT: Be conservative with confidence scores. Uncertain findings go to needs_check_parts
+
+8. CONFIDENCE GUIDELINES:
+   - A confidence of 0.70+ means you are CERTAIN the damage exists
+   - Reserve high confidence for obvious, unmistakable damage only
+   - Be conservative: if uncertain, put in needs_check_parts with lower confidence
+   - Keyword choice should match confidence: "Likely" = 0.50-0.60, "Possible" = 0.55-0.65
 
 COMMON PARTS:
 hood, roof, trunk_door, grille, upper_bumper, lower_bumper, front_windshield,
@@ -503,11 +536,27 @@ export async function analyzeVehicleDamage(images, vehicleInfo, geminiApiKey) {
         const severityLabel = damageIndex !== null ? (damageIndex < 4 ? 'Repair' : 'Replace') : 'Replace';
 
         if (matchedPart) {
+          // Smart confidence detection based on keywords if not explicitly provided
+          let confidence = damage.confidence;
+          if (!confidence || confidence < 0.01) {
+            // Detect confidence from keywords in damage description (wreck-vision style)
+            const description = `${damage.damage_type} ${damage.part_name_en}`.toLowerCase();
+            if (description.includes('obvious') || description.includes('clear') || description.includes('unmistakable') || description.includes('definite')) {
+              confidence = 0.85;
+            } else if (description.includes('likely') || description.includes('suspected')) {
+              confidence = 0.60;
+            } else if (description.includes('possible') || description.includes('probable')) {
+              confidence = 0.55;
+            } else {
+              confidence = 0.65; // Conservative default: goes to needs_check
+            }
+          }
+
           return {
             part_name_en: matchedPart.nameEn,
             part_name_ar: matchedPart.nameAr,
             damage_type: damageType,
-            confidence: damage.confidence || 0.65, // Default to 0.65 (< 0.70 = needs_check) if not provided
+            confidence: confidence, // Smart detection + default conservative fallback
             severity_label: severityLabel,
             price: matchedPart.price,
             partId: matchedPart.partId,
