@@ -10,14 +10,14 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import estimateRoutes from './routes/estimates.js';
-import { compressImages, callGeminiWithImages, enrichDamageData } from './gemini-analysis.js';
-import { analyzeVehicleDamage } from './analysis-4stage-full.js';
+// Use SHARED module from wreck-vision - SINGLE SOURCE OF TRUTH
+import { runAnalysisPipeline, enrichDamageData } from '@gfast/analysis-core';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = 3333;  // Workshop app runs on 3333, wreck-vision on 3002
 
 // ============================================================================
 // MIDDLEWARE
@@ -47,21 +47,18 @@ app.post('/api/analysis', async (req, res, next) => {
 
     console.log(`📊 Analysis starting: ${imageCount} image(s), ${vehicleInfo.year} ${vehicleInfo.make} ${vehicleInfo.model}`);
 
-    let imagesToAnalyze = images;
-    try {
-      imagesToAnalyze = await compressImages(images, 75, 1920);
-    } catch (error) {
-      console.log(`⚠️ Image compression error: ${error.message}, using original images`);
-    }
-
-    // Use complete 4-stage analysis pipeline from wreck-vision (byte-identical)
-    // FUTURE: Replace with `await runAnalysisPipeline()` from @gfast/analysis-core
-    // once analysis-core is converted to ESM (currently it's CommonJS)
-    const analysisData = await analyzeVehicleDamage(imagesToAnalyze, vehicleInfo, process.env.WORKSHOP_GEMINI_API_KEY);
+    // Use SHARED analysis pipeline from @gfast/analysis-core
+    // This ensures 100% consistency with wreck-vision تحليل المركبه
+    const analysisData = await runAnalysisPipeline(
+      images,
+      vehicleInfo,
+      undefined,  // auto-detect image views
+      undefined   // auto-detect image angles
+    );
 
     console.log(`✅ 4-Stage analysis complete: ${analysisData.damages?.length || 0} damages found, ${analysisData.needs_check_parts?.length || 0} needs_check`);
 
-    // Enrich with PARTS_DATABASE and pricing
+    // Enrich with PARTS_DATABASE and pricing (also from shared module)
     const enriched = enrichDamageData(analysisData, vehicleInfo);
 
     return res.json({
