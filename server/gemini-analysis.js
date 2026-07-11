@@ -403,60 +403,336 @@ export const PARTS_DATABASE = {
   front_bulkhead: { price: 0, nameEn: 'front bulkhead', nameAr: 'صدر السيارة', partId: 'PT_0202', category: 'chassis_structure' },
 };
 
-// Part name aliases mapping - handle common Gemini naming variations
+// Part name aliases mapping - EXACT copy from wreck-vision local-server.cjs
 const PART_NAME_ALIASES = {
-  'front_bumper': 'upper_bumper',
-  'rear_bumper': 'rear_bumper_upper',
-  'fender_left': 'front_left_fender',
-  'fender_right': 'front_right_fender',
-  'door_left': 'front_left_door',
-  'door_right': 'front_right_door',
-  'windshield': 'front_windshield',
+  // Old headlight naming → new taxonomy
   'headlight_left': 'front_left_headlight',
   'headlight_right': 'front_right_headlight',
-  'bumper': 'upper_bumper',
-  'bumper_upper': 'upper_bumper',
-  'bumper_lower': 'lower_bumper',
-  'left_fender': 'front_left_fender',
-  'right_fender': 'front_right_fender',
-  'left_door': 'front_left_door',
-  'right_door': 'front_right_door',
+  'fr_right_headlight': 'front_right_headlight',
+  'fr_left_headlight': 'front_left_headlight',
+  // Windshield
+  'windshield': 'front_windshield',
+  // Bumpers
+  'front_bumper': 'upper_bumper',
+  'upper_bumper_front': 'upper_bumper',
+  'lower_bumper_front': 'lower_bumper',
+  'rear_bumper': 'rear_bumper_upper',
+  'rear_lower_bumper': 'rear_bumper_lower',
+  // Fenders (word order swap)
+  'front_fender_left': 'front_left_fender',
+  'front_fender_right': 'front_right_fender',
+  'fl_fender': 'front_left_fender',
+  'fr_fender': 'front_right_fender',
+  // Doors (word order swap)
   'front_door_left': 'front_left_door',
   'front_door_right': 'front_right_door',
   'rear_door_left': 'rear_left_door',
   'rear_door_right': 'rear_right_door',
-  'left_headlight': 'front_left_headlight',
-  'right_headlight': 'front_right_headlight',
-  'lamp': 'front_right_headlight',
-  'light': 'front_right_headlight',
-  'hood_panel': 'hood',
-  'engine_hood': 'hood',
+  'fl_door': 'front_left_door',
+  'fr_door': 'front_right_door',
+  'rl_door': 'rear_left_door',
+  'rr_door': 'rear_right_door',
+  // Mirrors
+  'side_mirror_left': 'left_mirror',
+  'side_mirror_right': 'right_mirror',
+  'left_side_mirror': 'left_mirror',
+  'right_side_mirror': 'right_mirror',
+  // Taillights → rear headlights
+  'taillight_left': 'rear_left_headlight_outer',
+  'taillight_right': 'rear_right_headlight_outer',
+  'rl_headlight_inner': 'rear_left_headlight_inner',
+  'rr_headlight_inner': 'rear_right_headlight_inner',
+  'rl_headlight_outer': 'rear_left_headlight_outer',
+  'rr_headlight_outer': 'rear_right_headlight_outer',
+  // Trunk
   'trunk': 'trunk_door',
-  'rear_trunk': 'trunk_door',
-  'liftgate': 'trunk_door',
-  'tailgate': 'trunk_door',
-  'quarter_panel': 'rear_right_quarter_panel',
-  'quarter_left': 'left_quarter_panel',
-  'quarter_right': 'rear_right_quarter_panel',
-  'mirror': 'left_mirror',
-  'side_mirror': 'left_mirror',
-  'mirror_left': 'left_mirror',
-  'mirror_right': 'right_mirror',
+  'trunk_lid': 'trunk_door',
+  // Quarter panels
+  'quarter_panel_left': 'left_quarter_panel',
+  'quarter_panel_right': 'rear_right_quarter_panel',
+  'left_quarterpanel': 'left_quarter_panel',
+  'rear_right_quarterpanel': 'rear_right_quarter_panel',
+  'right_quarter_panel': 'rear_right_quarter_panel',
+  // Rocker panels
+  'rocker_panel_left': 'left_rocker_panel',
+  'rocker_panel_right': 'right_rocker_panel',
+  'left_rockerpanel': 'left_rocker_panel',
+  'right_rockerpanel': 'right_rocker_panel',
+  'l_rockerpanel': 'left_rocker_panel',
+  'r_rockerpanel': 'right_rocker_panel',
+  // Pillars
+  'a_pillar_left': 'a_pillars',
+  'a_pillar_right': 'a_pillars',
+  'a-pillars': 'a_pillars',
+  'b_pillar_left': 'b_pillar',
+  'b_pillar_right': 'b_pillar',
+  'left_b_pillar': 'b_pillar',
+  'right_b_pillar': 'b_pillar',
+  'c_pillar_left': 'c_pillar',
+  'c_pillar_right': 'c_pillar',
+  'c-pillar': 'c_pillar',
+  // Tires
+  'fl_tire': 'front_left_tire',
+  'fr_tire': 'front_right_tire',
+  'rr_tire': 'rear_right_tire',
+  'rl_tire': 'rear_left_tire',
+  // Wheels
+  'fl_wheel': 'front_left_wheel',
+  'fr_wheel': 'front_right_wheel',
+  'rr_wheel': 'rear_right_wheel',
+  'rl_wheel': 'rear_left_wheel',
+  // Fog lights
+  'foglight_right': 'front_right_foglight',
+  'foglight_left': 'front_left_foglight',
+  'fr_right_foglight': 'front_right_foglight',
+  'fr_left_foglight': 'front_left_foglight',
+  'fog_trim_left': 'front_left_fog_trim',
+  'fog_trim_right': 'front_right_fog_trim',
+  'fr_left_fogtrim': 'front_left_fog_trim',
+  'fr_right_fogtrim': 'front_right_fog_trim',
+  // Legacy v1 fog trim names
+  'front_left_fogtrim': 'front_left_fog_trim',
+  'front_right_fogtrim': 'front_right_fog_trim',
+  // Chassis / structural
+  'fr_carrier': 'front_carrier',
+  'front_carrier': 'front_carrier',
+  'radiator_support': 'radiator_support',
+  'bumper_crash_foam': 'rear_bumper_crash_foam',
+  'fr_cross_member': 'front_right_cross_member',
+  'fl_cross_member': 'front_left_cross_member',
+  'rr_cross_member': 'rear_right_cross_member',
+  'rl_cross_member': 'rear_left_cross_member',
+  'fr_rail': 'front_right_rail',
+  'fl_rail': 'front_left_rail',
+  'fl_inner_quarterpanel_fender': 'front_left_pan_panel',
+  'fr_inner_quarterpanel': 'front_right_pan_panel',
+  'fr_fender_sidemember': 'front_right_rail',
+  'fl_fender_sidemember': 'front_left_rail',
+  'rr_inner_quarterpanel': 'rear_right_pan_panel',
+  'rl_inner_quarterpanel': 'rear_left_pan_panel',
+  // Inner pillars
+  'fr_inner_pillar': 'front_right_inner_pillar',
+  'fl_inner_pillar': 'front_left_inner_pillar',
+  'rr_inner_pillar': 'rear_right_inner_pillar',
+  'rl_inner_pillar': 'rear_left_inner_pillar',
+  // Door hinges
+  'fr_door_hinge': 'front_right_door_hinge',
+  'fl_door_hinge': 'front_left_door_hinge',
+  'rr_door_hinge': 'rear_right_door_hinge',
+  'rl_door_hinge': 'rear_left_door_hinge',
+  // Door windows
+  'fl_door_window': 'front_left_door_window',
+  'rl_door_window': 'rear_left_door_window',
+  'fr_door_window': 'front_right_door_window',
+  'rr_door_window': 'rear_right_door_window',
+  // Door trims
+  'fl_door_trim': 'front_left_door_trim',
+  'rl_door_trim': 'rear_left_door_trim',
+  'fr_door_trim': 'front_right_door_trim',
+  'rr_door_trim': 'rear_right_door_trim',
+  // Door handles
+  'fl_door_handle': 'front_left_door_handle',
+  'rl_door_handle': 'rear_left_door_handle',
+  'fr_door_handle': 'front_right_door_handle',
+  'rr_door_handle': 'rear_right_door_handle',
+  // Suspension
+  'fr_shock_absorber': 'front_right_shock_absorber',
+  'fl_shock_absorber': 'front_left_shock_absorber',
+  'rl_shock_absorber': 'rear_left_shock_absorber',
+  'rr_shock_absorber': 'rear_right_shock_absorber',
+  'fr_control_arm': 'front_right_control_arm',
+  'fl_control_arm': 'front_left_control_arm',
+  'rr_control_arm': 'rear_right_control_arm',
+  'rl_control_arm': 'rear_left_control_arm',
+  'fr_steering_knuckle': 'front_right_steering_knuckle',
+  'fl_steering_knuckle': 'front_left_steering_knuckle',
+  'rr_steering_knuckle': 'rear_right_steering_knuckle',
+  'rl_steering_knuckle': 'rear_left_steering_knuckle',
+  'fr_coil_spring': 'front_right_shock_absorber',
+  'fl_coil_spring': 'front_left_shock_absorber',
+  'rr_coil_spring': 'rear_right_shock_absorber',
+  'rl_coil_spring': 'rear_left_shock_absorber',
+  // Logos
+  'front_car_logo': 'front_car_logo',
+  'fr_car_logo': 'front_car_logo',
+  'rear_car_logo': 'rear_car_logo',
+  // Fan
+  'fan_shroud': 'radiator_fan',
+  // Condenser (old → new)
+  'condenser': 'ac_condenser',
+  // Additional / Repair Parts aliases (re-pointed for v3.1 canonicals)
+  'front_impact_bar': 'front_bumper_chassis_bar',
+  'front_bumper_reinforcement_bar': 'front_bumper_chassis_bar',
+  'core_support': 'radiator_support',
+  'hood_lock': 'hood_latch',
+  'hood_lock_assembly': 'hood_latch',
+  'hood_latch_assembly': 'hood_latch',
+  'front_wiring_harness_and_sensors': 'front_harness',
+  'wheel_arch_liner': 'front_left_fender_liner',
+  'dashboard_internal_structure': 'dashboard_internal_structure',
+  'front_left_chassis_rail': 'front_left_rail',
+  'rear_impact_bar': 'rear_impact_bar',
+  'rear_impact_reinforcement_bar': 'rear_impact_bar',
+  'rear_body_panel': 'rear_panel',
+  'rear_end_panel': 'rear_panel',
+  'rear_parking_sensor_harness': 'rear_parking_sensor_harness',
+  // Structural component names (Stage 3 Gemini output normalization)
+  'a_pillar': 'a_pillars',
+  'subframe': 'underbody_chassis',
+  'unibody': 'underbody_chassis',
+  'crumple_zone': 'front_bumper_chassis_bar',
+  // "Frame Rail" variants → DB keys are front_left_rail / front_right_rail
+  'frame_rail': 'front_right_rail',
+  'front_frame_rail': 'front_right_rail',
+  'front_right_frame_rail': 'front_right_rail',
+  'front_left_frame_rail': 'front_left_rail',
+  'rear_frame_rail': 'rear_frame_rail_right',
+  'rear_frame_rail_left': 'rear_frame_rail_left',
+  'rear_frame_rail_right': 'rear_frame_rail_right',
+  // "Bumper Bar" → chassis bar
+  'bumper_bar': 'front_bumper_chassis_bar',
+  'front_bumper_bar': 'front_bumper_chassis_bar',
+  'rear_bumper_bar': 'rear_bumper_chassis_bar',
+  // Legacy generic airbags → default to airbag_module (v3.1 canonical)
+  'airbags': 'airbag_module',
+  'airbag': 'airbag_module',
+  // v3.1 has no positional front/rear airbag entries; route legacy keys to nearest canonical
+  'front_left_airbag': 'steering_wheel_driver_airbag',
+  'front_right_airbag': 'airbag_module',
+  'rear_left_airbag': 'left_side_curtain_airbags',
+  'rear_right_airbag': 'right_side_curtain_airbags',
+  // Legacy generic seatbelts → default to front_left_seatbelt
+  'seatbelts': 'front_left_seatbelt',
+  'seatbelt': 'front_left_seatbelt',
+  // Legacy generic pretensioner → default to front_left_seatbelt_pretensioner
+  'seatbelt_pretensioner': 'front_left_seatbelt_pretensioner',
+  // Part Taxonomy v3 aliases
+  'right_chassis_rail_tip': 'front_right_cross_member',
+  'left_chassis_rail_tip': 'front_left_cross_member',
+  'hood_latch_and_striker': 'hood_latch',
+  'hood_latch_and_release_cable': 'hood_latch',
+  'door_hinge_pillars': 'front_right_door_hinge',
+  'dashboard_cross_car_beam': 'tableau',
+  // 'radiator_core_support' is folded into 'radiator_support' (PT_0187) via aliases.
+  'radiator_core_support': 'radiator_support',
+  'parking_sensor_wiring_harness': 'front_harness',
+  'parking_sensor_harness': 'front_parking_sensors',
+  'left_front_wheel_arch_liner': 'front_left_fender_liner',
+  'right_front_wheel_arch_liner': 'front_right_fender_liner',
+  'rear_left_wheel_arch_liner': 'rear_left_fender_liner',
+  'rear_right_wheel_arch_liner': 'rear_right_fender_liner',
+  'front_left_suspension_strut_and_control_arm': 'front_left_suspension_assembly',
+  'front_right_suspension_strut_and_control_arm': 'front_right_suspension_assembly',
+  'rear_left_suspension_strut_and_control_arm': 'rear_left_suspension_assembly',
+  'rear_right_suspension_strut_and_control_arm': 'rear_right_suspension_assembly',
+  'rear_floor_pan': 'spare_tire_pan',
+  'rear_floor_pan_and_spare_tire_well': 'spare_tire_pan',
+  'trunk_floor': 'spare_tire_pan',
+  // Bare "floor pan" / cabin floor — v3.1 has no dedicated cabin floor entry,
+  // so route to underbody_chassis (covers the full underbody panel).
+  'floor': 'underbody_chassis',
+  'floor_pan': 'underbody_chassis',
+  'front_floor_pan': 'underbody_chassis',
+  'cabin_floor_pan': 'underbody_chassis',
+  'center_floor_pan': 'underbody_chassis',
+  'floor_pan_section': 'underbody_chassis',
+  'front_left_apron_and_wheel_house': 'front_left_apron',
+  'rear_bumper_mounting_brackets': 'rear_bumper_brackets',
+  'windshield_washer_reservoir': 'washer_fluid_reservoir',
+  'side_curtain_airbag': 'side_curtain_airbag_system',
+  'curtain_airbag': 'side_curtain_airbag_system',
+  'airbag_impact_sensor': 'airbag_impact_sensors',
+  'impact_sensor': 'airbag_impact_sensors',
+  'cooling_fan': 'cooling_fan_assembly',
+  'front_right_apron': 'front_right_apron',
+  'front_left_apron': 'front_left_apron',
+  'front_apron': 'front_right_apron',
+  'inner_wheel_well_liner': 'front_left_fender_liner',
+  // Hidden-damage shorthand variants emitted by Stage-4 inference
+  'front_left_suspension': 'front_left_suspension_assembly',
+  'front_right_suspension': 'front_right_suspension_assembly',
+  'rear_left_suspension': 'rear_left_suspension_assembly',
+  'rear_right_suspension': 'rear_right_suspension_assembly',
+  'front_left_strut': 'front_left_suspension_assembly',
+  'front_right_strut': 'front_right_suspension_assembly',
+  'rear_left_strut': 'rear_left_suspension_assembly',
+  'rear_right_strut': 'rear_right_suspension_assembly',
+  'front_left_strut_assembly': 'front_left_suspension_assembly',
+  'front_right_strut_assembly': 'front_right_suspension_assembly',
+  'rear_left_strut_assembly': 'rear_left_suspension_assembly',
+  'rear_right_strut_assembly': 'rear_right_suspension_assembly',
+  'strut': 'front_left_suspension_assembly',
+  'front_strut': 'front_left_suspension_assembly',
+  'rear_strut': 'rear_left_suspension_assembly',
+  'front_chassis_rail': 'front_left_rail',
+  'front_left_frame_rail': 'front_left_rail',
+  'front_right_frame_rail': 'front_right_rail',
+  'rear_chassis_rail': 'rear_frame_rail_left',
+  'front_bumper_reinforcement': 'front_bumper_chassis_bar',
+  'rear_bumper_reinforcement': 'rear_impact_bar',
+  'dashboard': 'tableau',
+  // Slash-compound shorthands the AI sometimes emits (covered by normalizePartName
+  // fallback, but listed here so the resolution is explicit & auditable)
+  'front_rail_apron': 'front_left_rail',
+  'rear_rail_apron': 'rear_frame_rail_left',
+  'roof_panel_header_rail': 'roof',
+  'roof_header_rail': 'roof',
+  'header_rail': 'roof',
+  // v3.1 taxonomy additions
+  'left_front_door_hinges': 'front_left_door_hinge',
+  'right_front_door_hinges': 'front_right_door_hinge',
+  'front_impact_sensor': 'airbag_impact_sensors',
+  'airbag_control_module': 'airbag_module',
+  'steering_wheel_airbag': 'steering_wheel_driver_airbag',
+  'driver_airbag': 'steering_wheel_driver_airbag',
+  'radiator_and_cooling_fan_assembly': 'cooling_fan_assembly',
+  'trunk_latch': 'trunk_latch_and_striker',
+  'bulkhead': 'front_bulkhead',
 };
 
 function normalizePartName(rawName) {
   if (!rawName) return '';
-  const key = rawName
+  // Strip punctuation FIRST so that slashes/parens don't leave double underscores
+  // when whitespace is later collapsed (e.g. "Radiator Support / Core Support"
+  // → "radiator support  core support" → "radiator_support_core_support",
+  // not "radiator_support__core_support").
+  let key = rawName
     .toLowerCase()
     .trim()
-    .replace(/[()\/\\,;:]/g, ' ')
-    .replace(/[-]/g, '_')
-    .replace(/\s+/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '');
+    .replace(/[()\/\\,;:]/g, ' ')   // punctuation → space (slashes, commas, etc.)
+    .replace(/[-]/g, '_')            // hyphens → underscore (e.g. A-Pillar → a_pillar)
+    .replace(/\s+/g, '_')            // collapse whitespace → underscore
+    .replace(/_+/g, '_')             // collapse runs of underscores
+    .replace(/^_+|_+$/g, '');        // trim leading/trailing underscores
 
+  // Direct alias hit
   if (PART_NAME_ALIASES[key]) return PART_NAME_ALIASES[key];
   if (PARTS_DATABASE[key]) return key;
+
+  // Slash-compound fallback: the AI sometimes returns "Front Rail / Apron" or
+  // "Roof Panel / Header Rail". Try each side of the slash as a separate part
+  // and return the first that resolves to a canonical key. Prefer the chassis
+  // side when both resolve (callers usually want the structural pick).
+  if (/\//.test(rawName)) {
+    const parts = rawName.split(/\//).map(s => s.trim()).filter(Boolean);
+    let firstHit = null;
+    let chassisHit = null;
+    for (const piece of parts) {
+      const k = piece
+        .toLowerCase()
+        .replace(/[-]/g, '_')
+        .replace(/\s+/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '');
+      const resolved = PART_NAME_ALIASES[k] || (PARTS_DATABASE[k] ? k : null);
+      if (!resolved) continue;
+      if (!firstHit) firstHit = resolved;
+      const cat = PARTS_DATABASE[resolved]?.category;
+      if (cat === 'chassis_structure' && !chassisHit) chassisHit = resolved;
+    }
+    if (chassisHit || firstHit) return chassisHit || firstHit;
+  }
+
   return key;
 }
 
