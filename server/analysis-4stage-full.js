@@ -345,84 +345,110 @@ Answer with ONLY:
 }
 
 function buildStage2BPrompt(visibleAreas, stage1Result) {
-  return `You are a vehicle damage detection AI. Analyze these vehicle images and detect ALL visible damage.
+  return `You are a vehicle damage detection system analyzing images.
 
-TASK: Return ONLY valid JSON with damage details. Split into two arrays based on confidence.
+CRITICAL CONSTRAINT — READ CAREFULLY:
+You may ONLY report damage on parts that belong to the following visible areas:
+${JSON.stringify(visibleAreas)}
 
-CONFIDENCE LEVELS (matching wreck-vision standard):
-- HIGH (>70%): Obvious, clear, unmistakable damage - use HIGH confidence words
-- MEDIUM (50-70%): Uncertain, possibly damage - use UNCERTAIN keywords: "Likely", "Possible", "Suspected", "Probable"
-- LOW (<50%): Very uncertain - mark as needs_check_parts
+CONFIDENCE SCORING RULES (MANDATORY):
+- 0.80 to 1.00: OBVIOUS damage. Crystal clear, unmistakable. Visual evidence is unambiguous (deep dents, shattered glass, broken mirrors, clear cracks).
+  Examples: 0.92, 0.95, 0.98 (NOT 1 or 100)
+- 0.70 to 0.79: LIKELY damage. Good evidence but slight uncertainty. Go to "damages" array.
+  Examples: 0.72, 0.75, 0.78
+- 0.50 to 0.69: UNCERTAIN damage. Some evidence but could be optical illusion, reflection, normal wear, or minor issue. MUST go to "needs_check_parts" for human review.
+  Examples: 0.52, 0.60, 0.68
+- 0.40 to 0.49: VERY UNCERTAIN. Barely perceptible, ambiguous observations. Only include if you see ANY indicator. Go to "needs_check_parts".
+  Examples: 0.42, 0.45, 0.48
+- Below 0.40: DO NOT REPORT. Too speculative.
 
-RETURN THIS JSON ONLY (no other text):
+MUST SPLIT RESULTS INTO TWO ARRAYS:
+1. "damages": Parts with confidence >= 0.70 (certain enough to report)
+   Example confidences: 0.75, 0.85, 0.92, 0.98
+2. "needs_check_parts": Parts with 0.50-0.69 (uncertain, needs human verification)
+   Example confidences: 0.52, 0.60, 0.68
+
+CONFIDENCE SPLIT EXAMPLE:
+- Obvious deep dent with clear edges → 0.88 confidence → "damages"
+- Slight crease that might be a dent or shadow → 0.62 confidence → "needs_check_parts" with reason_for_uncertainty
+- Mirror that looks cracked but could be dust → 0.55 confidence → "needs_check_parts"
+- Barely visible area you're not sure about → DO NOT REPORT (< 0.40)
+
+IMPORTANT — FALSE POSITIVE PREVENTION:
+- Many vehicles are in PERFECT condition with NO damage. Do NOT hallucinate or invent damage.
+- If the vehicle appears clean and undamaged, return EMPTY arrays for "damages" and "needs_check_parts".
+- Do NOT confuse the following with actual damage:
+  * Normal reflections, shadows, or lighting variations on paint
+  * Factory panel gaps, body lines, or trim seams
+  * Normal wear patterns (minor stone chips, road dust, dirt)
+  * Camera artifacts, JPEG compression, or image noise
+  * Dark areas caused by angles or lighting, not dents
+  * Plastic trim texture or matte vs glossy surface transitions
+- You MUST have clear, unambiguous visual evidence of ACTUAL physical damage before reporting.
+- When uncertain, default to needs_check_parts (0.50-0.69 range) for human review rather than inventing high confidence.
+
+DETECTION RULES:
+1. Report ONLY damage you can SEE in the images — never guess or infer.
+2. Parts with confidence >= 0.70 go in "damages" (report to customer).
+3. Parts with confidence 0.50-0.69 go in "needs_check_parts" (requires human approval).
+4. For paired parts (headlights, mirrors, doors), only report the SPECIFIC side that is damaged.
+5. Cross-reference multiple images to confirm damage when possible.
+6. If no damage is visible, return empty arrays — do NOT fabricate findings.
+
+LEFT/RIGHT CRITICAL RULE:
+- Always determine left/right from the DRIVER'S perspective sitting inside the car
+- Driver left = viewer's right when looking at front of car
+- Driver right = viewer's left when looking at front of car
+- If you see damage on the right side of a front photo → that is front_left_fender or front_left_headlight (driver's left)
+- Double-check every part name contains the correct _left or _right suffix before outputting
+
+Return this exact JSON (confidence MUST be decimal between 0.0-1.0, e.g., 0.85, not 1 or 85):
+\`\`\`json
 {
   "damages": [
     {
-      "part_name_en": "hood",
-      "part_name_ar": "كبوت",
-      "damage_type": "Dent",
-      "confidence": 0.95
+      "part_name_en": "exact part name from valid parts",
+      "part_name_ar": "الاسم بالعربية",
+      "damage_type": "Dent|Scratch|Crack|Broken|Missing|Deformation",
+      "description": "specific visual evidence observed",
+      "confidence": 0.85
     }
   ],
   "needs_check_parts": [
     {
-      "part_name_en": "bumper",
-      "part_name_ar": "مصد",
-      "damage_type": "Scratch (Likely bent reinforcement)",
-      "confidence": 0.55
+      "part_name_en": "exact part name",
+      "part_name_ar": "الاسم بالعربية",
+      "damage_type": "string",
+      "description": "what you observed",
+      "reason_for_uncertainty": "why confidence is low — e.g., 'Could be reflection', 'Might be shadow', 'Possible minor dent'",
+      "confidence": 0.62
     }
   ]
 }
+\`\`\`
 
-RULES:
-1. Detect ALL visible damage (dents, scratches, cracks, broken parts, missing pieces, deformation)
+EXAMPLE OUTPUTS:
+Vehicle with obvious damage:
+\`\`\`json
+{
+  "damages": [
+    {"part_name_en": "Hood", "part_name_ar": "كبوت", "damage_type": "Dent", "description": "Deep inward dent visible from multiple angles", "confidence": 0.92},
+    {"part_name_en": "Front Left Headlight", "part_name_ar": "فانوس أمامي شمال", "damage_type": "Broken", "description": "Shattered glass with missing pieces", "confidence": 0.95}
+  ],
+  "needs_check_parts": [
+    {"part_name_en": "Front Left Fender", "part_name_ar": "رفرف أمامي شمال", "damage_type": "Scratch", "description": "Thin line mark on fender", "reason_for_uncertainty": "Could be surface dust or very light scratch", "confidence": 0.58}
+  ]
+}
+\`\`\`
 
-2. For EACH damaged part, assess confidence level (0.0-1.0):
-   === HIGH CONFIDENCE (≥ 0.70) - Obviously Damaged ===
-   - 0.95-1.0: Crystal clear damage. Sharp edges, obvious deformation, visible breaks/cracks
-   - 0.80-0.94: Undeniable damage. Obvious dents, clear cracks, unmistakable paint damage
-   - 0.71-0.79: Clear damage. Definite deformation, obvious physical change
-
-   === MEDIUM CONFIDENCE (50-70%) - Possibly Damaged ===
-   Use keywords: "Likely", "Possible", "Suspected", "Probable"
-   - 0.60-0.70: Visible anomaly that COULD be damage. "Possible dent", "Suspected crack"
-   - 0.50-0.59: Suspicious area needing verification. "Likely bent", "Probable damage"
-
-   === LOW CONFIDENCE (<50%) - Uncertain ===
-   - Below 0.50: Unlikely to be damage or too uncertain. Might be lighting, reflection, artifact
-
-3. PUT in "damages" array:
-   - ONLY parts with confidence >= 0.70
-   - Use assertive wording: "Clear dent", "Obvious crack", "Definite deformation"
-   - MUST be obviously damaged
-
-4. PUT in "needs_check_parts" array:
-   - Parts with confidence < 0.70 (uncertain, needs manual user review)
-   - Use uncertain keywords: "Likely", "Possible", "Suspected", "Probable"
-   - Example: "Likely bent reinforcement bar (<60% confidence)"
-
-5. CRITICAL RULES:
-   - If confidence < 0.70 → MUST be in needs_check_parts ONLY, NOT in damages
-   - If confidence >= 0.70 → MUST be in damages ONLY, NOT in needs_check_parts
-   - No part should appear in both arrays
-   - If NO damage visible, return { "damages": [], "needs_check_parts": [] }
-
-6. DO NOT hallucinate - only report what you clearly see in the images
-
-7. LEFT/RIGHT from driver's perspective
-
-8. CONFIDENCE GUIDELINES:
-   - A confidence of 0.70+ means you are CERTAIN the damage exists
-   - Reserve high confidence for obvious, unmistakable damage only
-   - Be conservative: if uncertain, put in needs_check_parts with lower confidence
-   - Keyword choice should match confidence: "Likely" = 0.50-0.60, "Possible" = 0.55-0.65
-
-COMMON PARTS:
-hood, roof, trunk_door, grille, upper_bumper, lower_bumper, front_windshield,
-front_left_headlight, front_right_headlight, front_left_fender, front_right_fender,
-front_left_door, front_right_door, rear_left_door, rear_right_door, left_quarter_panel,
-rear_right_quarter_panel, left_mirror, right_mirror, front_left_door_window,
-front_right_door_window, rear_left_door_window, rear_right_door_window
+Undamaged vehicle:
+\`\`\`json
+{
+  "damages": [],
+  "needs_check_parts": [],
+  "summary": "No damage detected — vehicle appears to be in good condition"
+}
+\`\`\`
 
 Return ONLY the JSON object. No markdown, no explanation.`;
 }
@@ -493,8 +519,29 @@ export async function analyzeVehicleDamage(images, vehicleInfo, geminiApiKey) {
     const verifyResult = parseJSON(verifyContent, 'Stage 2A-Verify');
     const stage2bResult = parseJSON(stage2bContent, 'Stage 2B');
 
+    // Fix confidence values: if Gemini returned integer 1, convert to 0.95
+    // (Gemini sometimes returns "confidence": 1 instead of 0.95)
+    if (stage2bResult.damages) {
+      stage2bResult.damages.forEach(d => {
+        if (d.confidence === 1) d.confidence = 0.95;
+        else if (d.confidence > 1) d.confidence = 0.95; // Safety: cap at 0.95
+      });
+    }
+    if (stage2bResult.needs_check_parts) {
+      stage2bResult.needs_check_parts.forEach(nc => {
+        if (nc.confidence === 1) nc.confidence = 0.95;
+        else if (nc.confidence > 1) nc.confidence = 0.95;
+      });
+    }
+
     console.log(`  ✓ Verification has_damage: ${verifyResult.has_damage}`);
     console.log(`  ✓ Stage 2B damages found: ${(stage2bResult.damages || []).length}`);
+    console.log(`  ✓ Stage 2B needs_check found: ${(stage2bResult.needs_check_parts || []).length}`);
+
+    // DEBUG: Log when needs_check is empty (for troubleshooting)
+    if ((stage2bResult.needs_check_parts || []).length === 0 && (stage2bResult.damages || []).length > 0) {
+      console.log('ℹ️  Stage 2B: All detected parts are high-confidence (no needs_check_parts) - this is normal for obvious damage');
+    }
 
     if (!verifyResult.has_damage) {
       console.log('  → Verification rejected pre-check. Treating as undamaged.\n');
@@ -523,58 +570,74 @@ export async function analyzeVehicleDamage(images, vehicleInfo, geminiApiKey) {
       return key;
     }
 
+    // Helper function to map and enrich a damage record
+    function mapDamageRecord(damage, isNeedsCheck = false) {
+      const partKey = normalizePartName(damage.part_name_en);
+      const matchedPart = PARTS_DATABASE[partKey];
+
+      const damageType = damage.damage_type || 'unknown';
+      const damageIndex = DAMAGE_TYPE_INDEX[damageType.toLowerCase()] || null;
+      const severityLabel = damageIndex !== null ? (damageIndex < 4 ? 'Repair' : 'Replace') : 'Replace';
+
+      if (matchedPart) {
+        let confidence = damage.confidence;
+        if (!confidence || confidence < 0.01) {
+          const description = `${damage.damage_type} ${damage.part_name_en}`.toLowerCase();
+          if (description.includes('obvious') || description.includes('clear') || description.includes('unmistakable') || description.includes('definite')) {
+            confidence = 0.85;
+          } else if (description.includes('likely') || description.includes('suspected')) {
+            confidence = 0.60;
+          } else if (description.includes('possible') || description.includes('probable')) {
+            confidence = 0.55;
+          } else {
+            confidence = 0.65;
+          }
+        }
+
+        const mapped = {
+          part_name_en: matchedPart.nameEn,
+          part_name_ar: matchedPart.nameAr,
+          damage_type: damageType,
+          confidence: confidence,
+          severity_label: severityLabel,
+          price: matchedPart.price,
+          partId: matchedPart.partId,
+          category: matchedPart.category,
+          is_ai_detected: true,
+          isUnmapped: false,
+        };
+
+        // Preserve reason_for_uncertainty for needs_check parts
+        if (isNeedsCheck && damage.reason_for_uncertainty) {
+          mapped.reason_for_uncertainty = damage.reason_for_uncertainty;
+        }
+
+        return mapped;
+      }
+      return null;
+    }
+
+    // Map BOTH damages and needs_check_parts arrays from Gemini
     const detectedDamages = stage2bResult.damages || [];
     const mappedDamages = detectedDamages
-      .map(damage => {
-        // Normalize part name and look up in PARTS_DATABASE
-        const partKey = normalizePartName(damage.part_name_en);
-        const matchedPart = PARTS_DATABASE[partKey];
+      .map(damage => mapDamageRecord(damage, false))
+      .filter(d => d !== null);
 
-        // Use DAMAGE_TYPE_INDEX for severity decision
-        const damageType = damage.damage_type || 'unknown';
-        const damageIndex = DAMAGE_TYPE_INDEX[damageType.toLowerCase()] || null;
-        const severityLabel = damageIndex !== null ? (damageIndex < 4 ? 'Repair' : 'Replace') : 'Replace';
-
-        if (matchedPart) {
-          // Smart confidence detection based on keywords if not explicitly provided
-          let confidence = damage.confidence;
-          if (!confidence || confidence < 0.01) {
-            // Detect confidence from keywords in damage description (wreck-vision style)
-            const description = `${damage.damage_type} ${damage.part_name_en}`.toLowerCase();
-            if (description.includes('obvious') || description.includes('clear') || description.includes('unmistakable') || description.includes('definite')) {
-              confidence = 0.85;
-            } else if (description.includes('likely') || description.includes('suspected')) {
-              confidence = 0.60;
-            } else if (description.includes('possible') || description.includes('probable')) {
-              confidence = 0.55;
-            } else {
-              confidence = 0.65; // Conservative default: goes to needs_check
-            }
-          }
-
-          return {
-            part_name_en: matchedPart.nameEn,
-            part_name_ar: matchedPart.nameAr,
-            damage_type: damageType,
-            confidence: confidence, // Smart detection + default conservative fallback
-            severity_label: severityLabel,
-            price: matchedPart.price,
-            partId: matchedPart.partId,
-            category: matchedPart.category,
-            is_ai_detected: true,
-            isUnmapped: false,
-          };
-        }
-        return null;
-      })
+    const geminiNeedsCheck = stage2bResult.needs_check_parts || [];
+    const mappedNeedsCheck = geminiNeedsCheck
+      .map(nc => mapDamageRecord(nc, true))
       .filter(d => d !== null);
 
     console.log(`  ✓ Mapped ${mappedDamages.length} damages to taxonomy`);
+    console.log(`  ✓ Mapped ${mappedNeedsCheck.length} needs_check from Gemini`);
     console.log(`  ✓ Filtered out unknown parts\n`);
 
-    // Split into confirmed damages (confidence >= 0.70) and needs_check (< 0.70)
+    // Split damages by confidence (secondary split in case Gemini confidence was low in damages array)
     const confirmedDamages = mappedDamages.filter(d => d.confidence >= 0.70);
-    const needsCheckDamages = mappedDamages.filter(d => d.confidence < 0.70);
+    const damagesNeedsCheck = mappedDamages.filter(d => d.confidence < 0.70);
+
+    // Combine: needs_check_parts from Gemini PLUS any damages that fell below confidence threshold
+    const needsCheckDamages = [...mappedNeedsCheck, ...damagesNeedsCheck];
 
     console.log(`  ✓ Confirmed damages (≥70%): ${confirmedDamages.length}`);
     if (confirmedDamages.length > 0) {

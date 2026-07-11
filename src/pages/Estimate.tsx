@@ -513,8 +513,30 @@ export default function EstimatePage() {
           {/* Needs Check Parts Section */}
           {needsCheckParts.length > 0 && (
             <div style={{ marginBottom: '2rem' }}>
+              {/* Red Warning Banner */}
+              <div style={{
+                marginBottom: '1.5rem',
+                padding: '1rem 1.5rem',
+                backgroundColor: '#fee2e2',
+                border: '2px solid #dc2626',
+                borderRadius: '0.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem'
+              }}>
+                <span style={{ fontSize: '2rem' }}>⚠️</span>
+                <div>
+                  <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#991b1b', marginBottom: '0.25rem' }}>
+                    أجزاء تحتاج فحص ({needsCheckParts.length})
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: '#7f1d1d' }}>
+                    يرجى مراجعة الأجزاء أدناه والموافقة أو الرفض قبل تأكيد التقدير
+                  </div>
+                </div>
+              </div>
+
               <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#dc2626' }}>
-                ⚠️ أجزاء تحتاج فحص يدوي ({needsCheckParts.length})
+                قائمة الأجزاء المحتاجة للفحص
               </h2>
               <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
                 <table style={{ width: '100%', textAlign: 'right' }}>
