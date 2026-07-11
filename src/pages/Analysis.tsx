@@ -124,6 +124,11 @@ export default function AnalysisPage() {
           full_response: data.analysis
         });
         sessionStorage.setItem('analysisResult', JSON.stringify(data.analysis))
+        sessionStorage.setItem('vehicleInfo', JSON.stringify({
+          year: parseInt(year),
+          make,
+          model,
+        }))
         navigate('/estimate/new')
       }
     } catch (err) {

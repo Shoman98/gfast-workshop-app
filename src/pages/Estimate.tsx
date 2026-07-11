@@ -54,10 +54,13 @@ export default function EstimatePage() {
   const [labors, setLabors] = useState<Labor[]>(fixedLabors)
   const [estimateStatus, setEstimateStatus] = useState<'draft' | 'confirmed'>('draft')
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [vehicleInfo, setVehicleInfo] = useState({ year: 0, make: '', model: '' })
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
   useEffect(() => {
     if (estimateId === 'new') {
       const analysisResult = sessionStorage.getItem('analysisResult')
+      const vehicleData = sessionStorage.getItem('vehicleInfo')
       if (analysisResult) {
         const analysis = JSON.parse(analysisResult)
         console.log('📋 Estimate page loaded analysis:', {
@@ -67,6 +70,11 @@ export default function EstimatePage() {
         setParts(analysis.damages || [])
         setNeedsCheckParts(analysis.needs_check_parts || [])
         sessionStorage.removeItem('analysisResult')
+      }
+      if (vehicleData) {
+        const vehicle = JSON.parse(vehicleData)
+        setVehicleInfo(vehicle)
+        sessionStorage.removeItem('vehicleInfo')
       }
     } else if (estimateId) {
       // Load existing audit logs for this estimate
@@ -261,9 +269,9 @@ export default function EstimatePage() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            vehicle_year: 2023,
-            vehicle_make: 'Unknown',
-            vehicle_model: 'Unknown',
+            vehicle_year: vehicleInfo.year || 2023,
+            vehicle_make: vehicleInfo.make || 'Unknown',
+            vehicle_model: vehicleInfo.model || 'Unknown',
             parts,
             labors,
             status: 'confirmed',
@@ -274,10 +282,12 @@ export default function EstimatePage() {
 
         const data = await response.json()
         setEstimateStatus('confirmed')
-        // Redirect to report after 1.5s
+        setShowSuccessMessage(true)
+
+        // Redirect to report after 2s (show success message)
         setTimeout(() => {
           navigate(`/report/${data.estimate.estimate_id || estimateId}`)
-        }, 1500)
+        }, 2000)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'فشلت العملية')
@@ -342,6 +352,22 @@ export default function EstimatePage() {
               fontWeight: '500',
             }}>
               ⚠️ {error}
+            </div>
+          )}
+
+          {showSuccessMessage && (
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '1.5rem',
+              backgroundColor: '#dcfce7',
+              borderRight: '4px solid #16a34a',
+              borderRadius: '0.5rem',
+              color: '#166534',
+              fontWeight: '600',
+              fontSize: '1rem',
+              textAlign: 'center',
+            }}>
+              ✅ تم تأكيد التقدير بنجاح! جاري فتح التقرير...
             </div>
           )}
 
