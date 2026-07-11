@@ -19,11 +19,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [workshop, setWorkshop] = useState<any>(null)
-  const [searchBrand, setSearchBrand] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const filteredEstimates = estimates.filter((est) => {
-    const brandMatch = est.vehicle_make.toLowerCase().includes(searchBrand.toLowerCase())
-    return brandMatch
+  // Filter: only confirmed estimates, searchable by vehicle brand/model/year
+  const confirmedEstimates = estimates.filter((est) => est.status === 'confirmed')
+
+  const filteredEstimates = confirmedEstimates.filter((est) => {
+    const query = searchQuery.toLowerCase()
+    const make = est.vehicle_make.toLowerCase()
+    const model = est.vehicle_model.toLowerCase()
+    const year = est.vehicle_year.toString()
+    return make.includes(query) || model.includes(query) || year.includes(query)
   })
 
   useEffect(() => {
@@ -58,24 +64,6 @@ export default function DashboardPage() {
     }
   }
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'draft': return 'مسودة'
-      case 'confirmed': return 'مؤكد'
-      case 'exported': return 'مصدر'
-      default: return status
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft': return { bg: '#fef3c7', text: '#92400e' }
-      case 'confirmed': return { bg: '#dcfce7', text: '#166534' }
-      case 'exported': return { bg: '#dbeafe', text: '#0c4a6e' }
-      default: return { bg: '#f3f4f6', text: '#374151' }
-    }
-  }
-
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('ar-EG')
   }
@@ -83,6 +71,10 @@ export default function DashboardPage() {
   const handleLogout = () => {
     localStorage.clear()
     navigate('/login')
+  }
+
+  const countDamages = (parts: any[]) => {
+    return parts?.filter(p => p.severity_label === 'Replace').length || 0
   }
 
   return (
@@ -96,7 +88,7 @@ export default function DashboardPage() {
         zIndex: 40,
       }}>
         <div style={{
-          maxWidth: '80rem',
+          maxWidth: '1200px',
           margin: '0 auto',
           padding: '1rem 1.5rem',
           display: 'flex',
@@ -104,8 +96,14 @@ export default function DashboardPage() {
           alignItems: 'center',
         }}>
           <div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2563eb' }}>جي-فاست</h1>
-            {workshop && <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.25rem' }}>{workshop.workshop_name}</p>}
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2563eb', margin: 0 }}>
+              جي-فاست
+            </h1>
+            {workshop && (
+              <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem', margin: 0 }}>
+                {workshop.workshop_name}
+              </p>
+            )}
           </div>
           <button
             onClick={handleLogout}
@@ -125,7 +123,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content */}
-      <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '2rem 1.5rem' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1.5rem' }}>
         {/* New Estimate Button */}
         <button
           onClick={() => navigate('/analysis')}
@@ -144,25 +142,25 @@ export default function DashboardPage() {
           ➕ تقدير جديد
         </button>
 
-        {/* Estimates Section */}
+        {/* Confirmed Estimates Section */}
         <div style={{
           backgroundColor: 'white',
           borderRadius: '0.75rem',
           boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
           padding: '2rem',
         }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>
-            التقديرات الأخيرة
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827', marginTop: 0 }}>
+            التقديرات المؤكدة
           </h2>
 
           {/* Search Bar */}
-          {estimates.length > 0 && (
+          {confirmedEstimates.length > 0 && (
             <div style={{ marginBottom: '1.5rem' }}>
               <input
                 type="text"
-                value={searchBrand}
-                onChange={(e) => setSearchBrand(e.target.value)}
-                placeholder="ابحث عن ماركة المركبة..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ابحث عن الماركة أو الموديل أو السنة..."
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem',
@@ -176,8 +174,8 @@ export default function DashboardPage() {
                 onFocus={(e) => e.target.style.borderColor = '#2563eb'}
                 onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
               />
-              {searchBrand && (
-                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
+              {searchQuery && (
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem', marginBottom: 0 }}>
                   عدد النتائج: {filteredEstimates.length}
                 </p>
               )}
@@ -200,11 +198,13 @@ export default function DashboardPage() {
 
           {loading ? (
             <div style={{ textAlign: 'center', paddingTop: '3rem', paddingBottom: '3rem' }}>
-              <p style={{ color: '#4b5563' }}>⏳ جاري التحميل...</p>
+              <p style={{ color: '#6b7280' }}>⏳ جاري التحميل...</p>
             </div>
-          ) : estimates.length === 0 ? (
+          ) : confirmedEstimates.length === 0 ? (
             <div style={{ textAlign: 'center', paddingTop: '3rem', paddingBottom: '3rem' }}>
-              <p style={{ color: '#4b5563', marginBottom: '1.5rem', fontSize: '1.125rem' }}>لا توجد تقديرات بعد</p>
+              <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '1.125rem' }}>
+                لا توجد تقديرات مؤكدة بعد
+              </p>
               <button
                 onClick={() => navigate('/analysis')}
                 style={{
@@ -222,102 +222,91 @@ export default function DashboardPage() {
             </div>
           ) : filteredEstimates.length === 0 ? (
             <div style={{ textAlign: 'center', paddingTop: '2rem', paddingBottom: '2rem' }}>
-              <p style={{ color: '#4b5563', fontSize: '1rem' }}>لم يتم العثور على نتائج لـ "{searchBrand}"</p>
+              <p style={{ color: '#6b7280', fontSize: '1rem' }}>
+                لم يتم العثور على نتائج لـ "{searchQuery}"
+              </p>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', textAlign: 'right' }}>
+              <table style={{ width: '100%', textAlign: 'right', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #d1d5db' }}>
-                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>المركبة</th>
-                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>الأجزاء</th>
-                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>التكلفة</th>
-                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>الحالة</th>
-                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>التاريخ</th>
-                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>إجراء</th>
+                  <tr style={{ borderBottom: '2px solid #d1d5db', backgroundColor: '#f9fafb' }}>
+                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'right' }}>
+                      الماركة / الموديل / السنة
+                    </th>
+                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>
+                      الأضرار (Replace)
+                    </th>
+                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>
+                      التكلفة
+                    </th>
+                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>
+                      التاريخ
+                    </th>
+                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>
+                      التقرير
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEstimates.map((estimate) => {
-                    const statusColor = getStatusColor(estimate.status)
-                    return (
-                      <tr
-                        key={estimate.estimate_id}
-                        style={{
-                          borderBottom: '1px solid #e5e7eb',
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      >
-                        <td style={{ padding: '1rem 1.5rem' }}>
-                          <div style={{ fontWeight: '600', color: '#111827' }}>
-                            {estimate.vehicle_year} {estimate.vehicle_make} {estimate.vehicle_model}
-                          </div>
-                        </td>
-                        <td style={{ padding: '1rem 1.5rem', color: '#4b5563' }}>
-                          {estimate.parts?.length || 0} أجزاء
-                        </td>
-                        <td style={{ padding: '1rem 1.5rem', fontWeight: '600', color: '#111827' }}>
-                          {estimate.total_cost_max ? `${estimate.total_cost_max.toLocaleString()} ج.م` : '—'}
-                        </td>
-                        <td style={{ padding: '1rem 1.5rem' }}>
-                          <span
-                            style={{
-                              padding: '0.25rem 0.75rem',
-                              backgroundColor: statusColor.bg,
-                              color: statusColor.text,
-                              borderRadius: '0.25rem',
-                              fontSize: '0.875rem',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            {getStatusLabel(estimate.status)}
-                          </span>
-                        </td>
-                        <td style={{ padding: '1rem 1.5rem', color: '#4b5563', fontSize: '0.875rem' }}>
-                          {formatDate(estimate.created_at)}
-                        </td>
-                        <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                            {estimate.status === 'confirmed' ? (
-                              <button
-                                onClick={() => navigate(`/report/${estimate.estimate_id}`)}
-                                style={{
-                                  padding: '0.5rem 1rem',
-                                  backgroundColor: '#16a34a',
-                                  color: 'white',
-                                  borderRadius: '0.5rem',
-                                  fontWeight: 'bold',
-                                  fontSize: '0.875rem',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                📄 التقرير
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => navigate(`/estimate/${estimate.estimate_id}`)}
-                                style={{
-                                  padding: '0.5rem 1rem',
-                                  backgroundColor: '#2563eb',
-                                  color: 'white',
-                                  borderRadius: '0.5rem',
-                                  fontWeight: 'bold',
-                                  fontSize: '0.875rem',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                ✏️ تعديل
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
+                  {filteredEstimates.map((estimate) => (
+                    <tr
+                      key={estimate.estimate_id}
+                      style={{
+                        borderBottom: '1px solid #e5e7eb',
+                        transition: 'background-color 0.2s',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      {/* Vehicle Info */}
+                      <td style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>
+                        <div style={{ fontWeight: '600', color: '#111827', fontSize: '0.95rem' }}>
+                          {estimate.vehicle_make} {estimate.vehicle_model}
+                        </div>
+                        <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                          {estimate.vehicle_year}
+                        </div>
+                      </td>
+
+                      {/* Damages Count */}
+                      <td style={{ padding: '1rem 1.5rem', textAlign: 'center', color: '#111827', fontWeight: '600' }}>
+                        {countDamages(estimate.parts)}
+                      </td>
+
+                      {/* Cost */}
+                      <td style={{ padding: '1rem 1.5rem', textAlign: 'center', color: '#111827', fontWeight: '600' }}>
+                        {estimate.total_cost_max ? `${estimate.total_cost_max.toLocaleString()} ج.م` : '—'}
+                      </td>
+
+                      {/* Date */}
+                      <td style={{ padding: '1rem 1.5rem', textAlign: 'center', color: '#6b7280', fontSize: '0.875rem' }}>
+                        {formatDate(estimate.created_at)}
+                      </td>
+
+                      {/* Report Hyperlink */}
+                      <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
+                        <button
+                          onClick={() => navigate(`/report/${estimate.estimate_id}`)}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            backgroundColor: '#16a34a',
+                            color: 'white',
+                            borderRadius: '0.5rem',
+                            fontWeight: 'bold',
+                            fontSize: '0.875rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#15803d'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#16a34a'}
+                        >
+                          📄 تقرير
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
