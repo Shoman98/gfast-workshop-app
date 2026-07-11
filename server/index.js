@@ -55,6 +55,8 @@ app.post('/api/analysis', async (req, res, next) => {
     }
 
     // Use complete 4-stage analysis pipeline from wreck-vision (byte-identical)
+    // FUTURE: Replace with `await runAnalysisPipeline()` from @gfast/analysis-core
+    // once analysis-core is converted to ESM (currently it's CommonJS)
     const analysisData = await analyzeVehicleDamage(imagesToAnalyze, vehicleInfo, process.env.WORKSHOP_GEMINI_API_KEY);
 
     console.log(`✅ 4-Stage analysis complete: ${analysisData.damages?.length || 0} damages found, ${analysisData.needs_check_parts?.length || 0} needs_check`);
