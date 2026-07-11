@@ -741,6 +741,13 @@ export function enrichDamageData(rawAnalysis, vehicleInfo) {
     return { damages: [], needs_check_parts: [] };
   }
 
+  console.log('📊 enrichDamageData input:', {
+    totalDamages: rawAnalysis.damages?.length || 0,
+    totalNeedsCheck: rawAnalysis.needs_check_parts?.length || 0,
+    damageSample: rawAnalysis.damages?.[0] ? { name: rawAnalysis.damages[0].part_name_ar, conf: rawAnalysis.damages[0].confidence } : null,
+    needsCheckSample: rawAnalysis.needs_check_parts?.[0] ? { name: rawAnalysis.needs_check_parts[0].part_name_ar, conf: rawAnalysis.needs_check_parts[0].confidence } : null,
+  });
+
   // Enrich confirmed damages (confidence >= 0.70)
   const enriched = (rawAnalysis.damages || []).map(damage => {
     const partKey = normalizePartName(damage.part_name_en);

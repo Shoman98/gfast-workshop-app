@@ -347,7 +347,7 @@ Answer with ONLY:
 function buildStage2BPrompt(visibleAreas, stage1Result) {
   return `You are a vehicle damage detection AI. Analyze these vehicle images and detect ALL visible damage.
 
-TASK: Return ONLY valid JSON with damage details. If no damage, return empty arrays.
+TASK: Return ONLY valid JSON with damage details. Split into two arrays based on confidence.
 
 RETURN THIS JSON ONLY (no other text):
 {
@@ -359,16 +359,30 @@ RETURN THIS JSON ONLY (no other text):
       "confidence": 0.95
     }
   ],
-  "needs_check_parts": []
+  "needs_check_parts": [
+    {
+      "part_name_en": "bumper",
+      "part_name_ar": "مصد",
+      "damage_type": "Scratch",
+      "confidence": 0.55
+    }
+  ]
 }
 
 RULES:
 1. Detect ALL visible damage (dents, scratches, cracks, broken parts, missing pieces, deformation)
-2. Each part: one JSON object with part_name_en, part_name_ar, damage_type, confidence (0.0-1.0)
-3. confidence >= 0.70 goes to "damages", < 0.70 goes to "needs_check_parts"
-4. If NO damage visible, return { "damages": [], "needs_check_parts": [] }
-5. DO NOT hallucinate - only report what you clearly see
-6. LEFT/RIGHT from driver's perspective
+2. For EACH damaged part, assess confidence level (0.0-1.0):
+   - 0.95-1.0: Clear, undeniable damage with sharp lines/deformation
+   - 0.80-0.94: Obvious damage but could be minor or hard to see completely
+   - 0.60-0.79: Visible anomaly that COULD be damage but might be lighting/reflection
+   - 0.40-0.59: Suspicious area that needs manual verification
+   - Below 0.40: Unlikely to be damage, probably artifact
+3. PUT in "damages" array: parts with confidence >= 0.70
+4. PUT in "needs_check_parts" array: parts with confidence < 0.70 (uncertain, needs user review)
+5. If NO damage visible, return { "damages": [], "needs_check_parts": [] }
+6. DO NOT hallucinate - only report what you clearly see in the images
+7. LEFT/RIGHT from driver's perspective
+8. IMPORTANT: Be conservative with confidence scores. Uncertain findings go to needs_check_parts
 
 COMMON PARTS:
 hood, roof, trunk_door, grille, upper_bumper, lower_bumper, front_windshield,
@@ -493,7 +507,7 @@ export async function analyzeVehicleDamage(images, vehicleInfo, geminiApiKey) {
             part_name_en: matchedPart.nameEn,
             part_name_ar: matchedPart.nameAr,
             damage_type: damageType,
-            confidence: damage.confidence || 0.8,
+            confidence: damage.confidence || 0.65, // Default to 0.65 (< 0.70 = needs_check) if not provided
             severity_label: severityLabel,
             price: matchedPart.price,
             partId: matchedPart.partId,
@@ -510,11 +524,22 @@ export async function analyzeVehicleDamage(images, vehicleInfo, geminiApiKey) {
     console.log(`  ✓ Filtered out unknown parts\n`);
 
     // Split into confirmed damages (confidence >= 0.70) and needs_check (< 0.70)
-    const confirmedDamages = mappedDamages.filter(d => (d.confidence || 0.7) >= 0.70);
-    const needsCheckDamages = mappedDamages.filter(d => (d.confidence || 0.7) < 0.70);
+    const confirmedDamages = mappedDamages.filter(d => d.confidence >= 0.70);
+    const needsCheckDamages = mappedDamages.filter(d => d.confidence < 0.70);
 
     console.log(`  ✓ Confirmed damages (≥70%): ${confirmedDamages.length}`);
-    console.log(`  ⚠️  Needs check (<70%): ${needsCheckDamages.length}\n`);
+    if (confirmedDamages.length > 0) {
+      confirmedDamages.slice(0, 3).forEach(d => {
+        console.log(`    - ${d.part_name_ar} (${Math.round(d.confidence * 100)}%)`);
+      });
+    }
+    console.log(`  ⚠️  Needs check (<70%): ${needsCheckDamages.length}`);
+    if (needsCheckDamages.length > 0) {
+      needsCheckDamages.slice(0, 3).forEach(d => {
+        console.log(`    - ${d.part_name_ar} (${Math.round(d.confidence * 100)}%)`);
+      });
+    }
+    console.log('');
 
     return {
       damages: confirmedDamages,
