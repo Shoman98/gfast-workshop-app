@@ -351,28 +351,34 @@ CRITICAL CONSTRAINT — READ CAREFULLY:
 You may ONLY report damage on parts that belong to the following visible areas:
 ${JSON.stringify(visibleAreas)}
 
-CONFIDENCE SCORING RULES (MANDATORY):
+CONFIDENCE SCORING RULES (MANDATORY - FOLLOW EXACTLY):
 - 0.80 to 1.00: OBVIOUS damage. Crystal clear, unmistakable. Visual evidence is unambiguous (deep dents, shattered glass, broken mirrors, clear cracks).
   Examples: 0.92, 0.95, 0.98 (NOT 1 or 100)
-- 0.70 to 0.79: LIKELY damage. Good evidence but slight uncertainty. Go to "damages" array.
+- 0.70 to 0.79: PROBABLE damage. Good visual evidence but slight uncertainty. Go to "damages" array.
   Examples: 0.72, 0.75, 0.78
-- 0.50 to 0.69: UNCERTAIN damage. Some evidence but could be optical illusion, reflection, normal wear, or minor issue. MUST go to "needs_check_parts" for human review.
-  Examples: 0.52, 0.60, 0.68
-- 0.40 to 0.49: VERY UNCERTAIN. Barely perceptible, ambiguous observations. Only include if you see ANY indicator. Go to "needs_check_parts".
-  Examples: 0.42, 0.45, 0.48
+- 0.40 to 0.69: POSSIBLE damage. Visual signs observed but could be artifact, reflection, shadow, or minor issue. ALWAYS report these in "needs_check_parts" for human inspection.
+  Examples: 0.52, 0.60, 0.68, 0.42, 0.45
 - Below 0.40: DO NOT REPORT. Too speculative.
 
-MUST SPLIT RESULTS INTO TWO ARRAYS:
-1. "damages": Parts with confidence >= 0.70 (certain enough to report)
-   Example confidences: 0.75, 0.85, 0.92, 0.98
-2. "needs_check_parts": Parts with 0.50-0.69 (uncertain, needs human verification)
-   Example confidences: 0.52, 0.60, 0.68
+CRITICAL INSTRUCTION - ALWAYS POPULATE NEEDS_CHECK:
+- When in doubt about HIGH confidence (≥ 0.70), do NOT report it. But DO report MODERATE confidence (0.40-0.69) items in "needs_check_parts" for physical inspection.
+- A confidence of 0.40-0.69 means it MIGHT be damage — report these in "needs_check_parts" even if you're unsure.
+- The technician will physically inspect needs_check_parts to confirm or reject them.
+- This is a FALSE POSITIVE PREVENTION strategy: Report uncertain findings for human verification rather than guessing wrong.
 
-CONFIDENCE SPLIT EXAMPLE:
-- Obvious deep dent with clear edges → 0.88 confidence → "damages"
-- Slight crease that might be a dent or shadow → 0.62 confidence → "needs_check_parts" with reason_for_uncertainty
-- Mirror that looks cracked but could be dust → 0.55 confidence → "needs_check_parts"
-- Barely visible area you're not sure about → DO NOT REPORT (< 0.40)
+MUST SPLIT RESULTS INTO TWO ARRAYS:
+1. "damages": Parts with confidence >= 0.70 (confirmed high-confidence findings)
+   Example confidences: 0.75, 0.85, 0.92, 0.98
+2. "needs_check_parts": Parts with 0.40-0.69 (possible findings, human inspection required)
+   Example confidences: 0.52, 0.60, 0.68, 0.42, 0.45
+
+CONFIDENCE SPLIT EXAMPLES (FOLLOW EXACTLY):
+- Obvious deep dent with unambiguous edges → 0.92 confidence → "damages" (≥0.70)
+- Clear scratch visible in multiple images → 0.85 confidence → "damages" (≥0.70)
+- Slight crease that might be a dent or shadow → 0.65 confidence → "needs_check_parts" (0.40-0.69)
+- Mirror that looks cracked but could be dust or reflection → 0.58 confidence → "needs_check_parts" (0.40-0.69)
+- Area with some indicator of damage but very ambiguous → 0.45 confidence → "needs_check_parts" (0.40-0.69)
+- Almost imperceptible observation with no clear evidence → DO NOT REPORT (< 0.40)
 
 IMPORTANT — FALSE POSITIVE PREVENTION:
 - Many vehicles are in PERFECT condition with NO damage. Do NOT hallucinate or invent damage.
