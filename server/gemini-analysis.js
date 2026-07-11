@@ -778,6 +778,7 @@ export function enrichDamageData(rawAnalysis, vehicleInfo) {
       damage_type: part.damage_type || 'unknown',
       severity_label: part.severity_label || getSeverityDecision(part.damage_type).decision,
       confidence: part.confidence || 0.5,
+      reason_for_uncertainty: part.reason_for_uncertainty,
       is_ai_detected: part.is_ai_detected !== false,
       price: partInfo.price || 0,
       partId: partInfo.partId || null,

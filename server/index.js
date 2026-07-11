@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import estimateRoutes from './routes/estimates.js';
 import { compressImages, callGeminiWithImages, enrichDamageData } from './gemini-analysis.js';
-import { analyzeVehicleDamage } from './analysis-4stage-full.js';
+import { analyzeVehicleDamage } from './analysis-mock.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
