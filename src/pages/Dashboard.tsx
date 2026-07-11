@@ -38,7 +38,7 @@ export default function DashboardPage() {
       setWorkshop(JSON.parse(workshopData))
     }
     loadEstimates()
-  }, [])
+  }, [navigate])
 
   const loadEstimates = async () => {
     const token = localStorage.getItem('token')
