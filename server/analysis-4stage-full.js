@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { PARTS_DATABASE, DAMAGE_TYPE_INDEX, getSeverityDecision as getServerSeverityDecision } from './gemini-analysis.js';
 
 // ============================================================================
 // 4-STAGE ANALYSIS WITH FULL PROMPT STRUCTURE (from gfast-b2c-v2)
@@ -119,63 +120,7 @@ function buildAreaToPartsMap() {
   };
 }
 
-// ============================================================================
-// DAMAGE TYPE & PARTS DATABASE
-// ============================================================================
-
-const DAMAGE_TYPE_INDEX = {
-  'dent': 2, 'scratch': 1, 'scuff marks': 1, 'scuff': 1, 'buckled': 3, 'buckling': 3,
-  'severe buckling': 4, 'broken': 5, 'crack': 5, 'cracked': 5, 'severe cracking': 5,
-  'frame damage': 4, 'structural integrity': 5, 'deformation': 4, 'severe deformation': 4,
-  'impact deformation': 3, 'structural deformation': 5, 'misaligned': 1, 'misalignment': 1,
-  'bent': 1, 'missing': 5, 'detached': 5, 'scrape': 3, 'torn': 4, 'tear': 5,
-  'pushed forward': 3, 'pushed back': 3, 'pushed inward': 3, 'rust': 3,
-  'shattered lens': 5, 'broken housing': 5, 'internal damage': 5, 'spider-web fractures': 5,
-  'scratches on lens': 2, 'leaks': 3, 'leak': 3, 'airbag deployment': 5,
-  'creasing': 2, 'heat deformation': 5, 'melted': 5, 'surface oxidation': 3,
-  'paint failure': 2, 'paint damage': 2, 'paint scorching': 5, 'soot accumulation': 5,
-  'heavy soot': 5, 'total paint loss': 4, 'charred': 4, 'paint scraping': 3,
-  'cracking': 5, 'scratched': 1, 'dented': 2, 'rusted': 3, 'corroded': 3, 'corrosion': 3,
-  'chipped': 2, 'chip': 2, 'peeling': 2, 'faded': 1, 'discolored': 1, 'warped': 3,
-  'punctured': 4, 'puncture': 4, 'shattered': 5, 'crushed': 5, 'collapsed': 5,
-  'loose': 2, 'separated': 3, 'split': 4,
-};
-
-const PARTS_DATABASE = {
-  hood: { partId: 'PT_0001', price: 2800, nameEn: 'Hood', nameAr: 'كبوت', category: 'exterior_body', isSafety: false },
-  front_windshield: { partId: 'PT_0002', price: 2100, nameEn: 'Front Windshield', nameAr: 'زجاج أمامي', category: 'exterior_body', isSafety: true },
-  front_left_headlight: { partId: 'PT_0008', price: 5600, nameEn: 'Front Left Headlight', nameAr: 'فانوس أمامي شمال', category: 'exterior_body', isSafety: true },
-  front_right_headlight: { partId: 'PT_0007', price: 5600, nameEn: 'Front Right Headlight', nameAr: 'فانوس أمامي يمين', category: 'exterior_body', isSafety: true },
-  upper_bumper: { partId: 'PT_0009', price: 1610, nameEn: 'Upper Bumper', nameAr: 'اكصدام أمامي علوي', category: 'exterior_body', isSafety: false },
-  front_left_fender: { partId: 'PT_0018', price: 2000, nameEn: 'Front Left Fender', nameAr: 'رفرف أمامي شمال', category: 'exterior_body', isSafety: false },
-  front_right_fender: { partId: 'PT_0028', price: 2000, nameEn: 'Front Right Fender', nameAr: 'رفرف أمامي يمين', category: 'exterior_body', isSafety: false },
-  front_left_door: { partId: 'PT_0020', price: 4200, nameEn: 'Front Left Door', nameAr: 'باب أمامي شمال', category: 'exterior_body', isSafety: true },
-  front_right_door: { partId: 'PT_0030', price: 4200, nameEn: 'Front Right Door', nameAr: 'باب أمامي يمين', category: 'exterior_body', isSafety: true },
-  rear_left_door: { partId: 'PT_0021', price: 3800, nameEn: 'Rear Left Door', nameAr: 'باب خلفي شمال', category: 'exterior_body', isSafety: false },
-  rear_right_door: { partId: 'PT_0031', price: 3800, nameEn: 'Rear Right Door', nameAr: 'باب خلفي يمين', category: 'exterior_body', isSafety: false },
-  left_mirror: { partId: 'PT_0023', price: 800, nameEn: 'Left Mirror', nameAr: 'مراية شمال', category: 'exterior_body', isSafety: true },
-  right_mirror: { partId: 'PT_0034', price: 800, nameEn: 'Right Mirror', nameAr: 'مراية يمين', category: 'exterior_body', isSafety: true },
-  roof: { partId: 'PT_0005', price: 5000, nameEn: 'Roof', nameAr: 'سقف', category: 'exterior_body', isSafety: false },
-  trunk_door: { partId: 'PT_0050', price: 3500, nameEn: 'Trunk Door', nameAr: 'باب الشنطة', category: 'exterior_body', isSafety: false },
-  rear_bumper_upper: { partId: 'PT_0041', price: 2030, nameEn: 'Rear Bumper Upper', nameAr: 'اكصدام خلفي علوي', category: 'exterior_body', isSafety: false },
-  grille: { partId: 'PT_0006', price: 1050, nameEn: 'Grille', nameAr: 'شبكة أمامية', category: 'exterior_body', isSafety: false },
-  front_car_logo: { partId: 'PT_0010', price: 0, nameEn: 'Front Car Logo', nameAr: 'شعار العربية (امامي)', category: 'exterior_body', isSafety: false },
-  lower_bumper: { partId: 'PT_0015', price: 0, nameEn: 'Lower Bumper', nameAr: 'اكصدام أمامي سفلي', category: 'exterior_body', isSafety: false },
-  front_left_fog_trim: { partId: 'PT_0016', price: 0, nameEn: 'Front Left Fog Trim', nameAr: 'إطار كشاف الضباب شمال', category: 'exterior_body', isSafety: false },
-  front_right_fog_trim: { partId: 'PT_0017', price: 0, nameEn: 'Front Right Fog Trim', nameAr: 'إطار كشاف الضباب يمين', category: 'exterior_body', isSafety: false },
-  left_rocker_panel: { partId: 'PT_0019', price: 0, nameEn: 'Left Rocker Panel', nameAr: 'عتبة جنب شمال', category: 'exterior_body', isSafety: false },
-  left_quarter_panel: { partId: 'PT_0022', price: 3500, nameEn: 'Left Quarter Panel', nameAr: 'رفرف خلفي شمال', category: 'exterior_body', isSafety: false },
-  rear_right_quarter_panel: { partId: 'PT_0032', price: 3500, nameEn: 'Rear Right Quarter Panel', nameAr: 'رفرف خلفي يمين', category: 'exterior_body', isSafety: false },
-  b_pillar: { partId: 'PT_0033', price: 0, nameEn: 'B Pillar', nameAr: 'قايم وسط', category: 'exterior_body', isSafety: true },
-  c_pillar: { partId: 'PT_0044', price: 0, nameEn: 'C Pillar', nameAr: 'قايم خلفي', category: 'exterior_body', isSafety: true },
-  a_pillars: { partId: 'PT_0004', price: 0, nameEn: 'A Pillars', nameAr: '(قائم أمامي)', category: 'exterior_body', isSafety: true },
-};
-
-const PART_NAME_ALIASES = {
-  'front bumper': 'upper_bumper', 'rear bumper': 'rear_bumper_upper', 'left door': 'front_left_door',
-  'right door': 'front_right_door', 'left fender': 'front_left_fender', 'right fender': 'front_right_fender',
-  'windshield': 'front_windshield', 'bonnet': 'hood', 'boot': 'trunk_door', 'tailgate': 'trunk_door',
-};
+// PARTS_DATABASE and DAMAGE_TYPE_INDEX imported from gemini-analysis.js
 
 function getSeverityDecision(damageType) {
   if (!damageType) return { decision: 'Replace', index: null, isKnownType: false };
@@ -517,26 +462,44 @@ export async function analyzeVehicleDamage(images, vehicleInfo, geminiApiKey) {
 
     // ========== MAP TO TAXONOMY & FILTER ==========
     console.log('\n🗂️ Mapping to Part Taxonomy & Filtering');
+    // Normalize part names to match PARTS_DATABASE keys
+    function normalizePartName(rawName) {
+      if (!rawName) return '';
+      const key = rawName
+        .toLowerCase()
+        .trim()
+        .replace(/[()\/\\,;:]/g, ' ')
+        .replace(/[-]/g, '_')
+        .replace(/\s+/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '');
+      return key;
+    }
+
     const detectedDamages = stage2bResult.damages || [];
     const mappedDamages = detectedDamages
       .map(damage => {
-        // Gemini returns part_name_en, match it to PARTS_DATABASE
-        const partKey = damage.part_name_en?.toLowerCase().replace(/\s+/g, '_') || '';
+        // Normalize part name and look up in PARTS_DATABASE
+        const partKey = normalizePartName(damage.part_name_en);
         const matchedPart = PARTS_DATABASE[partKey];
-        const severityDecision = getSeverityDecision(damage.damage_type);
+
+        // Use DAMAGE_TYPE_INDEX for severity decision
+        const damageType = damage.damage_type || 'unknown';
+        const damageIndex = DAMAGE_TYPE_INDEX[damageType.toLowerCase()] || null;
+        const severityLabel = damageIndex !== null ? (damageIndex < 4 ? 'Repair' : 'Replace') : 'Replace';
 
         if (matchedPart) {
           return {
-            part_name_en: damage.part_name_en || matchedPart.nameEn,
-            part_name_ar: damage.part_name_ar || matchedPart.nameAr,
-            damage_type: damage.damage_type || 'Unknown',
+            part_name_en: matchedPart.nameEn,
+            part_name_ar: matchedPart.nameAr,
+            damage_type: damageType,
             confidence: damage.confidence || 0.8,
-            severity_label: severityDecision.decision,
-            price: matchedPart.price || 1000,
-            is_ai_detected: true,
+            severity_label: severityLabel,
+            price: matchedPart.price,
             partId: matchedPart.partId,
             category: matchedPart.category,
-            isSafety: matchedPart.isSafety,
+            is_ai_detected: true,
+            isUnmapped: false,
           };
         }
         return null;
