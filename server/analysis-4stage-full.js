@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { PARTS_DATABASE, DAMAGE_TYPE_INDEX, getSeverityDecision as getServerSeverityDecision } from './gemini-analysis.js';
+import { PARTS_DATABASE, DAMAGE_TYPE_INDEX, getSeverityDecision as getServerSeverityDecision, PART_NAME_ALIASES } from './gemini-analysis.js';
 
 // ============================================================================
 // 4-STAGE ANALYSIS WITH FULL PROMPT STRUCTURE (from gfast-b2c-v2)
@@ -579,7 +579,9 @@ export async function analyzeVehicleDamage(images, vehicleInfo, geminiApiKey) {
     // Helper function to map and enrich a damage record
     function mapDamageRecord(damage, isNeedsCheck = false) {
       const partKey = normalizePartName(damage.part_name_en);
-      const matchedPart = PARTS_DATABASE[partKey];
+      // Try alias first, then direct match
+      const aliasedKey = PART_NAME_ALIASES[partKey] || partKey;
+      const matchedPart = PARTS_DATABASE[aliasedKey];
 
       const damageType = damage.damage_type || 'unknown';
       const damageIndex = DAMAGE_TYPE_INDEX[damageType.toLowerCase()] || null;
@@ -626,16 +628,28 @@ export async function analyzeVehicleDamage(images, vehicleInfo, geminiApiKey) {
     // Map BOTH damages and needs_check_parts arrays from Gemini
     const detectedDamages = stage2bResult.damages || [];
     const mappedDamages = detectedDamages
-      .map(damage => mapDamageRecord(damage, false))
+      .map((damage, idx) => {
+        const mapped = mapDamageRecord(damage, false);
+        if (!mapped) {
+          console.log(`    ⚠️  Damage ${idx+1} not in PARTS_DATABASE: "${damage.part_name_en}" (conf: ${damage.confidence})`);
+        }
+        return mapped;
+      })
       .filter(d => d !== null);
 
     const geminiNeedsCheck = stage2bResult.needs_check_parts || [];
     const mappedNeedsCheck = geminiNeedsCheck
-      .map(nc => mapDamageRecord(nc, true))
+      .map((nc, idx) => {
+        const mapped = mapDamageRecord(nc, true);
+        if (!mapped) {
+          console.log(`    ⚠️  Needs_check ${idx+1} not in PARTS_DATABASE: "${nc.part_name_en}" (conf: ${nc.confidence})`);
+        }
+        return mapped;
+      })
       .filter(d => d !== null);
 
-    console.log(`  ✓ Mapped ${mappedDamages.length} damages to taxonomy`);
-    console.log(`  ✓ Mapped ${mappedNeedsCheck.length} needs_check from Gemini`);
+    console.log(`  ✓ Mapped ${mappedDamages.length}/${detectedDamages.length} damages to taxonomy`);
+    console.log(`  ✓ Mapped ${mappedNeedsCheck.length}/${geminiNeedsCheck.length} needs_check from Gemini`);
     console.log(`  ✓ Filtered out unknown parts\n`);
 
     // Split damages by confidence (secondary split in case Gemini confidence was low in damages array)

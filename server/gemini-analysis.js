@@ -404,7 +404,7 @@ export const PARTS_DATABASE = {
 };
 
 // Part name aliases mapping - EXACT copy from wreck-vision local-server.cjs
-const PART_NAME_ALIASES = {
+export const PART_NAME_ALIASES = {
   // Old headlight naming → new taxonomy
   'headlight_left': 'front_left_headlight',
   'headlight_right': 'front_right_headlight',
