@@ -45,6 +45,7 @@ class QueryBuilder {
     this._filters = []; // Support multiple filters
     this._orderBy = null;
     this._fields = '*';
+    this._relations = []; // Parse relations like "estimate_parts:estimate_parts(*)"
     this._insertData = null;
     this._updateData = null;
     this._isInsertChain = false;
@@ -90,6 +91,27 @@ class QueryBuilder {
 
     // Called from select() chain
     this._fields = fields;
+
+    // Parse relations like "*, estimate_parts:estimate_parts(*)"
+    if (typeof fields === 'string') {
+      // Split by comma, find relation definitions
+      const parts = fields.split(',').map(p => p.trim());
+      this._relations = [];
+
+      for (const part of parts) {
+        // Match patterns like "estimate_parts:estimate_parts(*)" or "user_id:users(*)"
+        const relationMatch = part.match(/^(\w+):(\w+)\(\*\)$/);
+        if (relationMatch) {
+          const [, relationName, relatedTable] = relationMatch;
+          this._relations.push({
+            name: relationName,
+            table: `workshop_app.${relatedTable}`,
+            foreignKey: `${this.tableName.replace('workshop_app.', '')}_id` // e.g., estimates_id -> estimate_id
+          });
+        }
+      }
+    }
+
     return this;
   }
 
@@ -143,7 +165,27 @@ class QueryBuilder {
       results = results.filter((r) => r[filter.column] === filter.value);
     }
 
-    const result = results[0] || null;
+    let result = results[0] || null;
+
+    // Fetch relations if defined
+    if (result && this._relations.length > 0) {
+      for (const rel of this._relations) {
+        const relatedTable = db[rel.table];
+        if (relatedTable) {
+          // Get the primary key field for the current table (e.g., "estimate_id" for estimates)
+          const pkField = this.tableName.replace('workshop_app.', '').replace(/s$/, '_id');
+          const pkValue = result[pkField] || result.id;
+
+          // Find all records in related table where foreign key matches
+          const relatedRecords = Array.from(relatedTable.values()).filter(
+            (r) => r[pkField] === pkValue
+          );
+
+          result[rel.name] = relatedRecords;
+        }
+      }
+    }
+
     return { data: result, error: result ? null : 'Not found' };
   }
 

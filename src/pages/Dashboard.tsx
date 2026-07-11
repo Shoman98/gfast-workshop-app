@@ -33,6 +33,7 @@ export default function DashboardPage() {
   })
 
   useEffect(() => {
+    console.log('🔵 Dashboard: useEffect mounted')
     const workshopData = localStorage.getItem('workshop')
     if (workshopData) {
       setWorkshop(JSON.parse(workshopData))
@@ -41,23 +42,30 @@ export default function DashboardPage() {
   }, [navigate])
 
   const loadEstimates = async () => {
+    console.log('📊 Dashboard: loadEstimates called')
     const token = localStorage.getItem('token')
     if (!token) {
+      console.log('❌ Dashboard: No token found')
       navigate('/login')
       return
     }
 
     try {
       setLoading(true)
+      console.log('🔄 Dashboard: Fetching /api/estimates')
       const response = await fetch('/api/estimates', {
         headers: { Authorization: `Bearer ${token}` },
       })
 
+      console.log('📦 Dashboard: Response status:', response.status)
       if (!response.ok) throw new Error('فشل تحميل التقديرات')
 
       const data = await response.json()
+      console.log('✅ Dashboard: Loaded estimates:', data.estimates?.length || 0, 'total')
+      console.log('   Confirmed only:', data.estimates?.filter((e: any) => e.status === 'confirmed').length || 0)
       setEstimates(data.estimates || [])
     } catch (err) {
+      console.error('💥 Dashboard: Error loading estimates:', err)
       setError(err instanceof Error ? err.message : 'فشل تحميل التقديرات')
     } finally {
       setLoading(false)

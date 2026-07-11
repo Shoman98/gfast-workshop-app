@@ -65,9 +65,22 @@ router.get('/:estimateId', authenticate, async (req, res, next) => {
       .eq('workshop_id', workshopId)
       .single();
 
-    if (error || !estimate) {
+    if (error) {
+      console.error('❌ GET estimate error:', error);
+      return res.status(500).json({ error: 'Failed to fetch estimate', details: error.message });
+    }
+
+    if (!estimate) {
+      console.error('❌ Estimate not found:', estimateId);
       return res.status(404).json({ error: 'Estimate not found' });
     }
+
+    console.log('✅ GET estimate success:', {
+      estimateId: estimate.estimate_id,
+      hasEstimateParts: !!estimate.estimate_parts,
+      estimatePartsLength: estimate.estimate_parts?.length || 0,
+      estimatePartsData: estimate.estimate_parts,
+    });
 
     res.json({
       success: true,
@@ -85,22 +98,38 @@ router.get('/:estimateId', authenticate, async (req, res, next) => {
 router.post('/', authenticate, async (req, res, next) => {
   try {
     const workshopId = req.workshop_id;
-    const { vehicleYear, vehicleMake, vehicleModel, vehicle_year, vehicle_make, vehicle_model, parts, labors } = req.body;
+    const { vehicleYear, vehicleMake, vehicleModel, vehicle_year, vehicle_make, vehicle_model, parts, labors, status } = req.body;
     const year = vehicleYear || vehicle_year;
     const make = vehicleMake || vehicle_make;
     const model = vehicleModel || vehicle_model;
 
+    console.log('📥 POST /api/estimates received:', {
+      workshopId,
+      status,
+      vehicleInfo: { year, make, model },
+      partsCount: parts?.length || 0,
+      laborsCount: labors?.length || 0,
+      partsArray: parts ? parts.slice(0, 2) : 'NO PARTS',
+    });
+
     // Create estimate
+    const estimateData = {
+      workshop_id: workshopId,
+      vehicle_year: year,
+      vehicle_make: make,
+      vehicle_model: model,
+      status: status || 'draft',
+      labors: labors || [],
+    };
+
+    // If status is confirmed, set confirmed_at timestamp
+    if (status === 'confirmed') {
+      estimateData.confirmed_at = new Date().toISOString();
+    }
+
     const { data: estimate, error: estimateError } = await supabase
       .from('workshop_app.estimates')
-      .insert({
-        workshop_id: workshopId,
-        vehicle_year: year,
-        vehicle_make: make,
-        vehicle_model: model,
-        status: 'draft',
-        labors: labors || [],
-      })
+      .insert(estimateData)
       .select()
       .single();
 
@@ -120,11 +149,21 @@ router.post('/', authenticate, async (req, res, next) => {
         is_ai_detected: part.is_ai_detected !== false,
       }));
 
+      console.log('💾 Saving parts for estimate', estimate.estimate_id, ':', {
+        totalParts: partsData.length,
+        replaceParts: partsData.filter(p => p.severity_label === 'Replace').length,
+        sampleParts: partsData.slice(0, 2),
+      });
+
       const { error: partsError } = await supabase
         .from('workshop_app.estimate_parts')
         .insert(partsData);
 
-      if (partsError) throw partsError;
+      if (partsError) {
+        console.error('❌ Error saving parts:', partsError);
+        throw partsError;
+      }
+      console.log('✅ Parts saved successfully');
     }
 
     res.json({

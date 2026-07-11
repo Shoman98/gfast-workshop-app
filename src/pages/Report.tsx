@@ -37,6 +37,7 @@ export default function ReportPage() {
       setLoading(true)
       const token = localStorage.getItem('token')
 
+      console.log('📄 Report: Loading estimate', estimateId)
       const response = await fetch(`/api/estimates/${estimateId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -44,6 +45,20 @@ export default function ReportPage() {
       if (!response.ok) throw new Error('فشل تحميل التقرير')
 
       const data = await response.json()
+      console.log('📄 Report: API response:', {
+        success: data.success,
+        hasEstimate: !!data.estimate,
+        estimateId: data.estimate?.estimate_id,
+        vehicleInfo: {
+          year: data.estimate?.vehicle_year,
+          make: data.estimate?.vehicle_make,
+          model: data.estimate?.vehicle_model,
+        },
+        estimatePartsLength: data.estimate?.estimate_parts?.length || 0,
+        estimatePartsSample: data.estimate?.estimate_parts?.slice(0, 2),
+        laborsLength: data.estimate?.labors?.length || 0,
+      })
+
       const workshopData = JSON.parse(localStorage.getItem('workshop') || '{}')
 
       setReport({
@@ -57,6 +72,7 @@ export default function ReportPage() {
 
       setShareUrl(`${window.location.origin}/report/${estimateId}?public=true`)
     } catch (err) {
+      console.error('📄 Report: Error loading:', err)
       setError(err instanceof Error ? err.message : 'خطأ في تحميل التقرير')
     } finally {
       setLoading(false)
@@ -71,6 +87,18 @@ export default function ReportPage() {
 
   const replaceParts = report?.estimate_parts?.filter((p) => p.severity_label === 'Replace') || report?.parts?.filter((p) => p.severity_label === 'Replace') || []
   const laborCosts = report?.estimate_labors?.filter((l) => (l.price || 0) > 0) || report?.labors?.filter((l) => (l.price || 0) > 0) || []
+
+  if (report) {
+    console.log('📄 Report Data:', {
+      hasEstimateParts: !!report.estimate_parts,
+      hasParts: !!report.parts,
+      estimatePartsLength: report.estimate_parts?.length || 0,
+      partsLength: report.parts?.length || 0,
+      replacePartsLength: replaceParts.length,
+      replaceParts: replaceParts.map(p => ({ name_ar: p.part_name_ar, severity: p.severity_label, price: p.price })),
+      laborCostsLength: laborCosts.length,
+    })
+  }
 
   const totalPartsCost = replaceParts.reduce((sum, p) => sum + (p.price || 0), 0)
   const totalLaborCost = laborCosts.reduce((sum, l) => sum + (l.price || 0), 0)

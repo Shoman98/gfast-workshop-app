@@ -241,11 +241,17 @@ export default function EstimatePage() {
   }
 
   const confirmEstimate = async () => {
+    console.log('🔵 confirmEstimate called')
+    console.log('   parts.length:', parts.length)
+    console.log('   parts:', parts)
+    console.log('   estimateStatus:', estimateStatus)
     if (parts.length === 0) {
+      console.log('❌ No parts, showing error')
       setError('يرجى إضافة جزء واحد على الأقل')
       return
     }
 
+    console.log('✅ Opening confirm dialog')
     setShowConfirmDialog(true)
   }
 
@@ -262,25 +268,47 @@ export default function EstimatePage() {
       setShowConfirmDialog(false)
 
       if (estimateId === 'new') {
+        const payload = {
+          vehicle_year: vehicleInfo.year || 2023,
+          vehicle_make: vehicleInfo.make || 'Unknown',
+          vehicle_model: vehicleInfo.model || 'Unknown',
+          parts,
+          labors,
+          status: 'confirmed',
+        }
+
+        console.log('🚀 Sending confirmation payload:', payload)
+        console.log('📋 Parts details:', {
+          totalParts: parts.length,
+          replaceParts: parts.filter(p => p.severity_label === 'Replace').length,
+          sample: parts.slice(0, 2).map(p => ({
+            name_ar: p.part_name_ar,
+            severity: p.severity_label,
+            price: p.price,
+          })),
+        })
+        console.log('📡 Posting to /api/estimates')
+
         const response = await fetch('/api/estimates', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            vehicle_year: vehicleInfo.year || 2023,
-            vehicle_make: vehicleInfo.make || 'Unknown',
-            vehicle_model: vehicleInfo.model || 'Unknown',
-            parts,
-            labors,
-            status: 'confirmed',
-          }),
+          body: JSON.stringify(payload),
         })
 
-        if (!response.ok) throw new Error('فشل إنشاء التقدير')
+        console.log('📦 Response status:', response.status, response.statusText)
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          console.error('❌ API Error:', errorData)
+          throw new Error(errorData.error || 'فشل إنشاء التقدير')
+        }
 
         const data = await response.json()
+        console.log('✅ Estimate created:', data)
+
         setEstimateStatus('confirmed')
         setShowSuccessMessage(true)
 
@@ -290,7 +318,9 @@ export default function EstimatePage() {
         }, 2000)
       }
     } catch (err) {
+      console.error('💥 Error in handleConfirmDialog:', err)
       setError(err instanceof Error ? err.message : 'فشلت العملية')
+      setShowConfirmDialog(false)
     } finally {
       setConfirming(false)
     }
