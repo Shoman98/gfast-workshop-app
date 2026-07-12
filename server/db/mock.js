@@ -8,18 +8,18 @@ import { v4 as uuidv4 } from 'uuid';
 
 // In-memory storage
 const db = {
-  'workshop_app.workshops': new Map(),
-  'workshop_app.estimates': new Map(),
-  'workshop_app.estimate_parts': new Map(),
-  'workshop_app.estimate_edits': new Map(),
-  'workshop_app.estimate_audit_logs': new Map(),
+  'workshops': new Map(),
+  'estimates': new Map(),
+  'estimate_parts': new Map(),
+  'estimate_edits': new Map(),
+  'estimate_audit_logs': new Map(),
 };
 
 // Initialize with test data
 function initTestData() {
   const testWorkshopId = 'test-workshop-1';
 
-  db['workshop_app.workshops'].set(testWorkshopId, {
+  db['workshops'].set(testWorkshopId, {
     workshop_id: testWorkshopId,
     workshop_name: 'Test Workshop',
     pin_hash: '$2b$10$78DZ1DdVERbAZla9KX317enWnUDmsIP1hPmpumG5kVf3VnacLbSU.', // bcrypt of "1234"

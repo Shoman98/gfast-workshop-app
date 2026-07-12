@@ -243,12 +243,6 @@ export default function DashboardPage() {
                       الماركة / الموديل / السنة
                     </th>
                     <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>
-                      الأضرار (Replace)
-                    </th>
-                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>
-                      التكلفة
-                    </th>
-                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>
                       التاريخ
                     </th>
                     <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>
@@ -275,16 +269,6 @@ export default function DashboardPage() {
                         <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
                           {estimate.vehicle_year}
                         </div>
-                      </td>
-
-                      {/* Damages Count */}
-                      <td style={{ padding: '1rem 1.5rem', textAlign: 'center', color: '#111827', fontWeight: '600' }}>
-                        {countDamages(estimate.parts)}
-                      </td>
-
-                      {/* Cost */}
-                      <td style={{ padding: '1rem 1.5rem', textAlign: 'center', color: '#111827', fontWeight: '600' }}>
-                        {estimate.total_cost_max ? `${estimate.total_cost_max.toLocaleString()} ج.م` : '—'}
                       </td>
 
                       {/* Date */}

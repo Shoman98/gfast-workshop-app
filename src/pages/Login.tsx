@@ -5,29 +5,15 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const [workshopId, setWorkshopId] = useState('')
   const [pin, setPin] = useState('')
-  const [workshopName, setWorkshopName] = useState('')
-  const [location, setLocation] = useState('')
-  const [phone, setPhone] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-
-  const validatePhone = (phoneNum: string): boolean => {
-    const cleaned = phoneNum.replace(/[\s\-()]/g, '')
-    // Accept Egyptian phone numbers: 10-13 digits starting with 01 or 2001
-    return /^01[0-9]{8,10}$/.test(cleaned) || /^2001[0-9]{8,10}$/.test(cleaned)
-  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!workshopId || !pin || !workshopName || !location || !phone) {
-      setError('يرجى إدخال جميع البيانات')
-      return
-    }
-
-    if (!validatePhone(phone)) {
-      setError('رقم الهاتف غير صحيح (يجب أن يبدأ برقم 01)')
+    if (!workshopId || !pin) {
+      setError('يرجى إدخال رقم الورشة والرمز السري')
       return
     }
 
@@ -37,13 +23,7 @@ export default function LoginPage() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workshop_id: workshopId,
-          pin,
-          workshop_name: workshopName,
-          location,
-          phone,
-        }),
+        body: JSON.stringify({ workshop_id: workshopId, pin }),
       })
 
       const data = await response.json()
@@ -61,6 +41,16 @@ export default function LoginPage() {
       setError((err as Error).message)
       setLoading(false)
     }
+  }
+
+  const inputStyle = {
+    width: '100%',
+    padding: '0.75rem 1rem',
+    border: '2px solid #d1d5db',
+    borderRadius: '0.5rem',
+    textAlign: 'right' as const,
+    fontSize: '1.125rem',
+    outline: 'none',
   }
 
   return (
@@ -82,17 +72,12 @@ export default function LoginPage() {
         padding: '2rem',
       }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <h1 style={{
-            fontSize: '3rem',
-            fontWeight: 'bold',
-            color: '#2563eb',
-            marginBottom: '0.5rem',
-          }}>جي-فاست</h1>
-          <p style={{
-            color: '#4b5563',
-            fontSize: '1.125rem',
-            fontWeight: '500',
-          }}>منصة تقييم أضرار المركبات</p>
+          <h1 style={{ fontSize: '3rem', fontWeight: 'bold', color: '#2563eb', marginBottom: '0.5rem' }}>
+            جي-فاست
+          </h1>
+          <p style={{ color: '#4b5563', fontSize: '1.125rem', fontWeight: '500' }}>
+            منصة تقييم أضرار المركبات
+          </p>
         </div>
 
         {error && (
@@ -112,44 +97,23 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
-            <label style={{
-              display: 'block',
-              fontSize: '0.875rem',
-              fontWeight: 'bold',
-              color: '#374151',
-              marginBottom: '0.5rem',
-            }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>
               رقم الورشة
             </label>
             <input
               type="text"
               value={workshopId}
               onChange={(e) => setWorkshopId(e.target.value)}
-              placeholder="مثال: test-workshop-1"
+              placeholder="مثال: WS-001"
               disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                border: '2px solid #d1d5db',
-                borderRadius: '0.5rem',
-                textAlign: 'right',
-                fontSize: '1.125rem',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
+              style={inputStyle}
               onFocus={(e) => e.target.style.borderColor = '#2563eb'}
               onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
             />
           </div>
 
           <div>
-            <label style={{
-              display: 'block',
-              fontSize: '0.875rem',
-              fontWeight: 'bold',
-              color: '#374151',
-              marginBottom: '0.5rem',
-            }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>
               الرمز السري
             </label>
             <input
@@ -158,109 +122,7 @@ export default function LoginPage() {
               onChange={(e) => setPin(e.target.value)}
               placeholder="••••"
               disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                border: '2px solid #d1d5db',
-                borderRadius: '0.5rem',
-                textAlign: 'right',
-                fontSize: '1.125rem',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#2563eb'}
-              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-            />
-          </div>
-
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: '0.875rem',
-              fontWeight: 'bold',
-              color: '#374151',
-              marginBottom: '0.5rem',
-            }}>
-              اسم الورشة
-            </label>
-            <input
-              type="text"
-              value={workshopName}
-              onChange={(e) => setWorkshopName(e.target.value)}
-              placeholder="مثال: ورشة محمد للسيارات"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                border: '2px solid #d1d5db',
-                borderRadius: '0.5rem',
-                textAlign: 'right',
-                fontSize: '1.125rem',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#2563eb'}
-              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-            />
-          </div>
-
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: '0.875rem',
-              fontWeight: 'bold',
-              color: '#374151',
-              marginBottom: '0.5rem',
-            }}>
-              العنوان
-            </label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="مثال: القاهرة، حي النيل"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                border: '2px solid #d1d5db',
-                borderRadius: '0.5rem',
-                textAlign: 'right',
-                fontSize: '1.125rem',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#2563eb'}
-              onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-            />
-          </div>
-
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: '0.875rem',
-              fontWeight: 'bold',
-              color: '#374151',
-              marginBottom: '0.5rem',
-            }}>
-              رقم الهاتف
-            </label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="مثال: 01001234567"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                border: '2px solid #d1d5db',
-                borderRadius: '0.5rem',
-                textAlign: 'right',
-                fontSize: '1.125rem',
-                outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
+              style={inputStyle}
               onFocus={(e) => e.target.style.borderColor = '#2563eb'}
               onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
             />
@@ -279,30 +141,15 @@ export default function LoginPage() {
               fontSize: '1.125rem',
               border: 'none',
               cursor: loading ? 'not-allowed' : 'pointer',
-              marginTop: '1.5rem',
-              transition: 'background-color 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              if (!loading) e.currentTarget.style.backgroundColor = '#1d4ed8'
-            }}
-            onMouseLeave={(e) => {
-              if (!loading) e.currentTarget.style.backgroundColor = '#2563eb'
+              marginTop: '0.5rem',
             }}
           >
             {loading ? '⏳ جاري التحميل...' : '🔐 دخول'}
           </button>
         </form>
 
-        <div style={{
-          marginTop: '2rem',
-          paddingTop: '1.5rem',
-          borderTop: '1px solid #e5e7eb',
-          textAlign: 'center',
-        }}>
-          <p style={{
-            fontSize: '0.75rem',
-            color: '#6b7280',
-          }}>جي-فاست • نسخة تجريبية 1.0</p>
+        <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>جي-فاست • نسخة تجريبية 1.0</p>
         </div>
       </div>
     </div>

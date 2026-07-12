@@ -3,18 +3,27 @@
  */
 
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { supabase } from '../db/supabase.js';
 import { generateToken, verifyToken } from '../middleware/auth.js';
 import bcrypt from 'bcrypt';
 
 const router = express.Router();
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'محاولات كثيرة. يرجى الانتظار 15 دقيقة والمحاولة مجددا' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 /**
  * POST /api/auth/login
  * Login with workshop_id + PIN
  * Returns JWT token for session management
  */
-router.post('/login', async (req, res, next) => {
+router.post('/login', loginLimiter, async (req, res, next) => {
   try {
     const { workshop_id, pin, workshop_name, location, phone } = req.body;
 
@@ -24,7 +33,7 @@ router.post('/login', async (req, res, next) => {
 
     // Fetch workshop from database
     const { data: workshop, error } = await supabase
-      .from('workshop_app.workshops')
+      .from('workshops')
       .select('*')
       .eq('workshop_id', workshop_id)
       .single();
@@ -49,7 +58,7 @@ router.post('/login', async (req, res, next) => {
     // Update workshop profile with user-provided data (if provided)
     if (workshop_name || location || phone) {
       const { error: updateError } = await supabase
-        .from('workshop_app.workshops')
+        .from('workshops')
         .update({
           ...(workshop_name && { workshop_name }),
           ...(location && { city: location }),
@@ -106,7 +115,7 @@ router.post('/validate-token', async (req, res, next) => {
 
     // Fetch workshop data
     const { data: workshop, error } = await supabase
-      .from('workshop_app.workshops')
+      .from('workshops')
       .select('*')
       .eq('workshop_id', decoded.workshop_id)
       .single();
@@ -127,6 +136,27 @@ router.post('/validate-token', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+/**
+ * POST /api/auth/refresh
+ * Refresh token if still valid — returns new 24h token
+ */
+router.post('/refresh', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
+  const token = authHeader.substring(7);
+  const decoded = verifyToken(token);
+
+  if (!decoded) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+
+  const newToken = generateToken(decoded.workshop_id);
+  res.json({ success: true, token: newToken });
 });
 
 export default router;

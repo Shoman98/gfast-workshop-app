@@ -11,10 +11,19 @@ import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import estimateRoutes from './routes/estimates.js';
 // Use SHARED module from wreck-vision - SINGLE SOURCE OF TRUTH
-import { runAnalysisPipeline, enrichDamageData } from '@gfast/analysis-core';
+import pkg from '@gfast/analysis-core';
+const { runAnalysisPipeline, enrichDamageData, PARTS_DATABASE, DAMAGE_TYPE_INDEX, PART_NAME_ALIASES } = pkg;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
+
+// CRITICAL: Override GEMINI_API_KEY to use workshop app's key, not wreck-vision's
+// The shared module (@gfast/analysis-core) reads process.env.GEMINI_API_KEY
+// We need to ensure it uses the workshop app's key for Gemini calls
+if (process.env.WORKSHOP_GEMINI_API_KEY) {
+  process.env.GEMINI_API_KEY = process.env.WORKSHOP_GEMINI_API_KEY;
+  console.log(`🔑 Configured Gemini API key for workshop app`);
+}
 
 const app = express();
 const PORT = 3333;  // Workshop app runs on 3333, wreck-vision on 3002
@@ -29,9 +38,6 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-// Import PARTS_DATABASE and DAMAGE_TYPE_INDEX from shared module
-import { PARTS_DATABASE, DAMAGE_TYPE_INDEX } from '@gfast/analysis-core';
 
 // Transform and enrich analysis with PARTS_DATABASE lookup, severity mapping, LEFT/RIGHT rules
 // Handles both Gemini format (part_name_en, damage_type) and shared module format (partName, damageType)
@@ -54,22 +60,24 @@ function enrichAnalysisWithParts(analysisData, vehicleInfo) {
       .replace(/_+/g, '_')
       .replace(/^_+|_+$/g, '');
 
-    const partInfo = PARTS_DATABASE[partKey] || {};
+    // Use shared alias map from @gfast/analysis-core — same as wreck-vision
+    const resolvedKey = PART_NAME_ALIASES[partKey] || partKey;
+    const partInfo = PARTS_DATABASE[resolvedKey] || {};
     const damageTypeLower = damageType.toLowerCase();
     const damageIndex = DAMAGE_TYPE_MAP[damageTypeLower] !== undefined ? DAMAGE_TYPE_MAP[damageTypeLower] : 5;
 
     return {
       part_name_en: partInfo.nameEn || partNameEn || 'Unknown Part',
-      part_name_ar: partInfo.nameAr || partNameAr || 'قطعة غير معروفة',
+      part_name_ar: partInfo.nameAr || partNameAr || null,
       damage_type: damageType || 'unknown',
       description: part.description || part.visualEvidence || '',
-      confidence: (part.confidence || 0.5) / 100,  // Convert 98 → 0.98, or keep 0.65 as-is
+      confidence: (part.confidence > 1 ? part.confidence / 100 : part.confidence) || 0.5,
       severity_label: damageIndex < 4 ? 'Repair' : 'Replace',
-      price: partInfo.price || 0,
+      price: 0,
       partId: partInfo.partId || null,
       category: partInfo.category || 'exterior',
       is_ai_detected: part.is_ai_detected !== false,
-      isUnmapped: !PARTS_DATABASE[partKey],
+      isUnmapped: !PARTS_DATABASE[resolvedKey],
       reason_for_uncertainty: part.reason_for_uncertainty,
       // Additional fields from shared module (if present)
       location: part.location,
@@ -77,9 +85,45 @@ function enrichAnalysisWithParts(analysisData, vehicleInfo) {
     };
   }
 
+  // The shared module merges needs_check into damages with recommendedDecision: 'inspect'
+  // Split them back into two separate arrays
+  const allParts = analysisData.damages || [];
+  const confirmedDamages = allParts.filter(p => p.recommendedDecision !== 'inspect');
+  const needsCheckFromShared = allParts.filter(p => p.recommendedDecision === 'inspect');
+
+  // Also include any explicit needs_check_parts if present
+  const explicitNeedsCheck = analysisData.needs_check_parts || [];
+  const allNeedsCheck = [...needsCheckFromShared, ...explicitNeedsCheck];
+
+  console.log(`🔍 Split: ${confirmedDamages.length} confirmed damages, ${allNeedsCheck.length} needs_check (from recommendedDecision:inspect)`);
+
+  // Deduplicate by part_name_en — keep highest confidence when same part appears multiple times
+  function deduplicateByName(parts) {
+    const seen = new Map();
+    for (const part of parts) {
+      const key = (part.part_name_en || part.partName || '').toLowerCase().trim();
+      if (!seen.has(key) || part.confidence > seen.get(key).confidence) {
+        seen.set(key, part);
+      }
+    }
+    return Array.from(seen.values());
+  }
+
+  const isMapped = (part) => !part.isUnmapped && part.part_name_ar && part.part_name_ar !== 'قطعة غير معروفة';
+
+  const enrichedDamages = deduplicateByName(confirmedDamages)
+    .map(enrichPart)
+    .filter(isMapped);
+
+  const enrichedNeedsCheck = deduplicateByName(allNeedsCheck)
+    .map(enrichPart)
+    .filter(isMapped);
+
+  console.log(`✅ After dedup: ${enrichedDamages.length} damages, ${enrichedNeedsCheck.length} needs_check`);
+
   return {
-    damages: (analysisData.damages || []).map(enrichPart),
-    needs_check_parts: (analysisData.needs_check_parts || []).map(enrichPart),
+    damages: enrichedDamages,
+    needs_check_parts: enrichedNeedsCheck,
     vehicleInfo,
     timestamp: new Date().toISOString(),
     analysisSource: '@gfast/analysis-core (shared module)'
@@ -118,11 +162,16 @@ app.post('/api/analysis', async (req, res, next) => {
 
     console.log(`✅ 4-Stage analysis complete: ${analysisData.damages?.length || 0} damages found, ${analysisData.needs_check_parts?.length || 0} needs_check`);
 
-    // DEBUG: Show raw response structure
-    if (analysisData.damages && analysisData.damages.length > 0) {
-      console.log(`🔍 DEBUG - First damage part keys: ${Object.keys(analysisData.damages[0]).join(', ')}`);
-      console.log(`🔍 DEBUG - First damage sample:`, JSON.stringify(analysisData.damages[0], null, 2).substring(0, 200));
-    }
+    // DEBUG: Show raw response structure BEFORE filtering
+    console.log(`\n🔍 RAW GEMINI RESPONSE (BEFORE enrichment/filtering):`);
+    console.log(`   DAMAGES (${analysisData.damages?.length || 0}):`);
+    (analysisData.damages || []).slice(0, 3).forEach((d, i) => {
+      console.log(`     [${i}] ${d.partName || d.part_name_en} - confidence: ${d.confidence} (${typeof d.confidence})`);
+    });
+    console.log(`   NEEDS_CHECK (${analysisData.needs_check_parts?.length || 0}):`);
+    (analysisData.needs_check_parts || []).slice(0, 3).forEach((nc, i) => {
+      console.log(`     [${i}] ${nc.partName || nc.part_name_en} - confidence: ${nc.confidence} (${typeof nc.confidence})`);
+    });
 
     // Transform Gemini output to workshop format with PARTS_DATABASE enrichment
     // Apply: severity mapping, LEFT/RIGHT rules, part database lookup, pricing

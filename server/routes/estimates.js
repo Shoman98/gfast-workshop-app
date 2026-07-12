@@ -19,7 +19,7 @@ router.get('/', authenticate, async (req, res, next) => {
     const { status } = req.query; // Optional filter by status
 
     let query = supabase
-      .from('workshop_app.estimates')
+      .from('estimates')
       .select(`
         *,
         estimate_parts:estimate_parts(*)
@@ -55,11 +55,10 @@ router.get('/:estimateId', authenticate, async (req, res, next) => {
     const workshopId = req.workshop_id;
 
     const { data: estimate, error } = await supabase
-      .from('workshop_app.estimates')
+      .from('estimates')
       .select(`
         *,
-        estimate_parts:estimate_parts(*),
-        estimate_edits:estimate_edits(*)
+        estimate_parts:estimate_parts(*)
       `)
       .eq('estimate_id', estimateId)
       .eq('workshop_id', workshopId)
@@ -128,7 +127,7 @@ router.post('/', authenticate, async (req, res, next) => {
     }
 
     const { data: estimate, error: estimateError } = await supabase
-      .from('workshop_app.estimates')
+      .from('estimates')
       .insert(estimateData)
       .select()
       .single();
@@ -156,7 +155,7 @@ router.post('/', authenticate, async (req, res, next) => {
       });
 
       const { error: partsError } = await supabase
-        .from('workshop_app.estimate_parts')
+        .from('estimate_parts')
         .insert(partsData);
 
       if (partsError) {
@@ -188,7 +187,7 @@ router.put('/:estimateId/part/:partId', authenticate, async (req, res, next) => 
 
     // Verify estimate belongs to workshop
     const { data: estimate, error: checkError } = await supabase
-      .from('workshop_app.estimates')
+      .from('estimates')
       .select('estimate_id')
       .eq('estimate_id', estimateId)
       .eq('workshop_id', workshopId)
@@ -206,7 +205,7 @@ router.put('/:estimateId/part/:partId', authenticate, async (req, res, next) => 
     updateData.edited_at = new Date().toISOString();
 
     const { data: updated, error } = await supabase
-      .from('workshop_app.estimate_parts')
+      .from('estimate_parts')
       .update(updateData)
       .eq('estimate_part_id', partId)
       .select()
@@ -235,7 +234,7 @@ router.delete('/:estimateId/part/:partId', authenticate, async (req, res, next) 
 
     // Verify estimate belongs to workshop
     const { data: estimate } = await supabase
-      .from('workshop_app.estimates')
+      .from('estimates')
       .select('estimate_id')
       .eq('estimate_id', estimateId)
       .eq('workshop_id', workshopId)
@@ -247,7 +246,7 @@ router.delete('/:estimateId/part/:partId', authenticate, async (req, res, next) 
 
     // Delete part
     const { error } = await supabase
-      .from('workshop_app.estimate_parts')
+      .from('estimate_parts')
       .delete()
       .eq('estimate_part_id', partId);
 
@@ -273,7 +272,7 @@ router.post('/:estimateId/confirm', authenticate, async (req, res, next) => {
 
     // Verify estimate belongs to workshop
     const { data: estimate, error: checkError } = await supabase
-      .from('workshop_app.estimates')
+      .from('estimates')
       .select('*')
       .eq('estimate_id', estimateId)
       .eq('workshop_id', workshopId)
@@ -285,7 +284,7 @@ router.post('/:estimateId/confirm', authenticate, async (req, res, next) => {
 
     // Calculate totals from parts
     const { data: parts } = await supabase
-      .from('workshop_app.estimate_parts')
+      .from('estimate_parts')
       .select('price')
       .eq('estimate_id', estimateId);
 
@@ -293,7 +292,7 @@ router.post('/:estimateId/confirm', authenticate, async (req, res, next) => {
 
     // Confirm estimate
     const { data: confirmed, error } = await supabase
-      .from('workshop_app.estimates')
+      .from('estimates')
       .update({
         status: 'confirmed',
         confirmed_at: new Date().toISOString(),
@@ -350,7 +349,7 @@ router.post('/:estimateId/audit-logs', authenticate, async (req, res, next) => {
     };
 
     const { data: log, error } = await supabase
-      .from('workshop_app.estimate_audit_logs')
+      .from('estimate_audit_logs')
       .insert([logEntry]);
 
     if (error) {
@@ -378,7 +377,7 @@ router.get('/:estimateId/audit-logs', authenticate, async (req, res, next) => {
     const workshopId = req.workshop_id;
 
     const { data: logs, error } = await supabase
-      .from('workshop_app.estimate_audit_logs')
+      .from('estimate_audit_logs')
       .select('*')
       .eq('estimate_id', estimateId)
       .eq('workshop_id', workshopId)
@@ -409,7 +408,7 @@ router.get('/:estimateId/export', authenticate, async (req, res, next) => {
     const workshopId = req.workshop_id;
 
     const { data: estimate, error } = await supabase
-      .from('workshop_app.estimates')
+      .from('estimates')
       .select(`
         *,
         estimate_parts:estimate_parts(*)

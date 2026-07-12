@@ -13,7 +13,7 @@ export function generateToken(workshopId) {
   return jwt.sign(
     { workshop_id: workshopId },
     JWT_SECRET,
-    { expiresIn: '24h' }
+    { expiresIn: '8h' }
   );
 }
 

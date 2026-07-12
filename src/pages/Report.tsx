@@ -85,7 +85,9 @@ export default function ReportPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const replaceParts = report?.estimate_parts?.filter((p) => p.severity_label === 'Replace') || report?.parts?.filter((p) => p.severity_label === 'Replace') || []
+  const allParts = report?.estimate_parts || report?.parts || []
+  const replaceParts = allParts.filter((p) => p.severity_label === 'Replace')
+  const repairParts = allParts.filter((p) => p.severity_label === 'Repair')
   const laborCosts = report?.estimate_labors?.filter((l) => (l.price || 0) > 0) || report?.labors?.filter((l) => (l.price || 0) > 0) || []
 
   if (report) {
@@ -101,7 +103,8 @@ export default function ReportPage() {
   }
 
   const totalPartsCost = replaceParts.reduce((sum, p) => sum + (p.price || 0), 0)
-  const totalLaborCost = laborCosts.reduce((sum, l) => sum + (l.price || 0), 0)
+  const totalRepairLaborCost = repairParts.reduce((sum, p) => sum + (p.price || 0), 0)
+  const totalLaborCost = laborCosts.reduce((sum, l) => sum + (l.price || 0), 0) + totalRepairLaborCost
   const totalCost = totalPartsCost + totalLaborCost
 
   const formatDate = (dateStr: string) => {
@@ -269,7 +272,7 @@ export default function ReportPage() {
               وصف الأعمال
             </h3>
 
-            {laborCosts.length > 0 ? (
+            {(laborCosts.length > 0 || repairParts.length > 0) ? (
               <>
                 <table style={{ width: '100%', fontSize: '0.9rem', borderCollapse: 'collapse', marginBottom: '1rem' }}>
                   <thead>
@@ -286,6 +289,22 @@ export default function ReportPage() {
                         <td style={{ padding: '0.75rem', textAlign: 'right', color: '#111827' }}>{labor.labor_name_ar}</td>
                         <td style={{ padding: '0.75rem', textAlign: 'center', color: '#111827', fontWeight: '600' }}>
                           {labor.price?.toLocaleString()} ج.م
+                        </td>
+                      </tr>
+                    ))}
+                    {repairParts.length > 0 && (
+                      <tr>
+                        <td colSpan={3} style={{ padding: '0.5rem 0.75rem', backgroundColor: '#f3f4f6', fontWeight: 'bold', color: '#1e3a8a', fontSize: '0.85rem', borderTop: '2px solid #1e3a8a' }}>
+                          أعمال إصلاح القطع
+                        </td>
+                      </tr>
+                    )}
+                    {repairParts.map((part, idx) => (
+                      <tr key={`repair-${idx}`} style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
+                        <td style={{ padding: '0.75rem', textAlign: 'center', color: '#6b7280' }}>{laborCosts.length + idx + 1}</td>
+                        <td style={{ padding: '0.75rem', textAlign: 'right', color: '#111827' }}>{part.part_name_ar}</td>
+                        <td style={{ padding: '0.75rem', textAlign: 'center', color: '#111827', fontWeight: '600' }}>
+                          {(part.price || 0).toLocaleString()} ج.م
                         </td>
                       </tr>
                     ))}

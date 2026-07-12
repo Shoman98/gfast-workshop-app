@@ -29,36 +29,6 @@ export default function AnalysisPage() {
     }
   }
 
-  const compressImage = async (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const img = new Image()
-        img.onload = () => {
-          const canvas = document.createElement('canvas')
-          let { width, height } = img
-          if (width > height) {
-            if (width > 1024) {
-              height = Math.round((height * 1024) / width)
-              width = 1024
-            }
-          } else {
-            if (height > 1024) {
-              width = Math.round((width * 1024) / height)
-              height = 1024
-            }
-          }
-          canvas.width = width
-          canvas.height = height
-          const ctx = canvas.getContext('2d')!
-          ctx.drawImage(img, 0, 0, width, height)
-          resolve(canvas.toDataURL('image/jpeg', 0.65))
-        }
-        img.src = e.target?.result as string
-      }
-      reader.readAsDataURL(file)
-    })
-  }
 
   const handleAnalyze = async () => {
     setError('')
@@ -79,11 +49,20 @@ export default function AnalysisPage() {
 
     try {
       const allImages = [...generalImages, ...damageImages]
-      const compressedImages: string[] = []
+      const rawImages: string[] = []
 
+      // Send raw images (no frontend compression)
+      // Backend shared module handles compression for Gemini
       for (const file of allImages) {
-        const compressed = await compressImage(file)
-        compressedImages.push(compressed.split(',')[1])
+        const reader = new FileReader()
+        const base64 = await new Promise<string>((resolve) => {
+          reader.onload = (e) => {
+            const result = e.target?.result as string
+            resolve(result.split(',')[1])
+          }
+          reader.readAsDataURL(file)
+        })
+        rawImages.push(base64)
       }
 
       const token = localStorage.getItem('token')
@@ -100,7 +79,7 @@ export default function AnalysisPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          images: compressedImages,
+          images: rawImages,
           vehicleInfo: {
             year: parseInt(year),
             make,

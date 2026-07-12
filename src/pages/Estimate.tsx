@@ -54,6 +54,7 @@ export default function EstimatePage() {
   const [labors, setLabors] = useState<Labor[]>(fixedLabors)
   const [estimateStatus, setEstimateStatus] = useState<'draft' | 'confirmed'>('draft')
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [showRemoveDialog, setShowRemoveDialog] = useState<{ index: number; partName: string } | null>(null)
   const [vehicleInfo, setVehicleInfo] = useState({ year: 0, make: '', model: '' })
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
@@ -67,8 +68,9 @@ export default function EstimatePage() {
           damages: analysis.damages?.length || 0,
           needs_check: analysis.needs_check_parts?.length || 0
         });
-        setParts(analysis.damages || [])
-        setNeedsCheckParts(analysis.needs_check_parts || [])
+        const isMapped = (p: any) => p.part_name_ar && p.part_name_ar !== 'قطعة غير معروفة'
+        setParts((analysis.damages || []).filter(isMapped))
+        setNeedsCheckParts((analysis.needs_check_parts || []).filter(isMapped))
         sessionStorage.removeItem('analysisResult')
       }
       if (vehicleData) {
@@ -156,10 +158,17 @@ export default function EstimatePage() {
 
   const removePart = (index: number) => {
     if (estimateStatus === 'confirmed') return
+    const part = parts[index]
+    setShowRemoveDialog({ index, partName: part.part_name_ar })
+  }
 
+  const confirmRemovePart = () => {
+    if (!showRemoveDialog) return
+    const { index } = showRemoveDialog
     const part = parts[index]
     setParts(parts.filter((_, i) => i !== index))
     logAudit('remove_part', `تم حذف القطعة: ${part.part_name_ar}`, undefined, JSON.stringify(part))
+    setShowRemoveDialog(null)
   }
 
   const approveNeedsCheckPart = (index: number) => {
@@ -624,25 +633,12 @@ export default function EstimatePage() {
             border: '2px solid #e5e7eb',
           }}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>إضافة جزء جديد</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
               <input
                 type="text"
                 placeholder="الجزء (عربي)"
                 value={newPart.part_name_ar}
                 onChange={(e) => setNewPart({ ...newPart, part_name_ar: e.target.value })}
-                style={{
-                  padding: '0.75rem 1rem',
-                  border: '2px solid #d1d5db',
-                  borderRadius: '0.5rem',
-                  textAlign: 'right',
-                  outline: 'none',
-                }}
-              />
-              <input
-                type="text"
-                placeholder="نوع الضرر"
-                value={newPart.damage_type}
-                onChange={(e) => setNewPart({ ...newPart, damage_type: e.target.value })}
                 style={{
                   padding: '0.75rem 1rem',
                   border: '2px solid #d1d5db',
@@ -746,6 +742,23 @@ export default function EstimatePage() {
                       </td>
                     </tr>
                   ))}
+                  {/* Divider + Repair Parts */}
+                  {parts.filter(p => p.severity_label === 'Repair').length > 0 && (
+                    <tr>
+                      <td colSpan={3} style={{ padding: '0.5rem 0.75rem', backgroundColor: '#fde68a', fontWeight: 'bold', color: '#92400e', fontSize: '0.85rem' }}>
+                        أعمال إصلاح القطع
+                      </td>
+                    </tr>
+                  )}
+                  {parts.filter(p => p.severity_label === 'Repair').map((part, idx) => (
+                    <tr key={`repair-${idx}`} style={{ borderBottom: '1px solid #fde68a', backgroundColor: '#fffbeb' }}>
+                      <td style={{ padding: '0.75rem', textAlign: 'center', color: '#92400e' }}>{labors.length + idx + 1}</td>
+                      <td style={{ padding: '0.75rem', color: '#111827' }}>{part.part_name_ar}</td>
+                      <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#111827' }}>
+                        {(part.price || 0).toLocaleString()} ج.م
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
               <div style={{
@@ -758,7 +771,10 @@ export default function EstimatePage() {
                 textAlign: 'right',
                 borderTop: '2px solid #f59e0b',
               }}>
-                إجمالي تكلفة الأعمال: {labors.reduce((sum, l) => sum + (l.price || 0), 0).toLocaleString()} ج.م
+                إجمالي تكلفة الأعمال: {(
+                  labors.reduce((sum, l) => sum + (l.price || 0), 0) +
+                  parts.filter(p => p.severity_label === 'Repair').reduce((sum, p) => sum + (p.price || 0), 0)
+                ).toLocaleString()} ج.م
               </div>
             </div>
           </div>
@@ -828,6 +844,67 @@ export default function EstimatePage() {
               ← إلغاء
             </button>
           </div>
+
+          {/* Remove Part Confirmation Dialog */}
+          {showRemoveDialog && (
+            <div style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 50,
+            }}>
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '0.75rem',
+                padding: '2rem',
+                maxWidth: '400px',
+                width: '90%',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+              }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem', color: '#111827' }}>
+                  تأكيد الحذف
+                </h3>
+                <p style={{ color: '#6b7280', marginBottom: '2rem', lineHeight: 1.6 }}>
+                  هل أنت متأكد من حذف <strong style={{ color: '#dc2626' }}>{showRemoveDialog.partName}</strong>؟ لا يمكن التراجع عن هذا الإجراء.
+                </p>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <button
+                    onClick={confirmRemovePart}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: '#dc2626',
+                      color: 'white',
+                      borderRadius: '0.5rem',
+                      fontWeight: 'bold',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    حذف
+                  </button>
+                  <button
+                    onClick={() => setShowRemoveDialog(null)}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem 1.5rem',
+                      backgroundColor: 'white',
+                      color: '#6b7280',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '0.5rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Confirmation Dialog */}
           {showConfirmDialog && (
