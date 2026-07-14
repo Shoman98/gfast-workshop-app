@@ -38,6 +38,9 @@ router.post('/login', loginLimiter, async (req, res, next) => {
       .eq('workshop_id', workshop_id)
       .single();
 
+    console.log(`🔍 Supabase query result: data=${JSON.stringify(workshop)}, error=${JSON.stringify(error)}`);
+    console.log(`🔍 SUPABASE_URL=${process.env.SUPABASE_URL}`);
+
     if (error || !workshop) {
       console.log(`❌ Login failed: Workshop ${workshop_id} not found. Supabase error: ${JSON.stringify(error)}`);
       return res.status(401).json({ error: 'Invalid workshop_id or PIN' });
