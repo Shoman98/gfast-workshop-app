@@ -424,91 +424,55 @@ export default function EstimatePage() {
             </div>
           )}
 
-          {/* Parts Table */}
+          {/* Parts Cards */}
           <div style={{ marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>قائمة الأجزاء</h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#111827' }}>قائمة الأجزاء</h2>
 
             {parts.length > 0 ? (
-              <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
-                <table style={{ width: '100%', textAlign: 'right' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #d1d5db', backgroundColor: '#f9fafb' }}>
-                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>الجزء</th>
-                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>الحالة</th>
-                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151' }}>السعر</th>
-                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>حذف</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parts.map((part, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                        <td style={{ padding: '1rem 1.5rem' }}>
-                          <div style={{ fontWeight: '600', color: '#111827' }}>{part.part_name_ar}</div>
-                          {part.confidence && (
-                            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                              {Math.round(part.confidence * 100)}% ثقة
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ padding: '1rem 1.5rem' }}>
-                          <select
-                            value={part.severity_label}
-                            onChange={(e) =>
-                              updatePart(idx, 'severity_label', e.target.value as any)
-                            }
-                            style={{
-                              width: '100%',
-                              padding: '0.5rem 0.75rem',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '0.375rem',
-                              textAlign: 'right',
-                              outline: 'none',
-                            }}
-                          >
-                            <option value="Repair">إصلاح</option>
-                            <option value="Replace">استبدال</option>
-                          </select>
-                        </td>
-                        <td style={{ padding: '1rem 1.5rem' }}>
-                          <input
-                            type="number"
-                            value={part.price}
-                            onChange={(e) =>
-                              updatePart(idx, 'price', parseFloat(e.target.value) || 0)
-                            }
-                            disabled={estimateStatus === 'confirmed'}
-                            style={{
-                              width: '100%',
-                              padding: '0.5rem 0.75rem',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '0.375rem',
-                              textAlign: 'right',
-                              outline: 'none',
-                              opacity: estimateStatus === 'confirmed' ? 0.6 : 1,
-                              cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'text',
-                            }}
-                          />
-                        </td>
-                        <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                          <button
-                            onClick={() => removePart(idx)}
-                            disabled={estimateStatus === 'confirmed'}
-                            style={{
-                              color: '#dc2626',
-                              fontWeight: 'bold',
-                              background: 'none',
-                              border: 'none',
-                              cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
-                              opacity: estimateStatus === 'confirmed' ? 0.5 : 1,
-                            }}
-                          >
-                            ❌
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                {parts.map((part, idx) => (
+                  <div key={idx} style={{
+                    backgroundColor: '#f9fafb',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '0.5rem',
+                    padding: '0.75rem 1rem',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                      <button
+                        onClick={() => removePart(idx)}
+                        disabled={estimateStatus === 'confirmed'}
+                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', padding: 0 }}
+                      >❌</button>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontWeight: '600', color: '#111827', fontSize: '0.95rem' }}>{part.part_name_ar}</div>
+                        {part.confidence && (
+                          <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>{Math.round(part.confidence * 100)}% ثقة</div>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                      <select
+                        value={part.severity_label}
+                        onChange={(e) => updatePart(idx, 'severity_label', e.target.value as any)}
+                        disabled={estimateStatus === 'confirmed'}
+                        style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', textAlign: 'right', fontSize: '0.875rem' }}
+                      >
+                        <option value="Repair">إصلاح</option>
+                        <option value="Replace">استبدال</option>
+                      </select>
+                      <input
+                        type="number"
+                        value={part.price || ''}
+                        placeholder="السعر"
+                        onChange={(e) => updatePart(idx, 'price', Math.max(0, parseFloat(e.target.value) || 0))}
+                        disabled={estimateStatus === 'confirmed'}
+                        min="0"
+                        max="9999999"
+                        style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', textAlign: 'right', fontSize: '0.875rem' }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
@@ -561,79 +525,42 @@ export default function EstimatePage() {
               <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#dc2626' }}>
                 قائمة الأجزاء المحتاجة للفحص
               </h2>
-              <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
-                <table style={{ width: '100%', textAlign: 'right' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #fecaca', backgroundColor: '#fee2e2' }}>
-                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#991b1b' }}>الجزء</th>
-                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#991b1b' }}>الحالة المقترحة</th>
-                      <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#991b1b' }}>الإجراء</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {needsCheckParts.map((part, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid #fecaca', backgroundColor: '#fef2f2' }}>
-                        <td style={{ padding: '1rem 1.5rem' }}>
-                          <div style={{ fontWeight: '600', color: '#991b1b' }}>{part.part_name_ar}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#dc2626', marginTop: '0.25rem' }}>
-                            {Math.round(part.confidence * 100)}% ثقة (منخفضة)
-                          </div>
-                        </td>
-                        <td style={{ padding: '1rem 1.5rem' }}>
-                          <span style={{
-                            display: 'inline-block',
-                            padding: '0.375rem 0.75rem',
-                            backgroundColor: part.severity_label === 'Repair' ? '#dbeafe' : '#fee2e2',
-                            color: part.severity_label === 'Repair' ? '#1e40af' : '#991b1b',
-                            borderRadius: '0.375rem',
-                            fontWeight: '600',
-                            fontSize: '0.875rem',
-                          }}>
-                            {part.severity_label === 'Repair' ? 'إصلاح' : 'استبدال'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '1rem 1.5rem' }}>
-                          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-                            <button
-                              onClick={() => approveNeedsCheckPart(idx)}
-                              disabled={estimateStatus === 'confirmed'}
-                              style={{
-                                padding: '0.5rem 1rem',
-                                backgroundColor: '#10b981',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '0.375rem',
-                                fontWeight: '600',
-                                cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
-                                opacity: estimateStatus === 'confirmed' ? 0.5 : 1,
-                              }}
-                              title="إضافة إلى الأجزاء المؤكدة"
-                            >
-                              ✅ موافق
-                            </button>
-                            <button
-                              onClick={() => rejectNeedsCheckPart(idx)}
-                              disabled={estimateStatus === 'confirmed'}
-                              style={{
-                                padding: '0.5rem 1rem',
-                                backgroundColor: '#6b7280',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '0.375rem',
-                                fontWeight: '600',
-                                cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
-                                opacity: estimateStatus === 'confirmed' ? 0.5 : 1,
-                              }}
-                              title="رفض هذا الجزء"
-                            >
-                              ❌ رفض
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                {needsCheckParts.map((part, idx) => (
+                  <div key={idx} style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.5rem', padding: '0.75rem 1rem' }}>
+                    <div style={{ textAlign: 'right', marginBottom: '0.5rem' }}>
+                      <div style={{ fontWeight: '600', color: '#991b1b', fontSize: '0.95rem' }}>{part.part_name_ar}</div>
+                      <div style={{ fontSize: '0.7rem', color: '#dc2626' }}>{Math.round(part.confidence * 100)}% ثقة (منخفضة)</div>
+                      {part.reason_for_uncertainty && (
+                        <div style={{ fontSize: '0.7rem', color: '#b91c1c', marginTop: '0.25rem' }}>{part.reason_for_uncertainty}</div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          onClick={() => approveNeedsCheckPart(idx)}
+                          disabled={estimateStatus === 'confirmed'}
+                          style={{ padding: '0.5rem 0.875rem', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '0.375rem', fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer' }}
+                        >✅ موافق</button>
+                        <button
+                          onClick={() => rejectNeedsCheckPart(idx)}
+                          disabled={estimateStatus === 'confirmed'}
+                          style={{ padding: '0.5rem 0.875rem', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '0.375rem', fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer' }}
+                        >❌ رفض</button>
+                      </div>
+                      <span style={{
+                        padding: '0.25rem 0.625rem',
+                        backgroundColor: part.severity_label === 'Repair' ? '#dbeafe' : '#fee2e2',
+                        color: part.severity_label === 'Repair' ? '#1e40af' : '#991b1b',
+                        borderRadius: '0.375rem',
+                        fontWeight: '600',
+                        fontSize: '0.8rem',
+                      }}>
+                        {part.severity_label === 'Repair' ? 'إصلاح' : 'استبدال'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -647,49 +574,33 @@ export default function EstimatePage() {
             border: '2px solid #e5e7eb',
           }}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>إضافة جزء جديد</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
               <input
                 type="text"
                 placeholder="الجزء (عربي)"
                 value={newPart.part_name_ar}
                 onChange={(e) => setNewPart({ ...newPart, part_name_ar: e.target.value })}
-                style={{
-                  padding: '0.75rem 1rem',
-                  border: '2px solid #d1d5db',
-                  borderRadius: '0.5rem',
-                  textAlign: 'right',
-                  outline: 'none',
-                }}
+                style={{ width: '100%', padding: '0.75rem 1rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', textAlign: 'right', outline: 'none', boxSizing: 'border-box' as const }}
               />
-              <select
-                value={newPart.severity_label}
-                onChange={(e) =>
-                  setNewPart({ ...newPart, severity_label: e.target.value as any })
-                }
-                style={{
-                  padding: '0.75rem 1rem',
-                  border: '2px solid #d1d5db',
-                  borderRadius: '0.5rem',
-                  textAlign: 'right',
-                  outline: 'none',
-                }}
-              >
-                <option value="Repair">إصلاح</option>
-                <option value="Replace">استبدال</option>
-              </select>
-              <input
-                type="number"
-                placeholder="السعر"
-                value={newPart.price}
-                onChange={(e) => setNewPart({ ...newPart, price: parseFloat(e.target.value) || 0 })}
-                style={{
-                  padding: '0.75rem 1rem',
-                  border: '2px solid #d1d5db',
-                  borderRadius: '0.5rem',
-                  textAlign: 'right',
-                  outline: 'none',
-                }}
-              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <select
+                  value={newPart.severity_label}
+                  onChange={(e) => setNewPart({ ...newPart, severity_label: e.target.value as any })}
+                  style={{ padding: '0.75rem 1rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', textAlign: 'right', outline: 'none' }}
+                >
+                  <option value="Repair">إصلاح</option>
+                  <option value="Replace">استبدال</option>
+                </select>
+                <input
+                  type="number"
+                  placeholder="السعر"
+                  value={newPart.price || ''}
+                  min="0"
+                  max="9999999"
+                  onChange={(e) => setNewPart({ ...newPart, price: Math.max(0, parseFloat(e.target.value) || 0) })}
+                  style={{ padding: '0.75rem 1rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', textAlign: 'right', outline: 'none' }}
+                />
+              </div>
             </div>
             <button
               onClick={addPart}
@@ -722,59 +633,45 @@ export default function EstimatePage() {
             </h3>
 
             <div style={{ marginBottom: '1.5rem' }}>
-              <table style={{ width: '100%', textAlign: 'right', marginBottom: '1rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #f59e0b' }}>
-                    <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#92400e' }}>م</th>
-                    <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#92400e' }}>وصف الأعمال</th>
-                    <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#92400e', textAlign: 'center' }}>التكلفة</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {labors.map((labor, idx) => (
-                    <tr key={labor.id || idx} style={{ borderBottom: '1px solid #fde68a' }}>
-                      <td style={{ padding: '0.75rem', textAlign: 'center' }}>{idx + 1}</td>
-                      <td style={{ padding: '0.75rem' }}>{labor.labor_name_ar}</td>
-                      <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                        <input
-                          type="number"
-                          value={labor.price || 0}
-                          onChange={(e) => updateLabor(idx, 'price', parseFloat(e.target.value) || 0)}
-                          disabled={estimateStatus === 'confirmed'}
-                          placeholder="0"
-                          min="0"
-                          style={{
-                            width: '120px',
-                            padding: '0.5rem',
-                            border: '1px solid #f59e0b',
-                            borderRadius: '0.375rem',
-                            textAlign: 'center',
-                            opacity: estimateStatus === 'confirmed' ? 0.6 : 1,
-                            cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'text',
-                          }}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                  {/* Divider + Repair Parts */}
-                  {parts.filter(p => p.severity_label === 'Repair').length > 0 && (
-                    <tr>
-                      <td colSpan={3} style={{ padding: '0.5rem 0.75rem', backgroundColor: '#fde68a', fontWeight: 'bold', color: '#92400e', fontSize: '0.85rem' }}>
-                        أعمال إصلاح القطع
-                      </td>
-                    </tr>
-                  )}
+              {/* Fixed labors */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                {labors.map((labor, idx) => (
+                  <div key={labor.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', borderBottom: '1px solid #fde68a' }}>
+                    <input
+                      type="number"
+                      value={labor.price || ''}
+                      onChange={(e) => updateLabor(idx, 'price', Math.max(0, parseFloat(e.target.value) || 0))}
+                      disabled={estimateStatus === 'confirmed'}
+                      placeholder="0"
+                      min="0"
+                      max="9999999"
+                      style={{
+                        width: '100px',
+                        padding: '0.5rem',
+                        border: '1px solid #f59e0b',
+                        borderRadius: '0.375rem',
+                        textAlign: 'center',
+                        fontSize: '0.875rem',
+                      }}
+                    />
+                    <span style={{ color: '#92400e', fontWeight: '500', fontSize: '0.875rem', textAlign: 'right' }}>{labor.labor_name_ar}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Repair Parts */}
+              {parts.filter(p => p.severity_label === 'Repair').length > 0 && (
+                <>
+                  <div style={{ padding: '0.4rem 0.75rem', backgroundColor: '#fde68a', fontWeight: 'bold', color: '#92400e', fontSize: '0.85rem', borderRadius: '0.25rem', marginBottom: '0.5rem' }}>
+                    أعمال إصلاح القطع
+                  </div>
                   {parts.filter(p => p.severity_label === 'Repair').map((part, idx) => (
-                    <tr key={`repair-${idx}`} style={{ borderBottom: '1px solid #fde68a', backgroundColor: '#fffbeb' }}>
-                      <td style={{ padding: '0.75rem', textAlign: 'center', color: '#92400e' }}>{labors.length + idx + 1}</td>
-                      <td style={{ padding: '0.75rem', color: '#111827' }}>{part.part_name_ar}</td>
-                      <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#111827' }}>
-                        {(part.price || 0).toLocaleString()} ج.م
-                      </td>
-                    </tr>
+                    <div key={`repair-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', borderBottom: '1px solid #fde68a', backgroundColor: '#fffbeb' }}>
+                      <span style={{ fontWeight: '600', color: '#111827', fontSize: '0.875rem' }}>{(part.price || 0).toLocaleString()} ج.م</span>
+                      <span style={{ color: '#111827', fontSize: '0.875rem', textAlign: 'right' }}>{part.part_name_ar}</span>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </>
+              )}
               <div style={{
                 padding: '0.75rem',
                 backgroundColor: '#fef3c7',

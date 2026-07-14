@@ -236,72 +236,48 @@ export default function DashboardPage() {
               </p>
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', textAlign: 'right', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #d1d5db', backgroundColor: '#f9fafb' }}>
-                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'right' }}>
-                      الماركة / الموديل / السنة
-                    </th>
-                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>
-                      التاريخ
-                    </th>
-                    <th style={{ padding: '1rem 1.5rem', fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>
-                      التقرير
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredEstimates.map((estimate) => (
-                    <tr
-                      key={estimate.estimate_id}
-                      style={{
-                        borderBottom: '1px solid #e5e7eb',
-                        transition: 'background-color 0.2s',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                      {/* Vehicle Info */}
-                      <td style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>
-                        <div style={{ fontWeight: '600', color: '#111827', fontSize: '0.95rem' }}>
-                          {estimate.vehicle_make} {estimate.vehicle_model}
-                        </div>
-                        <div style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                          {estimate.vehicle_year}
-                        </div>
-                      </td>
-
-                      {/* Date */}
-                      <td style={{ padding: '1rem 1.5rem', textAlign: 'center', color: '#6b7280', fontSize: '0.875rem' }}>
-                        {formatDate(estimate.created_at)}
-                      </td>
-
-                      {/* Report Hyperlink */}
-                      <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                        <button
-                          onClick={() => navigate(`/report/${estimate.estimate_id}`)}
-                          style={{
-                            padding: '0.5rem 1rem',
-                            backgroundColor: '#16a34a',
-                            color: 'white',
-                            borderRadius: '0.5rem',
-                            fontWeight: 'bold',
-                            fontSize: '0.875rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#15803d'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#16a34a'}
-                        >
-                          📄 تقرير
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {filteredEstimates.map((estimate) => (
+                <div
+                  key={estimate.estimate_id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '1rem',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '0.5rem',
+                    backgroundColor: '#f9fafb',
+                    direction: 'rtl',
+                  }}
+                >
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: '600', color: '#111827', fontSize: '0.95rem' }}>
+                      {estimate.vehicle_make} {estimate.vehicle_model}
+                    </div>
+                    <div style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '0.2rem' }}>
+                      {estimate.vehicle_year} • {formatDate(estimate.created_at)}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/report/${estimate.estimate_id}`)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#16a34a',
+                      color: 'white',
+                      borderRadius: '0.5rem',
+                      fontWeight: 'bold',
+                      fontSize: '0.875rem',
+                      border: 'none',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    📄 تقرير
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
