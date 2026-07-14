@@ -634,9 +634,9 @@ export default function EstimatePage() {
 
             <div style={{ marginBottom: '1.5rem' }}>
               {/* Fixed labors */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '0.75rem' }}>
                 {labors.map((labor, idx) => (
-                  <div key={labor.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', borderBottom: '1px solid #fde68a' }}>
+                  <div key={labor.id || idx} style={{ display: 'flex', alignItems: 'center', padding: '0.625rem 0.75rem', borderBottom: '1px solid #fde68a' }}>
                     <input
                       type="number"
                       value={labor.price || ''}
@@ -646,7 +646,8 @@ export default function EstimatePage() {
                       min="0"
                       max="9999999"
                       style={{
-                        width: '100px',
+                        width: '90px',
+                        flexShrink: 0,
                         padding: '0.5rem',
                         border: '1px solid #f59e0b',
                         borderRadius: '0.375rem',
@@ -654,7 +655,7 @@ export default function EstimatePage() {
                         fontSize: '0.875rem',
                       }}
                     />
-                    <span style={{ color: '#92400e', fontWeight: '500', fontSize: '0.875rem', textAlign: 'right' }}>{labor.labor_name_ar}</span>
+                    <span style={{ flex: 1, color: '#92400e', fontWeight: '500', fontSize: '0.875rem', textAlign: 'right', paddingRight: '0.75rem' }}>{labor.labor_name_ar}</span>
                   </div>
                 ))}
               </div>
