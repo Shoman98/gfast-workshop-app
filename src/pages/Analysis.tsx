@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { apiUrl } from '@/lib/api'
 
 export default function AnalysisPage() {
   const navigate = useNavigate()
@@ -72,7 +73,7 @@ export default function AnalysisPage() {
         return
       }
 
-      const response = await fetch('/api/analysis', {
+      const response = await fetch(apiUrl('/api/analysis'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { apiUrl } from '@/lib/api'
 
 interface ReportData {
   estimate_id: string
@@ -38,7 +39,7 @@ export default function ReportPage() {
       const token = localStorage.getItem('token')
 
       console.log('📄 Report: Loading estimate', estimateId)
-      const response = await fetch(`/api/estimates/${estimateId}`, {
+      const response = await fetch(apiUrl(`/api/estimates/${estimateId}`), {
         headers: { Authorization: `Bearer ${token}` },
       })
 

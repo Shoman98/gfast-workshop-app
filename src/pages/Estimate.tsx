@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { apiUrl } from '@/lib/api'
 
 interface Part {
   id?: string
@@ -96,7 +97,7 @@ export default function EstimatePage() {
       const loadAuditLogs = async () => {
         try {
           const token = localStorage.getItem('token')
-          const response = await fetch(`/api/estimates/${estimateId}/audit-logs`, {
+          const response = await fetch(apiUrl(`/api/estimates/${estimateId}/audit-logs`), {
             headers: { Authorization: `Bearer ${token}` },
           })
           if (response.ok) {
@@ -311,7 +312,7 @@ export default function EstimatePage() {
         })
         console.log('📡 Posting to /api/estimates')
 
-        const response = await fetch('/api/estimates', {
+        const response = await fetch(apiUrl('/api/estimates'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

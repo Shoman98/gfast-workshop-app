@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { apiUrl } from '@/lib/api'
 
 interface Estimate {
   estimate_id: string
@@ -53,7 +54,7 @@ export default function DashboardPage() {
     try {
       setLoading(true)
       console.log('🔄 Dashboard: Fetching /api/estimates')
-      const response = await fetch('/api/estimates', {
+      const response = await fetch(apiUrl('/api/estimates'), {
         headers: { Authorization: `Bearer ${token}` },
       })
 

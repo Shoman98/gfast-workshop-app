@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { apiUrl } from '@/lib/api'
 import LoginPage from '@/pages/Login'
 import DashboardPage from '@/pages/Dashboard'
 import AnalysisPage from '@/pages/Analysis'
@@ -20,7 +21,7 @@ function useTokenRefresh() {
 
         // Refresh if less than 2 hours remaining
         if (expiresIn < 2 * 60 * 60 * 1000) {
-          const res = await fetch('/api/auth/refresh', {
+          const res = await fetch(apiUrl('/api/auth/refresh'), {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` },
           })
