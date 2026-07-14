@@ -26,7 +26,7 @@ if (process.env.WORKSHOP_GEMINI_API_KEY) {
 }
 
 const app = express();
-const PORT = 3333;  // Workshop app runs on 3333, wreck-vision on 3002
+const PORT = process.env.PORT || 3333;
 
 // ============================================================================
 // MIDDLEWARE
