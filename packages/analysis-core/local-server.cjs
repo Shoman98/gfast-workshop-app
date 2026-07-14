@@ -5563,9 +5563,9 @@ app.use((_req, res) => {
 });
 
 // ============================================================================
-// START SERVER
+// START SERVER — only when run directly, not when imported as a module
 // ============================================================================
-app.listen(CONFIG.PORT, () => {
+if (require.main === module) app.listen(CONFIG.PORT, () => {
   console.log('\n' + '='.repeat(80));
   console.log('🚀 VEHICLE DAMAGE ANALYSIS SERVER - MULTI-IMAGE - READY');
   console.log('='.repeat(80));
