@@ -39,12 +39,15 @@ router.post('/login', loginLimiter, async (req, res, next) => {
       .single();
 
     if (error || !workshop) {
-      console.log(`❌ Login failed: Workshop ${workshop_id} not found`);
+      console.log(`❌ Login failed: Workshop ${workshop_id} not found. Supabase error: ${JSON.stringify(error)}`);
       return res.status(401).json({ error: 'Invalid workshop_id or PIN' });
     }
 
+    console.log(`✅ Workshop found: ${workshop.workshop_id}, is_active: ${workshop.is_active}, hash: ${workshop.pin_hash?.substring(0, 20)}`);
+
     // Verify PIN
     const isPinValid = await bcrypt.compare(pin, workshop.pin_hash);
+    console.log(`🔑 PIN valid: ${isPinValid}`);
     if (!isPinValid) {
       console.log(`❌ Login failed: Wrong PIN for workshop ${workshop_id}`);
       return res.status(401).json({ error: 'Invalid workshop_id or PIN' });
