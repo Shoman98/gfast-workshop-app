@@ -65,6 +65,21 @@ function enrichAnalysisWithParts(analysisData, vehicleInfo) {
     const partInfo = PARTS_DATABASE[resolvedKey] || {};
     const damageTypeLower = damageType.toLowerCase();
     const damageIndex = DAMAGE_TYPE_MAP[damageTypeLower] !== undefined ? DAMAGE_TYPE_MAP[damageTypeLower] : 5;
+    const partCategory = (partInfo.category || '').toLowerCase();
+
+    // Base rule: index < 4 → Repair, >= 4 → Replace
+    let severityLabel = damageIndex < 4 ? 'Repair' : 'Replace';
+
+    // Category overrides — same as wreck-vision enrichDamageData
+    const alwaysReplace = ['airbags_safety', 'interior', 'mechanical', 'suspension'];
+    const alwaysRepair  = ['structural', 'chassis', 'chassis_structure'];
+    if (alwaysReplace.includes(partCategory)) {
+      severityLabel = 'Replace';
+    } else if (alwaysRepair.includes(partCategory)) {
+      severityLabel = 'Repair';
+    } else if (damageTypeLower.includes('buckl')) {
+      severityLabel = 'Repair';
+    }
 
     return {
       part_name_en: partInfo.nameEn || partNameEn || 'Unknown Part',
@@ -72,7 +87,7 @@ function enrichAnalysisWithParts(analysisData, vehicleInfo) {
       damage_type: damageType || 'unknown',
       description: part.description || part.visualEvidence || '',
       confidence: (part.confidence > 1 ? part.confidence / 100 : part.confidence) || 0.5,
-      severity_label: damageIndex < 4 ? 'Repair' : 'Replace',
+      severity_label: severityLabel,
       price: 0,
       partId: partInfo.partId || null,
       category: partInfo.category || 'exterior',
@@ -91,11 +106,21 @@ function enrichAnalysisWithParts(analysisData, vehicleInfo) {
   const confirmedDamages = allParts.filter(p => p.recommendedDecision !== 'inspect');
   const needsCheckFromShared = allParts.filter(p => p.recommendedDecision === 'inspect');
 
+  // Convert hiddenDamageAssessment (Stage 4 — AC condenser, radiator, etc.) into needs_check parts
+  const hiddenDamageParts = (analysisData.hiddenDamageAssessment || []).map(item => ({
+    partName: item.suspected_hidden_part || '',
+    damageType: 'Hidden Damage',
+    description: item.hidden_indicator?.replace('[HIDDEN] ', '') || '',
+    confidence: (item.confidence || 50) > 1 ? (item.confidence || 50) / 100 : (item.confidence || 0.5),
+    recommendedDecision: 'inspect',
+    reason_for_uncertainty: `خلف: ${(item.visible_damage_part || '').replace(/_/g, ' ')}`,
+  }));
+
   // Also include any explicit needs_check_parts if present
   const explicitNeedsCheck = analysisData.needs_check_parts || [];
-  const allNeedsCheck = [...needsCheckFromShared, ...explicitNeedsCheck];
+  const allNeedsCheck = [...needsCheckFromShared, ...explicitNeedsCheck, ...hiddenDamageParts];
 
-  console.log(`🔍 Split: ${confirmedDamages.length} confirmed damages, ${allNeedsCheck.length} needs_check (from recommendedDecision:inspect)`);
+  console.log(`🔍 Split: ${confirmedDamages.length} confirmed, ${needsCheckFromShared.length} inspect, ${hiddenDamageParts.length} hidden → ${allNeedsCheck.length} needs_check total`);
 
   // Deduplicate by part_name_en — keep highest confidence when same part appears multiple times
   function deduplicateByName(parts) {

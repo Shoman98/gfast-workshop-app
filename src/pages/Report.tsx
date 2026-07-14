@@ -349,6 +349,13 @@ export default function ReportPage() {
             </span>
           </div>
 
+          {/* Watermark */}
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.8rem', color: '#9ca3af', letterSpacing: '0.05em' }}>
+              Powered by <span style={{ fontWeight: 'bold', color: '#2563eb' }}>G-Fast</span>
+            </p>
+          </div>
+
           {/* Share Section */}
           <div style={{
             backgroundColor: '#f3f4f6',

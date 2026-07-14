@@ -73,7 +73,7 @@ export default function LoginPage() {
       }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <h1 style={{ fontSize: '3rem', fontWeight: 'bold', color: '#2563eb', marginBottom: '0.5rem' }}>
-            جي-فاست
+            G-Fast
           </h1>
           <p style={{ color: '#4b5563', fontSize: '1.125rem', fontWeight: '500' }}>
             منصة تقييم أضرار المركبات
@@ -149,7 +149,7 @@ export default function LoginPage() {
         </form>
 
         <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #e5e7eb', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>جي-فاست • نسخة تجريبية 1.0</p>
+          <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>G-Fast • V.01</p>
         </div>
       </div>
     </div>

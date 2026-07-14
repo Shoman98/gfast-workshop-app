@@ -69,8 +69,21 @@ export default function EstimatePage() {
           needs_check: analysis.needs_check_parts?.length || 0
         });
         const isMapped = (p: any) => p.part_name_ar && p.part_name_ar !== 'قطعة غير معروفة'
-        setParts((analysis.damages || []).filter(isMapped))
-        setNeedsCheckParts((analysis.needs_check_parts || []).filter(isMapped))
+        const dedup = (parts: any[]) => {
+          const seen = new Set<string>()
+          return parts.filter(p => {
+            const key = p.part_name_en?.toLowerCase().trim() || p.part_name_ar
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+          })
+        }
+        const cleanDamages = dedup((analysis.damages || []).filter(isMapped))
+        const damageKeys = new Set(cleanDamages.map((p: any) => p.part_name_en?.toLowerCase().trim()))
+        const cleanNeedsCheck = dedup((analysis.needs_check_parts || []).filter(isMapped))
+          .filter((p: any) => !damageKeys.has(p.part_name_en?.toLowerCase().trim()))
+        setParts(cleanDamages)
+        setNeedsCheckParts(cleanNeedsCheck)
         sessionStorage.removeItem('analysisResult')
       }
       if (vehicleData) {

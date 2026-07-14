@@ -105,7 +105,7 @@ export default function DashboardPage() {
         }}>
           <div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2563eb', margin: 0 }}>
-              جي-فاست
+              G-Fast
             </h1>
             {workshop && (
               <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem', margin: 0 }}>
