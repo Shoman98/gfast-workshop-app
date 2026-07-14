@@ -222,31 +222,25 @@ export default function ReportPage() {
                 قطع الغيار
               </h3>
 
-              {/* 3-Column Parts Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem', marginBottom: '1.5rem' }}>
-                {partColumns.map((column, colIdx) => (
-                  <div key={colIdx}>
-                    <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #1e3a8a' }}>
-                          <th style={{ padding: '0.5rem', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', width: '30px' }}>م</th>
-                          <th style={{ padding: '0.5rem', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'right' }}>قطع الغيار</th>
-                          <th style={{ padding: '0.5rem', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', width: '80px' }}>السعر</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {column.map((part, rowIdx) => (
-                          <tr key={rowIdx} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                            <td style={{ padding: '0.5rem', textAlign: 'center', color: '#6b7280' }}>{rowIdx + (colIdx * 10) + 1}</td>
-                            <td style={{ padding: '0.5rem', textAlign: 'right', color: '#111827' }}>{part.part_name_ar}</td>
-                            <td style={{ padding: '0.5rem', textAlign: 'center', color: '#111827', fontWeight: '600' }}>{part.price?.toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ))}
-              </div>
+              {/* Full-width Parts Table */}
+              <table style={{ width: '100%', fontSize: '0.9rem', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #1e3a8a' }}>
+                    <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', width: '40px' }}>م</th>
+                    <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'right' }}>قطع الغيار</th>
+                    <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#1e3a8a', textAlign: 'center', width: '120px' }}>السعر</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {replaceParts.map((part, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '0.75rem', textAlign: 'center', color: '#6b7280' }}>{idx + 1}</td>
+                      <td style={{ padding: '0.75rem', textAlign: 'right', color: '#111827' }}>{part.part_name_ar}</td>
+                      <td style={{ padding: '0.75rem', textAlign: 'center', color: '#111827', fontWeight: '600' }}>{part.price?.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
               {/* Total Parts Cost */}
               <div style={{
