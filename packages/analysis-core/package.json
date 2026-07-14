@@ -1,0 +1,13 @@
+{
+  "name": "@gfast/analysis-core",
+  "version": "1.0.0",
+  "description": "Core vehicle damage analysis engine - shared between B2C and Workshop apps",
+  "main": "index.js",
+  "type": "commonjs",
+  "exports": {
+    ".": "./index.js"
+  },
+  "dependencies": {
+    "sharp": "^0.33.1"
+  }
+}

@@ -13,7 +13,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@gfast/analysis-core": "file:../wreck-vision/packages/analysis-core",
+    "@gfast/analysis-core": "file:./packages/analysis-core",
     "@google/generative-ai": "^0.3.1",
     "@supabase/supabase-js": "^2.38.4",
     "bcrypt": "^6.0.0",
