@@ -27,6 +27,7 @@ if (process.env.WORKSHOP_GEMINI_API_KEY) {
 
 const app = express();
 const PORT = process.env.PORT || 3333;
+app.set('trust proxy', 1); // Required for Railway/Vercel reverse proxy
 
 // ============================================================================
 // MIDDLEWARE
