@@ -14,6 +14,12 @@ interface EstimatePart {
   is_ai_detected: boolean
 }
 
+interface Labor {
+  id: string
+  labor_name_ar: string
+  price: number
+}
+
 interface Claim {
   estimate_id: string
   workshop_id: string
@@ -22,6 +28,7 @@ interface Claim {
   vehicle_model: string
   confirmed_at: string
   insurance_company_id: string
+  labors: Labor[]
   estimate_parts: EstimatePart[]
 }
 
@@ -226,92 +233,170 @@ export default function InsuranceDashboard() {
       </div>
 
       {/* Claim Detail Modal */}
-      {selectedClaim && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
-          onClick={() => setSelectedClaim(null)}>
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ background: 'white', borderRadius: '1rem', width: '100%', maxWidth: '700px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      {selectedClaim && (() => {
+        const replaceParts = selectedClaim.estimate_parts.filter(p => p.severity_label === 'Replace')
+        const repairParts  = selectedClaim.estimate_parts.filter(p => p.severity_label === 'Repair')
+        const activeLabors = (selectedClaim.labors || []).filter(l => l.price > 0)
+        const replaceTotal = replaceParts.reduce((s, p) => s + p.price, 0)
+        const repairTotal  = repairParts.reduce((s, p) => s + p.price, 0)
+        const laborTotal   = activeLabors.reduce((s, l) => s + l.price, 0)
+        const grandTotal   = replaceTotal + repairTotal + laborTotal
+        const flagCount    = getFlaggedParts(selectedClaim.estimate_parts).length
 
-            {/* Modal header */}
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>
-                  {selectedClaim.vehicle_make} {selectedClaim.vehicle_model} {selectedClaim.vehicle_year}
+        const thStyle: React.CSSProperties = { padding: '0.6rem 1rem', textAlign: 'right', fontWeight: 600, fontSize: '0.78rem', color: '#6b7280', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }
+        const tdStyle: React.CSSProperties = { padding: '0.7rem 1rem', fontSize: '0.875rem' }
+
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+            onClick={() => setSelectedClaim(null)}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background: 'white', borderRadius: '1rem', width: '100%', maxWidth: '760px', maxHeight: '92vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', direction: 'rtl' }}>
+
+              {/* Header */}
+              <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#111827' }}>
+                    {selectedClaim.vehicle_make} {selectedClaim.vehicle_model} {selectedClaim.vehicle_year}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: '3px', display: 'flex', gap: '1rem' }}>
+                    <span>{selectedClaim.workshop_id}</span>
+                    <span>{new Date(selectedClaim.confirmed_at).toLocaleDateString('ar-EG')}</span>
+                    {flagCount > 0 && <span style={{ color: '#92400e', fontWeight: 600 }}>⚠ {flagCount} تغييرات</span>}
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: '2px' }}>
-                  {selectedClaim.workshop_id} · {new Date(selectedClaim.confirmed_at).toLocaleDateString('ar-EG')}
-                </div>
+                <button onClick={() => setSelectedClaim(null)} style={{ border: 'none', background: 'none', fontSize: '1.5rem', color: '#9ca3af', cursor: 'pointer', lineHeight: 1 }}>×</button>
               </div>
-              <button onClick={() => setSelectedClaim(null)} style={{ border: 'none', background: 'none', fontSize: '1.4rem', color: '#9ca3af', cursor: 'pointer' }}>×</button>
-            </div>
 
-            {/* Parts list */}
-            <div style={{ overflowY: 'auto', flex: 1 }}>
               {/* Flag legend */}
-              <div style={{ padding: '0.75rem 1.5rem', backgroundColor: '#f8fafc', borderBottom: '1px solid #e5e7eb', display: 'flex', gap: '1rem', fontSize: '0.75rem', color: '#6b7280' }}>
-                <span>⚠ <span style={{ color: '#92400e', fontWeight: 600 }}>تغيير:</span> تبدّل الإجراء (إصلاح ↔ استبدال)</span>
-                <span>+ <span style={{ color: '#c2410c', fontWeight: 600 }}>مضاف:</span> أضافته الورشة يدوياً</span>
+              <div style={{ padding: '0.6rem 1.5rem', background: '#fffbeb', borderBottom: '1px solid #fde68a', display: 'flex', gap: '1.5rem', fontSize: '0.75rem' }}>
+                <span><span style={{ background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa', borderRadius: '999px', padding: '1px 8px', fontWeight: 700 }}>+ مضاف</span> أضافته الورشة يدوياً</span>
+                <span><span style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', borderRadius: '999px', padding: '1px 8px', fontWeight: 700 }}>⚠ تغيير</span> تبدّل الإجراء</span>
               </div>
 
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#f9fafb', color: '#6b7280', fontSize: '0.78rem' }}>
-                    {['القطعة', 'نوع الضرر', 'تقدير الذكاء', 'قرار الورشة', 'السعر', 'الحالة'].map((h, i) => (
-                      <th key={i} style={{ padding: '0.625rem 1rem', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid #e5e7eb' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedClaim.estimate_parts.map((part, i) => {
-                    const isAdded = part.is_ai_detected === false
-                    const isChanged = part.ai_original_severity && part.ai_original_severity !== part.severity_label
-                    const flagged = isAdded || isChanged
-                    return (
-                      <tr key={i} style={{ borderBottom: '1px solid #f3f4f6', backgroundColor: flagged ? '#fffbeb' : 'white' }}>
-                        <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: '#111827' }}>{part.part_name_ar}</td>
-                        <td style={{ padding: '0.75rem 1rem', color: '#6b7280' }}>{part.damage_type}</td>
-                        <td style={{ padding: '0.75rem 1rem', color: '#6b7280' }}>
-                          {isAdded ? '—' : (part.ai_original_severity === 'Replace' ? 'استبدال' : 'إصلاح')}
+              <div style={{ overflowY: 'auto', flex: 1 }}>
+
+                {/* ── SECTION 1: Replace parts ── */}
+                <div style={{ padding: '1rem 1.5rem 0.5rem', background: '#fef2f2', borderBottom: '1px solid #fecaca' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>🔴</span> قطع الاستبدال
+                    <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.78rem' }}>({replaceParts.length} قطعة)</span>
+                  </div>
+                </div>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>#</th>
+                      <th style={thStyle}>القطعة</th>
+                      <th style={thStyle}>نوع الضرر</th>
+                      <th style={thStyle}>الإجراء</th>
+                      <th style={thStyle}>التغييرات</th>
+                      <th style={{ ...thStyle, textAlign: 'left' }}>السعر</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {replaceParts.length === 0 && (
+                      <tr><td colSpan={6} style={{ ...tdStyle, color: '#9ca3af', textAlign: 'center', padding: '1rem' }}>لا توجد قطع استبدال</td></tr>
+                    )}
+                    {replaceParts.map((part, i) => {
+                      const isAdded   = part.is_ai_detected === false
+                      const isChanged = !isAdded && part.ai_original_severity && part.ai_original_severity !== part.severity_label
+                      return (
+                        <tr key={i} style={{ borderBottom: '1px solid #f3f4f6', background: (isAdded || isChanged) ? '#fffbeb' : 'white' }}>
+                          <td style={{ ...tdStyle, color: '#9ca3af', width: '36px' }}>{i + 1}</td>
+                          <td style={{ ...tdStyle, fontWeight: 600, color: '#111827' }}>{part.part_name_ar}</td>
+                          <td style={{ ...tdStyle, color: '#6b7280' }}>{part.damage_type}</td>
+                          <td style={tdStyle}>
+                            <span style={{ background: '#fef2f2', color: '#dc2626', borderRadius: '999px', padding: '2px 10px', fontSize: '0.75rem', fontWeight: 700 }}>استبدال</span>
+                          </td>
+                          <td style={tdStyle}>
+                            {isAdded   && <FlagBadge type="added" />}
+                            {isChanged && <FlagBadge type="changed" />}
+                          </td>
+                          <td style={{ ...tdStyle, fontWeight: 600, textAlign: 'left' }}>{part.price.toLocaleString('ar-EG')} ج.م</td>
+                        </tr>
+                      )
+                    })}
+                    <tr style={{ background: '#fef2f2', borderTop: '1px solid #fecaca' }}>
+                      <td colSpan={5} style={{ ...tdStyle, fontWeight: 700, color: '#dc2626', fontSize: '0.82rem' }}>إجمالي الاستبدال</td>
+                      <td style={{ ...tdStyle, fontWeight: 800, color: '#dc2626', textAlign: 'left' }}>{replaceTotal.toLocaleString('ar-EG')} ج.م</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* ── SECTION 2: Repair parts + Labors ── */}
+                <div style={{ padding: '1rem 1.5rem 0.5rem', background: '#f0fdf4', borderBottom: '1px solid #bbf7d0', borderTop: '6px solid #f3f4f6' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>🟢</span> أعمال الإصلاح والعمالة
+                  </div>
+                </div>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>#</th>
+                      <th style={{ ...thStyle, width: '55%' }}>البند</th>
+                      <th style={thStyle}>النوع</th>
+                      <th style={thStyle}>التغييرات</th>
+                      <th style={{ ...thStyle, textAlign: 'left' }}>السعر</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Repair parts */}
+                    {repairParts.map((part, i) => {
+                      const isAdded   = part.is_ai_detected === false
+                      const isChanged = !isAdded && part.ai_original_severity && part.ai_original_severity !== part.severity_label
+                      return (
+                        <tr key={`r-${i}`} style={{ borderBottom: '1px solid #f3f4f6', background: (isAdded || isChanged) ? '#fffbeb' : 'white' }}>
+                          <td style={{ ...tdStyle, color: '#9ca3af', width: '36px' }}>{i + 1}</td>
+                          <td style={{ ...tdStyle, fontWeight: 600, color: '#111827' }}>{part.part_name_ar}</td>
+                          <td style={tdStyle}>
+                            <span style={{ background: '#f0fdf4', color: '#16a34a', borderRadius: '999px', padding: '2px 10px', fontSize: '0.75rem', fontWeight: 700 }}>إصلاح</span>
+                          </td>
+                          <td style={tdStyle}>
+                            {isAdded   && <FlagBadge type="added" />}
+                            {isChanged && <FlagBadge type="changed" />}
+                          </td>
+                          <td style={{ ...tdStyle, fontWeight: 600, textAlign: 'left' }}>{part.price.toLocaleString('ar-EG')} ج.م</td>
+                        </tr>
+                      )
+                    })}
+                    {/* Labors */}
+                    {activeLabors.map((labor, i) => (
+                      <tr key={`l-${i}`} style={{ borderBottom: '1px solid #f3f4f6', background: '#f8fafc' }}>
+                        <td style={{ ...tdStyle, color: '#9ca3af' }}>{repairParts.length + i + 1}</td>
+                        <td style={{ ...tdStyle, fontWeight: 600, color: '#374151' }}>{labor.labor_name_ar}</td>
+                        <td style={tdStyle}>
+                          <span style={{ background: '#eff6ff', color: '#1e40af', borderRadius: '999px', padding: '2px 10px', fontSize: '0.75rem', fontWeight: 700 }}>عمالة</span>
                         </td>
-                        <td style={{ padding: '0.75rem 1rem' }}>
-                          <span style={{
-                            padding: '2px 8px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 700,
-                            background: part.severity_label === 'Replace' ? '#fef2f2' : '#f0fdf4',
-                            color: part.severity_label === 'Replace' ? '#dc2626' : '#16a34a',
-                          }}>
-                            {part.severity_label === 'Replace' ? 'استبدال' : 'إصلاح'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>{part.price.toLocaleString('ar-EG')} ج.م</td>
-                        <td style={{ padding: '0.75rem 1rem' }}>
-                          {isAdded && <FlagBadge type="added" />}
-                          {isChanged && !isAdded && <FlagBadge type="changed" />}
-                        </td>
+                        <td style={tdStyle}></td>
+                        <td style={{ ...tdStyle, fontWeight: 600, textAlign: 'left' }}>{labor.price.toLocaleString('ar-EG')} ج.م</td>
                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Modal footer */}
-            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f9fafb' }}>
-              <div style={{ fontWeight: 700, fontSize: '1rem', color: '#111827' }}>
-                الإجمالي: {getTotalCost(selectedClaim.estimate_parts).toLocaleString('ar-EG')} ج.م
+                    ))}
+                    {repairParts.length === 0 && activeLabors.length === 0 && (
+                      <tr><td colSpan={5} style={{ ...tdStyle, color: '#9ca3af', textAlign: 'center', padding: '1rem' }}>لا توجد أعمال إصلاح أو عمالة</td></tr>
+                    )}
+                    <tr style={{ background: '#f0fdf4', borderTop: '1px solid #bbf7d0' }}>
+                      <td colSpan={4} style={{ ...tdStyle, fontWeight: 700, color: '#16a34a', fontSize: '0.82rem' }}>إجمالي الإصلاح والعمالة</td>
+                      <td style={{ ...tdStyle, fontWeight: 800, color: '#16a34a', textAlign: 'left' }}>{(repairTotal + laborTotal).toLocaleString('ar-EG')} ج.م</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                {getFlaggedParts(selectedClaim.estimate_parts).length > 0 && (
-                  <span style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', borderRadius: '999px', padding: '4px 12px', fontSize: '0.8rem', fontWeight: 700 }}>
-                    ⚠ {getFlaggedParts(selectedClaim.estimate_parts).length} تغييرات تحتاج مراجعة
+
+              {/* Footer total */}
+              <div style={{ padding: '1rem 1.5rem', borderTop: '2px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f9fafb' }}>
+                <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#111827' }}>
+                  الإجمالي الكلي: {grandTotal.toLocaleString('ar-EG')} ج.م
+                </div>
+                {flagCount > 0 && (
+                  <span style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', borderRadius: '999px', padding: '4px 14px', fontSize: '0.82rem', fontWeight: 700 }}>
+                    ⚠ {flagCount} تغييرات تحتاج مراجعة
                   </span>
                 )}
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }

@@ -35,6 +35,7 @@ router.get('/claims', async (req, res) => {
         vehicle_model,
         confirmed_at,
         insurance_company_id,
+        labors,
         estimate_parts (
           part_id,
           part_name_en,
