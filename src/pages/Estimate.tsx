@@ -276,6 +276,12 @@ export default function EstimatePage() {
       return
     }
 
+    // Validate customer details before confirming
+    if (!vehicleInfo.vin_number || !vehicleInfo.customer_name || !vehicleInfo.customer_mobile) {
+      setError('يرجى إدخال جميع بيانات العميل ورقم الشاسيه قبل تأكيد التقدير')
+      return
+    }
+
     console.log('✅ Opening confirm dialog')
     setShowConfirmDialog(true)
   }
