@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getInsuranceSession, clearInsuranceSession } from '@/mock/insurance'
 import { apiUrl } from '@/lib/api'
+import ImageModal from '@/components/ImageModal'
 
 interface EstimatePart {
   part_id: string
@@ -64,6 +65,8 @@ export default function InsuranceDashboard() {
   const [claims, setClaims] = useState<Claim[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [imageModalOpen, setImageModalOpen] = useState(false)
+  const [selectedEstimateId, setSelectedEstimateId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!session) { navigate('/insurance/login'); return }
@@ -167,7 +170,7 @@ export default function InsuranceDashboard() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#f9fafb', fontSize: '0.8rem', color: '#6b7280' }}>
-                      {['التاريخ', 'المركبة', 'الورشة', 'عدد القطع', 'التكلفة الإجمالية', 'التغييرات', ''].map((h, i) => (
+                      {['التاريخ', 'المركبة', 'الورشة', 'عدد القطع', 'التكلفة الإجمالية', 'التغييرات', 'صور', ''].map((h, i) => (
                         <th key={i} style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid #e5e7eb' }}>{h}</th>
                       ))}
                     </tr>
@@ -196,6 +199,16 @@ export default function InsuranceDashboard() {
                               ? <span style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', borderRadius: '999px', padding: '3px 10px', fontSize: '0.75rem', fontWeight: 700 }}>⚠ {flagged.length} تغيير</span>
                               : <span style={{ color: '#10b981', fontSize: '0.8rem', fontWeight: 600 }}>✓ لا تغييرات</span>
                             }
+                          </td>
+                          <td style={{ padding: '0.875rem 1rem' }}>
+                            <button
+                              onClick={() => {
+                                setSelectedEstimateId(claim.estimate_id)
+                                setImageModalOpen(true)
+                              }}
+                              style={{ padding: '0.375rem 0.875rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+                              صور
+                            </button>
                           </td>
                           <td style={{ padding: '0.875rem 1rem' }}>
                             <button
@@ -231,6 +244,17 @@ export default function InsuranceDashboard() {
         )}
       </div>
 
+      {/* Image Modal */}
+      {selectedEstimateId && (
+        <ImageModal
+          estimateId={selectedEstimateId}
+          isOpen={imageModalOpen}
+          onClose={() => {
+            setImageModalOpen(false)
+            setSelectedEstimateId(null)
+          }}
+        />
+      )}
     </div>
   )
 }
