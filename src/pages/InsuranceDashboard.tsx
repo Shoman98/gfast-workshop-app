@@ -54,8 +54,10 @@ function getFlaggedParts(parts: EstimatePart[]) {
   )
 }
 
-function getTotalCost(parts: EstimatePart[]) {
-  return parts.reduce((sum, p) => sum + (p.price || 0), 0)
+function getTotalCost(parts: EstimatePart[], labors: Labor[] = []) {
+  const partsCost = parts.reduce((sum, p) => sum + (p.price || 0), 0)
+  const laborsCost = labors.reduce((sum, l) => sum + (l.price || 0), 0)
+  return partsCost + laborsCost
 }
 
 export default function InsuranceDashboard() {
@@ -178,7 +180,7 @@ export default function InsuranceDashboard() {
                   <tbody>
                     {claims.map((claim) => {
                       const flagged = getFlaggedParts(claim.estimate_parts)
-                      const total = getTotalCost(claim.estimate_parts)
+                      const total = getTotalCost(claim.estimate_parts, claim.labors)
                       return (
                         <tr key={claim.estimate_id} style={{ borderBottom: '1px solid #f3f4f6', transition: 'background .15s' }}
                           onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')}
