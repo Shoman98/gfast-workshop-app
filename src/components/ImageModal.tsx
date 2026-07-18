@@ -12,6 +12,7 @@ interface ImageModalProps {
   estimateId: string
   isOpen: boolean
   onClose: () => void
+  readOnly?: boolean
 }
 
 export default function ImageModal({ estimateId, isOpen, onClose }: ImageModalProps) {
@@ -155,37 +156,39 @@ export default function ImageModal({ estimateId, isOpen, onClose }: ImageModalPr
             </div>
           )}
 
-          {/* Upload Area */}
-          <div style={{
-            border: '2px dashed #3b82f6',
-            borderRadius: '0.75rem',
-            padding: '2rem',
-            textAlign: 'center',
-            marginBottom: '1.5rem',
-            background: '#eff6ff'
-          }}>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              disabled={uploading}
-              style={{ display: 'none' }}
-              id="image-upload"
-            />
-            <label htmlFor="image-upload" style={{
-              display: 'block',
-              cursor: uploading ? 'not-allowed' : 'pointer',
-              opacity: uploading ? 0.5 : 1
+          {/* Upload Area - Hidden in read-only mode */}
+          {!readOnly && (
+            <div style={{
+              border: '2px dashed #3b82f6',
+              borderRadius: '0.75rem',
+              padding: '2rem',
+              textAlign: 'center',
+              marginBottom: '1.5rem',
+              background: '#eff6ff'
             }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📸</div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1e40af', marginBottom: '0.25rem' }}>
-                {uploading ? 'جاري الرفع...' : 'انقر أو اسحب الصور'}
-              </div>
-              <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-                JPG, PNG, الحد الأقصى 10MB
-              </div>
-            </label>
-          </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                disabled={uploading}
+                style={{ display: 'none' }}
+                id="image-upload"
+              />
+              <label htmlFor="image-upload" style={{
+                display: 'block',
+                cursor: uploading ? 'not-allowed' : 'pointer',
+                opacity: uploading ? 0.5 : 1
+              }}>
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📸</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1e40af', marginBottom: '0.25rem' }}>
+                  {uploading ? 'جاري الرفع...' : 'انقر أو اسحب الصور'}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                  JPG, PNG, الحد الأقصى 10MB
+                </div>
+              </label>
+            </div>
+          )}
 
           {/* Images Grid */}
           {loading ? (
@@ -213,31 +216,33 @@ export default function ImageModal({ estimateId, isOpen, onClose }: ImageModalPr
                     alt="Estimate image"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
-                  <button
-                    onClick={() => handleDelete(img.id)}
-                    style={{
-                      position: 'absolute',
-                      top: '0.5rem',
-                      left: '0.5rem',
-                      background: '#ef4444',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '999px',
-                      width: '32px',
-                      height: '32px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '1.1rem',
-                      fontWeight: 700,
-                      transition: 'background .2s'
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#dc2626')}
-                    onMouseLeave={e => (e.currentTarget.style.background = '#ef4444')}
-                  >
-                    ×
-                  </button>
+                  {!readOnly && (
+                    <button
+                      onClick={() => handleDelete(img.id)}
+                      style={{
+                        position: 'absolute',
+                        top: '0.5rem',
+                        left: '0.5rem',
+                        background: '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '999px',
+                        width: '32px',
+                        height: '32px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.1rem',
+                        fontWeight: 700,
+                        transition: 'background .2s'
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#dc2626')}
+                      onMouseLeave={e => (e.currentTarget.style.background = '#ef4444')}
+                    >
+                      ×
+                    </button>
+                  )}
                   <div style={{
                     position: 'absolute',
                     bottom: 0,

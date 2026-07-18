@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { apiUrl } from '@/lib/api'
-import ImageModal from '@/components/ImageModal'
 
 interface ReportData {
   estimate_id: string
@@ -33,7 +32,6 @@ export default function ReportPage() {
   const [error, setError] = useState('')
   const [shareUrl, setShareUrl] = useState('')
   const [copied, setCopied] = useState(false)
-  const [imageModalOpen, setImageModalOpen] = useState(false)
 
   useEffect(() => {
     loadReport()
@@ -435,24 +433,6 @@ export default function ReportPage() {
             </div>
           </div>
 
-          {/* Upload Images Button */}
-          <button
-            onClick={() => setImageModalOpen(true)}
-            style={{
-              width: '100%',
-              padding: '1rem',
-              backgroundColor: '#8b5cf6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.375rem',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              marginBottom: '0.75rem',
-            }}
-          >
-            📸 رفع الصور
-          </button>
-
           {/* Back Button */}
           <button
             onClick={() => navigate('/dashboard')}
@@ -471,13 +451,6 @@ export default function ReportPage() {
           </button>
         </div>
       </div>
-
-      {/* Image Modal */}
-      <ImageModal
-        estimateId={estimateId || ''}
-        isOpen={imageModalOpen}
-        onClose={() => setImageModalOpen(false)}
-      />
     </div>
   )
 }

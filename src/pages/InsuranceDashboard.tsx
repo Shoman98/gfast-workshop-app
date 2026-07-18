@@ -207,7 +207,7 @@ export default function InsuranceDashboard() {
                                 setImageModalOpen(true)
                               }}
                               style={{ padding: '0.375rem 0.875rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
-                              صور
+                              📸 صور
                             </button>
                           </td>
                           <td style={{ padding: '0.875rem 1rem' }}>
@@ -244,7 +244,7 @@ export default function InsuranceDashboard() {
         )}
       </div>
 
-      {/* Image Modal */}
+      {/* Image Modal - Read-only for insurance */}
       {selectedEstimateId && (
         <ImageModal
           estimateId={selectedEstimateId}
@@ -253,6 +253,7 @@ export default function InsuranceDashboard() {
             setImageModalOpen(false)
             setSelectedEstimateId(null)
           }}
+          readOnly={true}
         />
       )}
     </div>
