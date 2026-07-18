@@ -230,7 +230,7 @@ export default function AnalysisPage() {
 
             {/* VIN Number */}
             <div style={{ marginTop: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>رقم الشاسيه (VIN) <span style={{ color: '#9ca3af', fontWeight: 400 }}>(مطلوب عند التأكيد)</span></label>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>رقم الشاسيه (VIN)</label>
               <input
                 type="text"
                 value={vinNumber}
@@ -277,9 +277,7 @@ export default function AnalysisPage() {
 
           {/* Customer Details */}
           <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #e5e7eb' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>
-              بيانات العميل <span style={{ color: '#9ca3af', fontWeight: 400, fontSize: '0.9rem' }}>(ستكون مطلوبة عند تأكيد التقدير)</span>
-            </h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>بيانات العميل</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>اسم العميل</label>
