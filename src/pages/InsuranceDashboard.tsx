@@ -287,7 +287,6 @@ export default function InsuranceDashboard() {
                     <tr>
                       <th style={thStyle}>#</th>
                       <th style={thStyle}>القطعة</th>
-                      <th style={thStyle}>نوع الضرر</th>
                       <th style={thStyle}>الإجراء</th>
                       <th style={thStyle}>التغييرات</th>
                       <th style={{ ...thStyle, textAlign: 'left' }}>السعر</th>
@@ -295,7 +294,7 @@ export default function InsuranceDashboard() {
                   </thead>
                   <tbody>
                     {replaceParts.length === 0 && (
-                      <tr><td colSpan={6} style={{ ...tdStyle, color: '#9ca3af', textAlign: 'center', padding: '1rem' }}>لا توجد قطع استبدال</td></tr>
+                      <tr><td colSpan={5} style={{ ...tdStyle, color: '#9ca3af', textAlign: 'center', padding: '1rem' }}>لا توجد قطع استبدال</td></tr>
                     )}
                     {replaceParts.map((part, i) => {
                       const isAdded   = part.is_ai_detected === false
@@ -304,7 +303,6 @@ export default function InsuranceDashboard() {
                         <tr key={i} style={{ borderBottom: '1px solid #f3f4f6', background: (isAdded || isChanged) ? '#fffbeb' : 'white' }}>
                           <td style={{ ...tdStyle, color: '#9ca3af', width: '36px' }}>{i + 1}</td>
                           <td style={{ ...tdStyle, fontWeight: 600, color: '#111827' }}>{part.part_name_ar}</td>
-                          <td style={{ ...tdStyle, color: '#6b7280' }}>{part.damage_type}</td>
                           <td style={tdStyle}>
                             <span style={{ background: '#fef2f2', color: '#dc2626', borderRadius: '999px', padding: '2px 10px', fontSize: '0.75rem', fontWeight: 700 }}>استبدال</span>
                           </td>
@@ -317,7 +315,7 @@ export default function InsuranceDashboard() {
                       )
                     })}
                     <tr style={{ background: '#fef2f2', borderTop: '1px solid #fecaca' }}>
-                      <td colSpan={5} style={{ ...tdStyle, fontWeight: 700, color: '#dc2626', fontSize: '0.82rem' }}>إجمالي الاستبدال</td>
+                      <td colSpan={4} style={{ ...tdStyle, fontWeight: 700, color: '#dc2626', fontSize: '0.82rem' }}>إجمالي الاستبدال</td>
                       <td style={{ ...tdStyle, fontWeight: 800, color: '#dc2626', textAlign: 'left' }}>{replaceTotal.toLocaleString('ar-EG')} ج.م</td>
                     </tr>
                   </tbody>
@@ -334,7 +332,6 @@ export default function InsuranceDashboard() {
                     <tr>
                       <th style={thStyle}>#</th>
                       <th style={{ ...thStyle, width: '55%' }}>البند</th>
-                      <th style={thStyle}>النوع</th>
                       <th style={thStyle}>التغييرات</th>
                       <th style={{ ...thStyle, textAlign: 'left' }}>السعر</th>
                     </tr>
@@ -349,9 +346,6 @@ export default function InsuranceDashboard() {
                           <td style={{ ...tdStyle, color: '#9ca3af', width: '36px' }}>{i + 1}</td>
                           <td style={{ ...tdStyle, fontWeight: 600, color: '#111827' }}>{part.part_name_ar}</td>
                           <td style={tdStyle}>
-                            <span style={{ background: '#f0fdf4', color: '#16a34a', borderRadius: '999px', padding: '2px 10px', fontSize: '0.75rem', fontWeight: 700 }}>إصلاح</span>
-                          </td>
-                          <td style={tdStyle}>
                             {isAdded   && <FlagBadge type="added" />}
                             {isChanged && <FlagBadge type="changed" />}
                           </td>
@@ -364,18 +358,15 @@ export default function InsuranceDashboard() {
                       <tr key={`l-${i}`} style={{ borderBottom: '1px solid #f3f4f6', background: '#f8fafc' }}>
                         <td style={{ ...tdStyle, color: '#9ca3af' }}>{repairParts.length + i + 1}</td>
                         <td style={{ ...tdStyle, fontWeight: 600, color: '#374151' }}>{labor.labor_name_ar}</td>
-                        <td style={tdStyle}>
-                          <span style={{ background: '#eff6ff', color: '#1e40af', borderRadius: '999px', padding: '2px 10px', fontSize: '0.75rem', fontWeight: 700 }}>عمالة</span>
-                        </td>
                         <td style={tdStyle}></td>
                         <td style={{ ...tdStyle, fontWeight: 600, textAlign: 'left' }}>{labor.price.toLocaleString('ar-EG')} ج.م</td>
                       </tr>
                     ))}
                     {repairParts.length === 0 && activeLabors.length === 0 && (
-                      <tr><td colSpan={5} style={{ ...tdStyle, color: '#9ca3af', textAlign: 'center', padding: '1rem' }}>لا توجد أعمال إصلاح أو عمالة</td></tr>
+                      <tr><td colSpan={4} style={{ ...tdStyle, color: '#9ca3af', textAlign: 'center', padding: '1rem' }}>لا توجد أعمال إصلاح أو عمالة</td></tr>
                     )}
                     <tr style={{ background: '#f0fdf4', borderTop: '1px solid #bbf7d0' }}>
-                      <td colSpan={4} style={{ ...tdStyle, fontWeight: 700, color: '#16a34a', fontSize: '0.82rem' }}>إجمالي الإصلاح والعمالة</td>
+                      <td colSpan={3} style={{ ...tdStyle, fontWeight: 700, color: '#16a34a', fontSize: '0.82rem' }}>إجمالي الإصلاح والعمالة</td>
                       <td style={{ ...tdStyle, fontWeight: 800, color: '#16a34a', textAlign: 'left' }}>{(repairTotal + laborTotal).toLocaleString('ar-EG')} ج.م</td>
                     </tr>
                   </tbody>
