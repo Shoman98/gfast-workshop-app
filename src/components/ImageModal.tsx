@@ -15,7 +15,7 @@ interface ImageModalProps {
   readOnly?: boolean
 }
 
-export default function ImageModal({ estimateId, isOpen, onClose }: ImageModalProps) {
+export default function ImageModal({ estimateId, isOpen, onClose, readOnly = false }: ImageModalProps) {
   const [images, setImages] = useState<ImageData[]>([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
