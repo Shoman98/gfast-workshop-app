@@ -46,8 +46,8 @@ export default function AnalysisPage() {
       return
     }
 
-    if (!year || !make || !model) {
-      setError('يرجى إدخال معلومات المركبة')
+    if (!year || !make || !model || !vinNumber || !customerName || !customerMobile) {
+      setError('يرجى إدخال جميع البيانات المطلوبة (المركبة وبيانات العميل ورقم الشاسيه)')
       return
     }
 
