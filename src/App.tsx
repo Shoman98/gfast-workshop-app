@@ -64,9 +64,12 @@ export default function App() {
           <Route path="/report/:estimateId" element={<ReportPage />} />
         </Route>
         {/* Insurance routes */}
-        <Route path="/insurance/login" element={<InsuranceLoginPage />} />
+        <Route path="/insurance/login" element={<Navigate to="/login" replace />} />
         <Route element={<InsuranceProtectedRoute />}>
           <Route path="/insurance/dashboard" element={<InsuranceDashboard />} />
+          <Route path="/insurance/assessment" element={<AnalysisPage />} />
+          <Route path="/insurance/estimate/:estimateId" element={<EstimatePage />} />
+          <Route path="/insurance/report/:estimateId" element={<ReportPage />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

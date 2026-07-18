@@ -112,7 +112,8 @@ export default function AnalysisPage() {
           model,
           insurance_company_id: insuranceCompanyId || null,
         }))
-        navigate('/estimate/new')
+        const isInsurance = window.location.pathname.startsWith('/insurance')
+        navigate(isInsurance ? '/insurance/estimate/new' : '/estimate/new')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'فشل التحليل')
