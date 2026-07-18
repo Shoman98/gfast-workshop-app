@@ -9,6 +9,7 @@ import ReportPage from '@/pages/Report'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import InsuranceLoginPage from '@/pages/InsuranceLogin'
 import InsuranceDashboard from '@/pages/InsuranceDashboard'
+import InsuranceClaimDetail from '@/pages/InsuranceClaimDetail'
 import InsuranceProtectedRoute from '@/components/InsuranceProtectedRoute'
 
 function useTokenRefresh() {
@@ -67,6 +68,7 @@ export default function App() {
         <Route path="/insurance/login" element={<Navigate to="/login" replace />} />
         <Route element={<InsuranceProtectedRoute />}>
           <Route path="/insurance/dashboard" element={<InsuranceDashboard />} />
+          <Route path="/insurance/claim/:estimateId" element={<InsuranceClaimDetail />} />
           <Route path="/insurance/assessment" element={<AnalysisPage />} />
           <Route path="/insurance/estimate/:estimateId" element={<EstimatePage />} />
           <Route path="/insurance/report/:estimateId" element={<ReportPage />} />
