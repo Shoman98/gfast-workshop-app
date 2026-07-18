@@ -56,7 +56,7 @@ export default function EstimatePage() {
   const [estimateStatus, setEstimateStatus] = useState<'draft' | 'confirmed'>('draft')
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showRemoveDialog, setShowRemoveDialog] = useState<{ index: number; partName: string } | null>(null)
-  const [vehicleInfo, setVehicleInfo] = useState({ year: 0, make: '', model: '' })
+  const [vehicleInfo, setVehicleInfo] = useState({ year: 0, make: '', model: '', insurance_company_id: null as string | null })
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
   useEffect(() => {
@@ -80,9 +80,11 @@ export default function EstimatePage() {
           })
         }
         const cleanDamages = dedup((analysis.damages || []).filter(isMapped))
+          .map((p: any) => ({ ...p, ai_original_severity: p.severity_label }))
         const damageKeys = new Set(cleanDamages.map((p: any) => p.part_name_en?.toLowerCase().trim()))
         const cleanNeedsCheck = dedup((analysis.needs_check_parts || []).filter(isMapped))
           .filter((p: any) => !damageKeys.has(p.part_name_en?.toLowerCase().trim()))
+          .map((p: any) => ({ ...p, ai_original_severity: p.severity_label }))
         setParts(cleanDamages)
         setNeedsCheckParts(cleanNeedsCheck)
         sessionStorage.removeItem('analysisResult')
@@ -295,7 +297,8 @@ export default function EstimatePage() {
           vehicle_year: vehicleInfo.year || 2023,
           vehicle_make: vehicleInfo.make || 'Unknown',
           vehicle_model: vehicleInfo.model || 'Unknown',
-          parts,
+          insurance_company_id: vehicleInfo.insurance_company_id || null,
+          parts: parts.map(p => ({ ...p, ai_original_severity: (p as any).ai_original_severity || null })),
           labors,
           status: 'confirmed',
         }

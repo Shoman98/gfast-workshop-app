@@ -7,6 +7,9 @@ import AnalysisPage from '@/pages/Analysis'
 import EstimatePage from '@/pages/Estimate'
 import ReportPage from '@/pages/Report'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import InsuranceLoginPage from '@/pages/InsuranceLogin'
+import InsuranceDashboard from '@/pages/InsuranceDashboard'
+import InsuranceProtectedRoute from '@/components/InsuranceProtectedRoute'
 
 function useTokenRefresh() {
   useEffect(() => {
@@ -60,6 +63,12 @@ export default function App() {
           <Route path="/estimate/:estimateId" element={<EstimatePage />} />
           <Route path="/report/:estimateId" element={<ReportPage />} />
         </Route>
+        {/* Insurance routes */}
+        <Route path="/insurance/login" element={<InsuranceLoginPage />} />
+        <Route element={<InsuranceProtectedRoute />}>
+          <Route path="/insurance/dashboard" element={<InsuranceDashboard />} />
+        </Route>
+
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>

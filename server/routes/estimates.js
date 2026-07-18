@@ -126,6 +126,10 @@ router.post('/', authenticate, async (req, res, next) => {
       estimateData.confirmed_at = new Date().toISOString();
     }
 
+    if (req.body.insurance_company_id) {
+      estimateData.insurance_company_id = req.body.insurance_company_id;
+    }
+
     const { data: estimate, error: estimateError } = await supabase
       .from('estimates')
       .insert(estimateData)
@@ -144,6 +148,7 @@ router.post('/', authenticate, async (req, res, next) => {
         damage_type: part.damage_type,
         confidence: part.confidence,
         severity_label: part.severity_label || 'Repair',
+        ai_original_severity: part.ai_original_severity || null,
         price: part.price || 0,
         is_ai_detected: part.is_ai_detected !== false,
       }));
