@@ -11,6 +11,9 @@ export default function AnalysisPage() {
   const [year, setYear] = useState('')
   const [make, setMake] = useState('')
   const [model, setModel] = useState('')
+  const [vinNumber, setVinNumber] = useState('')
+  const [customerName, setCustomerName] = useState('')
+  const [customerMobile, setCustomerMobile] = useState('')
   const [insuranceCompanyId, setInsuranceCompanyId] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState('')
@@ -43,8 +46,8 @@ export default function AnalysisPage() {
       return
     }
 
-    if (!year || !make || !model) {
-      setError('يرجى إدخال معلومات المركبة')
+    if (!year || !make || !model || !vinNumber || !customerName || !customerMobile) {
+      setError('يرجى إدخال جميع البيانات المطلوبة')
       return
     }
 
@@ -110,6 +113,9 @@ export default function AnalysisPage() {
           year: parseInt(year),
           make,
           model,
+          vin_number: vinNumber,
+          customer_name: customerName,
+          customer_mobile: customerMobile,
           insurance_company_id: insuranceCompanyId || null,
         }))
         const isInsurance = window.location.pathname.startsWith('/insurance')
@@ -222,6 +228,25 @@ export default function AnalysisPage() {
               </div>
             </div>
 
+            {/* VIN Number */}
+            <div style={{ marginTop: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>رقم الشاسيه (VIN)</label>
+              <input
+                type="text"
+                value={vinNumber}
+                onChange={(e) => setVinNumber(e.target.value)}
+                placeholder="WBADT43452G296706"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  textAlign: 'right',
+                  outline: 'none',
+                }}
+              />
+            </div>
+
             {/* Insurance company field */}
             <div style={{ marginTop: '1rem' }}>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>
@@ -247,6 +272,47 @@ export default function AnalysisPage() {
                   <option key={c.id} value={c.id}>{c.nameAr}</option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* Customer Details */}
+          <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #e5e7eb' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>بيانات العميل</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>اسم العميل</label>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="أحمد محمد"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    textAlign: 'right',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>رقم الهاتف</label>
+                <input
+                  type="tel"
+                  value={customerMobile}
+                  onChange={(e) => setCustomerMobile(e.target.value)}
+                  placeholder="01001234567"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    textAlign: 'right',
+                    outline: 'none',
+                  }}
+                />
+              </div>
             </div>
           </div>
 

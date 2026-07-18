@@ -24,6 +24,9 @@ interface Claim {
   vehicle_year: number
   vehicle_make: string
   vehicle_model: string
+  vin_number?: string
+  customer_name?: string
+  customer_mobile?: string
   confirmed_at: string
   insurance_company_id: string
   labors: Labor[]
@@ -97,8 +100,8 @@ export default function InsuranceClaimDetail() {
           <button onClick={() => navigate('/insurance/dashboard')} style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.9rem', cursor: 'pointer', marginBottom: '1rem', fontWeight: 600 }}>
             ← العودة
           </button>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+            <div style={{ flex: 1 }}>
               <h1 style={{ margin: 0, color: '#111827', fontSize: '1.5rem', fontWeight: 800 }}>
                 {claim.vehicle_make} {claim.vehicle_model} {claim.vehicle_year}
               </h1>
@@ -106,6 +109,28 @@ export default function InsuranceClaimDetail() {
                 {claim.workshop_id} · {new Date(claim.confirmed_at).toLocaleDateString('ar-EG')}
               </p>
             </div>
+          </div>
+
+          {/* Customer & Vehicle Details Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+            {claim.customer_name && (
+              <div>
+                <p style={{ margin: '0 0 0.25rem 0', color: '#6b7280', fontSize: '0.8rem', fontWeight: 600 }}>اسم العميل</p>
+                <p style={{ margin: 0, color: '#111827', fontWeight: 600 }}>{claim.customer_name}</p>
+              </div>
+            )}
+            {claim.customer_mobile && (
+              <div>
+                <p style={{ margin: '0 0 0.25rem 0', color: '#6b7280', fontSize: '0.8rem', fontWeight: 600 }}>رقم الهاتف</p>
+                <p style={{ margin: 0, color: '#111827', fontWeight: 600 }}>{claim.customer_mobile}</p>
+              </div>
+            )}
+            {claim.vin_number && (
+              <div>
+                <p style={{ margin: '0 0 0.25rem 0', color: '#6b7280', fontSize: '0.8rem', fontWeight: 600 }}>رقم الشاسيه (VIN)</p>
+                <p style={{ margin: 0, color: '#111827', fontWeight: 600 }}>{claim.vin_number}</p>
+              </div>
+            )}
           </div>
         </div>
 
