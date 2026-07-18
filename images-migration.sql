@@ -1,12 +1,11 @@
 -- Create estimate_images table to track Cloudinary images
 CREATE TABLE IF NOT EXISTS estimate_images (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  estimate_id TEXT NOT NULL REFERENCES estimates(estimate_id) ON DELETE CASCADE,
+  estimate_id UUID NOT NULL REFERENCES estimates(estimate_id) ON DELETE CASCADE,
   cloudinary_public_id TEXT NOT NULL,
   cloudinary_url TEXT NOT NULL,
   uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  uploaded_by TEXT,
-  CONSTRAINT fk_estimate FOREIGN KEY (estimate_id) REFERENCES estimates(estimate_id)
+  uploaded_by TEXT
 );
 
 -- Index for faster queries
