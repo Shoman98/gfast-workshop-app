@@ -253,7 +253,7 @@ export default function EstimatePage() {
       setError('يرجى إدخال اسم الجزء')
       return
     }
-    setParts([...parts, { ...newPart }])
+    setParts([...parts, { ...newPart, is_ai_detected: false, ai_original_severity: null as any }])
     logAudit('add_part', `تم إضافة قطعة جديدة: ${newPart.part_name_ar} (السعر: ${newPart.price})`, undefined, undefined, JSON.stringify(newPart))
     setNewPart({
       part_name_en: '',
