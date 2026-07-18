@@ -108,6 +108,24 @@ export default function AnalysisPage() {
           needs_check: data.analysis.needs_check_parts?.length || 0,
           full_response: data.analysis
         });
+
+        // Store images as base64 for later upload after estimate confirmation
+        const allImages = [...generalImages, ...damageImages]
+        if (allImages.length > 0) {
+          const imagePromises = allImages.map(file => {
+            return new Promise<string>((resolve) => {
+              const reader = new FileReader()
+              reader.onload = (e) => {
+                resolve(e.target?.result as string)
+              }
+              reader.readAsDataURL(file)
+            })
+          })
+          const imageBase64Array = await Promise.all(imagePromises)
+          sessionStorage.setItem('analysisImages', JSON.stringify(imageBase64Array))
+          console.log('📸 Stored', imageBase64Array.length, 'images for upload after confirmation')
+        }
+
         sessionStorage.setItem('analysisResult', JSON.stringify(data.analysis))
         sessionStorage.setItem('vehicleInfo', JSON.stringify({
           year: parseInt(year),

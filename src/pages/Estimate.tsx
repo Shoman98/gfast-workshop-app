@@ -337,6 +337,58 @@ export default function EstimatePage() {
 
         const data = await response.json()
         console.log('✅ Estimate created:', data)
+        const createdEstimateId = data.estimate?.estimate_id
+
+        // Upload images if any exist
+        if (createdEstimateId) {
+          const analysisImages = sessionStorage.getItem('analysisImages')
+          if (analysisImages) {
+            const images = JSON.parse(analysisImages)
+            console.log('📸 Uploading', images.length, 'images...')
+
+            for (const imageBase64 of images) {
+              try {
+                const formData = new FormData()
+                // Convert base64 to blob
+                const byteCharacters = atob(imageBase64.split(',')[1])
+                const byteNumbers = new Array(byteCharacters.length)
+                for (let i = 0; i < byteCharacters.length; i++) {
+                  byteNumbers[i] = byteCharacters.charCodeAt(i)
+                }
+                const byteArray = new Uint8Array(byteNumbers)
+                const blob = new Blob([byteArray], { type: 'image/jpeg' })
+
+                formData.append('file', blob)
+                formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET)
+
+                const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`
+                const cloudRes = await fetch(cloudinaryUrl, {
+                  method: 'POST',
+                  body: formData
+                })
+
+                if (cloudRes.ok) {
+                  const cloudData = await cloudRes.json()
+                  // Save image reference to database
+                  await fetch(apiUrl('/api/images'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      estimate_id: createdEstimateId,
+                      cloudinary_public_id: cloudData.public_id,
+                      cloudinary_url: cloudData.secure_url,
+                      uploaded_by: 'workshop'
+                    })
+                  })
+                  console.log('✅ Image uploaded:', cloudData.public_id)
+                }
+              } catch (imgErr) {
+                console.error('⚠️ Failed to upload image:', imgErr)
+              }
+            }
+            sessionStorage.removeItem('analysisImages')
+          }
+        }
 
         setEstimateStatus('confirmed')
         setShowSuccessMessage(true)
