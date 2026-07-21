@@ -97,7 +97,7 @@ router.get('/:estimateId', authenticate, async (req, res, next) => {
 router.post('/', authenticate, async (req, res, next) => {
   try {
     const workshopId = req.workshop_id;
-    const { vehicleYear, vehicleMake, vehicleModel, vehicle_year, vehicle_make, vehicle_model, parts, labors, status } = req.body;
+    const { vehicleYear, vehicleMake, vehicleModel, vehicle_year, vehicle_make, vehicle_model, vin_number, customer_name, customer_mobile, parts, labors, status } = req.body;
     const year = vehicleYear || vehicle_year;
     const make = vehicleMake || vehicle_make;
     const model = vehicleModel || vehicle_model;
@@ -117,6 +117,9 @@ router.post('/', authenticate, async (req, res, next) => {
       vehicle_year: year,
       vehicle_make: make,
       vehicle_model: model,
+      vin_number: vin_number || null,
+      customer_name: customer_name || null,
+      customer_mobile: customer_mobile || null,
       status: status || 'draft',
       labors: labors || [],
     };
@@ -124,6 +127,10 @@ router.post('/', authenticate, async (req, res, next) => {
     // If status is confirmed, set confirmed_at timestamp
     if (status === 'confirmed') {
       estimateData.confirmed_at = new Date().toISOString();
+    }
+
+    if (req.body.insurance_company_id) {
+      estimateData.insurance_company_id = req.body.insurance_company_id;
     }
 
     const { data: estimate, error: estimateError } = await supabase
@@ -144,6 +151,7 @@ router.post('/', authenticate, async (req, res, next) => {
         damage_type: part.damage_type,
         confidence: part.confidence,
         severity_label: part.severity_label || 'Repair',
+        ai_original_severity: part.ai_original_severity || null,
         price: part.price || 0,
         is_ai_detected: part.is_ai_detected !== false,
       }));

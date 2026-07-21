@@ -8,6 +8,10 @@ interface ReportData {
   vehicle_year: number
   vehicle_make: string
   vehicle_model: string
+  vin_number?: string
+  customer_name?: string
+  customer_mobile?: string
+  insurance_company_id?: string
   confirmed_at: string
   parts: any[]
   estimate_parts?: any[]
@@ -212,6 +216,41 @@ export default function ReportPage() {
                 <p style={{ color: '#6b7280', margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>سنه الصنع</p>
                 <p style={{ color: '#111827', margin: 0, fontWeight: '600' }}>{report.vehicle_year}</p>
               </div>
+            </div>
+          </div>
+
+          {/* Customer & Vehicle Details - Additional Info */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2.5rem', fontSize: '0.9rem', paddingBottom: '1.5rem', borderBottom: '1px solid #e5e7eb' }}>
+            {/* Customer Info */}
+            <div style={{ textAlign: 'right' }}>
+              {report.customer_name && (
+                <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+                  <p style={{ color: '#6b7280', margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>اسم العميل</p>
+                  <p style={{ color: '#111827', margin: 0, fontWeight: '600' }}>{report.customer_name}</p>
+                </div>
+              )}
+              {report.customer_mobile && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <p style={{ color: '#6b7280', margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>رقم الهاتف</p>
+                  <p style={{ color: '#111827', margin: 0, fontWeight: '600' }}>{report.customer_mobile}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Vehicle Details & Insurance */}
+            <div style={{ textAlign: 'right' }}>
+              {report.vin_number && (
+                <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+                  <p style={{ color: '#6b7280', margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>رقم الشاسيه (VIN)</p>
+                  <p style={{ color: '#111827', margin: 0, fontWeight: '600' }}>{report.vin_number}</p>
+                </div>
+              )}
+              {report.insurance_company_id && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <p style={{ color: '#6b7280', margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>شركة التأمين</p>
+                  <p style={{ color: '#111827', margin: 0, fontWeight: '600' }}>{report.insurance_company_id.toUpperCase()}</p>
+                </div>
+              )}
             </div>
           </div>
 

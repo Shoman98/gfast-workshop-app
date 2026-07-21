@@ -56,7 +56,7 @@ export default function EstimatePage() {
   const [estimateStatus, setEstimateStatus] = useState<'draft' | 'confirmed'>('draft')
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showRemoveDialog, setShowRemoveDialog] = useState<{ index: number; partName: string } | null>(null)
-  const [vehicleInfo, setVehicleInfo] = useState({ year: 0, make: '', model: '' })
+  const [vehicleInfo, setVehicleInfo] = useState({ year: 0, make: '', model: '', insurance_company_id: null as string | null })
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
   useEffect(() => {
@@ -80,9 +80,11 @@ export default function EstimatePage() {
           })
         }
         const cleanDamages = dedup((analysis.damages || []).filter(isMapped))
+          .map((p: any) => ({ ...p, ai_original_severity: p.severity_label }))
         const damageKeys = new Set(cleanDamages.map((p: any) => p.part_name_en?.toLowerCase().trim()))
         const cleanNeedsCheck = dedup((analysis.needs_check_parts || []).filter(isMapped))
           .filter((p: any) => !damageKeys.has(p.part_name_en?.toLowerCase().trim()))
+          .map((p: any) => ({ ...p, ai_original_severity: p.severity_label }))
         setParts(cleanDamages)
         setNeedsCheckParts(cleanNeedsCheck)
         sessionStorage.removeItem('analysisResult')
@@ -251,7 +253,7 @@ export default function EstimatePage() {
       setError('يرجى إدخال اسم الجزء')
       return
     }
-    setParts([...parts, { ...newPart }])
+    setParts([...parts, { ...newPart, is_ai_detected: false, ai_original_severity: null as any }])
     logAudit('add_part', `تم إضافة قطعة جديدة: ${newPart.part_name_ar} (السعر: ${newPart.price})`, undefined, undefined, JSON.stringify(newPart))
     setNewPart({
       part_name_en: '',
@@ -295,7 +297,11 @@ export default function EstimatePage() {
           vehicle_year: vehicleInfo.year || 2023,
           vehicle_make: vehicleInfo.make || 'Unknown',
           vehicle_model: vehicleInfo.model || 'Unknown',
-          parts,
+          vin_number: vehicleInfo.vin_number || null,
+          customer_name: vehicleInfo.customer_name || null,
+          customer_mobile: vehicleInfo.customer_mobile || null,
+          insurance_company_id: vehicleInfo.insurance_company_id || null,
+          parts: parts.map(p => ({ ...p, ai_original_severity: (p as any).ai_original_severity || null })),
           labors,
           status: 'confirmed',
         }
@@ -331,6 +337,81 @@ export default function EstimatePage() {
 
         const data = await response.json()
         console.log('✅ Estimate created:', data)
+        const createdEstimateId = data.estimate_id || data.estimate?.estimate_id
+
+        // Upload images if any exist
+        if (createdEstimateId) {
+          const analysisImages = sessionStorage.getItem('analysisImages')
+          console.log('🔍 Checking for analysisImages in sessionStorage:', analysisImages ? 'Found' : 'Not found')
+
+          if (analysisImages) {
+            try {
+              const images = JSON.parse(analysisImages)
+              console.log('📸 Uploading', images.length, 'images...')
+
+              for (const imageBase64 of images) {
+                try {
+                  const formData = new FormData()
+                  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+                  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+
+                  console.log('☁️ Cloudinary config - Cloud:', cloudName, 'Preset:', uploadPreset)
+
+                  // Convert base64 to blob
+                  const parts = imageBase64.split(',')
+                  const byteCharacters = atob(parts[1])
+                  const byteNumbers = new Array(byteCharacters.length)
+                  for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i)
+                  }
+                  const byteArray = new Uint8Array(byteNumbers)
+                  const blob = new Blob([byteArray], { type: 'image/jpeg' })
+
+                  formData.append('file', blob)
+                  formData.append('upload_preset', uploadPreset)
+
+                  const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
+                  console.log('📤 Uploading to:', cloudinaryUrl)
+
+                  const cloudRes = await fetch(cloudinaryUrl, {
+                    method: 'POST',
+                    body: formData
+                  })
+
+                  if (cloudRes.ok) {
+                    const cloudData = await cloudRes.json()
+                    console.log('☁️ Cloudinary response:', cloudData.public_id)
+
+                    // Save image reference to database
+                    const dbRes = await fetch(apiUrl('/api/images'), {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        estimate_id: createdEstimateId,
+                        cloudinary_public_id: cloudData.public_id,
+                        cloudinary_url: cloudData.secure_url,
+                        uploaded_by: 'workshop'
+                      })
+                    })
+
+                    if (dbRes.ok) {
+                      console.log('✅ Image saved to database:', cloudData.public_id)
+                    } else {
+                      console.error('❌ Database save failed:', await dbRes.json())
+                    }
+                  } else {
+                    console.error('❌ Cloudinary upload failed:', cloudRes.status, await cloudRes.text())
+                  }
+                } catch (imgErr) {
+                  console.error('💥 Error uploading single image:', imgErr)
+                }
+              }
+              sessionStorage.removeItem('analysisImages')
+            } catch (parseErr) {
+              console.error('💥 Error parsing analysisImages:', parseErr)
+            }
+          }
+        }
 
         setEstimateStatus('confirmed')
         setShowSuccessMessage(true)

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiUrl } from '@/lib/api'
+import { INSURANCE_COMPANIES } from '@/mock/insurance'
 
 export default function AnalysisPage() {
   const navigate = useNavigate()
@@ -10,6 +11,10 @@ export default function AnalysisPage() {
   const [year, setYear] = useState('')
   const [make, setMake] = useState('')
   const [model, setModel] = useState('')
+  const [vinNumber, setVinNumber] = useState('')
+  const [customerName, setCustomerName] = useState('')
+  const [customerMobile, setCustomerMobile] = useState('')
+  const [insuranceCompanyId, setInsuranceCompanyId] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState('')
 
@@ -41,8 +46,8 @@ export default function AnalysisPage() {
       return
     }
 
-    if (!year || !make || !model) {
-      setError('يرجى إدخال معلومات المركبة')
+    if (!year || !make || !model || !vinNumber || !customerName || !customerMobile) {
+      setError('يرجى إدخال جميع البيانات المطلوبة (المركبة وبيانات العميل ورقم الشاسيه)')
       return
     }
 
@@ -103,13 +108,36 @@ export default function AnalysisPage() {
           needs_check: data.analysis.needs_check_parts?.length || 0,
           full_response: data.analysis
         });
+
+        // Store images as base64 for later upload after estimate confirmation
+        const allImages = [...generalImages, ...damageImages]
+        if (allImages.length > 0) {
+          const imagePromises = allImages.map(file => {
+            return new Promise<string>((resolve) => {
+              const reader = new FileReader()
+              reader.onload = (e) => {
+                resolve(e.target?.result as string)
+              }
+              reader.readAsDataURL(file)
+            })
+          })
+          const imageBase64Array = await Promise.all(imagePromises)
+          sessionStorage.setItem('analysisImages', JSON.stringify(imageBase64Array))
+          console.log('📸 Stored', imageBase64Array.length, 'images for upload after confirmation')
+        }
+
         sessionStorage.setItem('analysisResult', JSON.stringify(data.analysis))
         sessionStorage.setItem('vehicleInfo', JSON.stringify({
           year: parseInt(year),
           make,
           model,
+          vin_number: vinNumber,
+          customer_name: customerName,
+          customer_mobile: customerMobile,
+          insurance_company_id: insuranceCompanyId || null,
         }))
-        navigate('/estimate/new')
+        const isInsurance = window.location.pathname.startsWith('/insurance')
+        navigate(isInsurance ? '/insurance/estimate/new' : '/estimate/new')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'فشل التحليل')
@@ -206,6 +234,93 @@ export default function AnalysisPage() {
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
                   placeholder="كامري"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    textAlign: 'right',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* VIN Number */}
+            <div style={{ marginTop: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>رقم الشاسيه (VIN)</label>
+              <input
+                type="text"
+                value={vinNumber}
+                onChange={(e) => setVinNumber(e.target.value)}
+                placeholder="WBADT43452G296706"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  textAlign: 'right',
+                  outline: 'none',
+                }}
+              />
+            </div>
+
+            {/* Insurance company field */}
+            <div style={{ marginTop: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>
+                شركة التأمين <span style={{ color: '#9ca3af', fontWeight: 400 }}>(اختياري)</span>
+              </label>
+              <select
+                value={insuranceCompanyId}
+                onChange={(e) => setInsuranceCompanyId(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  textAlign: 'right',
+                  outline: 'none',
+                  backgroundColor: 'white',
+                  fontSize: '0.95rem',
+                  color: insuranceCompanyId ? '#111827' : '#9ca3af',
+                }}
+              >
+                <option value="">-- بدون شركة تأمين --</option>
+                {INSURANCE_COMPANIES.map((c) => (
+                  <option key={c.id} value={c.id}>{c.nameAr}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Customer Details */}
+          <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #e5e7eb' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>بيانات العميل</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>اسم العميل</label>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="أحمد محمد"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    textAlign: 'right',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>رقم الهاتف</label>
+                <input
+                  type="tel"
+                  value={customerMobile}
+                  onChange={(e) => setCustomerMobile(e.target.value)}
+                  placeholder="01001234567"
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem',
