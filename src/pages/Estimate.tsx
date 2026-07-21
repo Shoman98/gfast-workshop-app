@@ -337,7 +337,7 @@ export default function EstimatePage() {
 
         const data = await response.json()
         console.log('✅ Estimate created:', data)
-        const createdEstimateId = data.estimate?.estimate_id
+        const createdEstimateId = data.estimate_id || data.estimate?.estimate_id
 
         // Upload images if any exist
         if (createdEstimateId) {

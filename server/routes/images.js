@@ -34,7 +34,9 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { estimate_id, cloudinary_public_id, cloudinary_url, uploaded_by } = req.body;
+    console.log('📸 POST /api/images received:', { estimate_id, cloudinary_public_id, cloudinary_url: cloudinary_url?.substring(0, 60) });
     if (!estimate_id || !cloudinary_public_id || !cloudinary_url) {
+      console.log('❌ Missing fields:', { estimate_id: !!estimate_id, cloudinary_public_id: !!cloudinary_public_id, cloudinary_url: !!cloudinary_url });
       return res.status(400).json({ error: 'Missing required fields' });
     }
 

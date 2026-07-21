@@ -2,7 +2,108 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getInsuranceSession, clearInsuranceSession } from '@/mock/insurance'
 import { apiUrl } from '@/lib/api'
-import ImageModal from '@/components/ImageModal'
+
+interface PhotosModalProps {
+  estimateId: string
+  vehicleLabel: string
+  onClose: () => void
+}
+
+function PhotosModal({ estimateId, vehicleLabel, onClose }: PhotosModalProps) {
+  const [images, setImages] = useState<{ id: string; cloudinary_url: string }[]>([])
+  const [loading, setLoading] = useState(true)
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch(apiUrl(`/api/images?estimate_id=${estimateId}`))
+      .then(r => r.json())
+      .then(d => setImages(d.images || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [estimateId])
+
+  const handleDownload = async (url: string, index: number) => {
+    try {
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `estimate-photo-${index + 1}.jpg`
+      a.click()
+      URL.revokeObjectURL(a.href)
+    } catch {
+      window.open(url, '_blank')
+    }
+  }
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 100 }} />
+
+      {/* Modal */}
+      <div style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        backgroundColor: 'white', borderRadius: '1rem', width: '90%', maxWidth: '560px',
+        maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+        zIndex: 101, direction: 'rtl', overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid #e5e7eb' }}>
+          <div>
+            <div style={{ fontWeight: '700', fontSize: '1rem', color: '#111827' }}>📷 صور التقدير</div>
+            <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.15rem' }}>{vehicleLabel}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: '#6b7280', padding: '0.25rem' }}>✕</button>
+        </div>
+
+        {/* Images grid */}
+        <div style={{ overflowY: 'auto', padding: '1rem', flex: 1 }}>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>جاري التحميل...</div>
+          ) : images.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>لا توجد صور بعد</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+              {images.map((img, i) => (
+                <div key={i} style={{ position: 'relative' }}>
+                  <img
+                    src={img.cloudinary_url}
+                    alt=""
+                    onClick={() => setLightboxUrl(img.cloudinary_url)}
+                    style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e5e7eb', cursor: 'pointer', display: 'block' }}
+                  />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDownload(img.cloudinary_url, i) }}
+                    title="تحميل"
+                    style={{ position: 'absolute', bottom: '5px', left: '5px', backgroundColor: 'rgba(0,0,0,0.55)', color: 'white', border: 'none', borderRadius: '5px', padding: '3px 6px', fontSize: '0.75rem', cursor: 'pointer', lineHeight: 1 }}
+                  >⬇</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        {images.length > 0 && (
+          <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'center' }}>
+            <button
+              onClick={() => images.forEach((img, i) => handleDownload(img.cloudinary_url, i))}
+              style={{ padding: '0.65rem 1.75rem', backgroundColor: '#0ea5e9', color: 'white', border: 'none', borderRadius: '0.6rem', fontWeight: '700', fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >⬇ تحميل الكل</button>
+          </div>
+        )}
+      </div>
+
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div onClick={() => setLightboxUrl(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.92)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out' }}>
+          <img src={lightboxUrl} alt="" style={{ maxWidth: '92vw', maxHeight: '88vh', borderRadius: '8px', objectFit: 'contain' }} />
+        </div>
+      )}
+    </>
+  )
+}
 
 interface EstimatePart {
   part_id: string
@@ -67,8 +168,7 @@ export default function InsuranceDashboard() {
   const [claims, setClaims] = useState<Claim[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [imageModalOpen, setImageModalOpen] = useState(false)
-  const [selectedEstimateId, setSelectedEstimateId] = useState<string | null>(null)
+  const [photosModal, setPhotosModal] = useState<{ estimateId: string; vehicleLabel: string } | null>(null)
 
   useEffect(() => {
     if (!session) { navigate('/insurance/login'); return }
@@ -204,12 +304,9 @@ export default function InsuranceDashboard() {
                           </td>
                           <td style={{ padding: '0.875rem 1rem' }}>
                             <button
-                              onClick={() => {
-                                setSelectedEstimateId(claim.estimate_id)
-                                setImageModalOpen(true)
-                              }}
-                              style={{ padding: '0.375rem 0.875rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
-                              📸 صور
+                              onClick={() => setPhotosModal({ estimateId: claim.estimate_id, vehicleLabel: `${claim.vehicle_make} ${claim.vehicle_model} ${claim.vehicle_year}` })}
+                              style={{ padding: '0.375rem 0.875rem', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+                              📷 صور
                             </button>
                           </td>
                           <td style={{ padding: '0.875rem 1rem' }}>
@@ -246,16 +343,11 @@ export default function InsuranceDashboard() {
         )}
       </div>
 
-      {/* Image Modal - Read-only for insurance */}
-      {selectedEstimateId && (
-        <ImageModal
-          estimateId={selectedEstimateId}
-          isOpen={imageModalOpen}
-          onClose={() => {
-            setImageModalOpen(false)
-            setSelectedEstimateId(null)
-          }}
-          readOnly={true}
+      {photosModal && (
+        <PhotosModal
+          estimateId={photosModal.estimateId}
+          vehicleLabel={photosModal.vehicleLabel}
+          onClose={() => setPhotosModal(null)}
         />
       )}
     </div>

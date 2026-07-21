@@ -57,6 +57,7 @@ router.post('/', authenticate, async (req, res, next) => {
     });
   } catch (err) {
     console.error('❌ Analysis error:', err.message);
+    if (err.cause) console.error('   Cause:', err.cause);
     next({
       message: err.message,
       status: 500,
