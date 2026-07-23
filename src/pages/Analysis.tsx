@@ -2,6 +2,11 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiUrl } from '@/lib/api'
 import { INSURANCE_COMPANIES } from '@/mock/insurance'
+import vehiclesData from '@/data/vehicles.json'
+
+const VEHICLES: Record<string, string[]> = vehiclesData
+const BRANDS = Object.keys(VEHICLES).sort()
+const YEARS = Array.from({ length: 2027 - 2020 + 1 }, (_, i) => 2027 - i)
 
 export default function AnalysisPage() {
   const navigate = useNavigate()
@@ -193,56 +198,60 @@ export default function AnalysisPage() {
           <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #e5e7eb' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>معلومات المركبة</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>السنة</label>
-                <input
-                  type="number"
-                  value={year}
-                  onChange={(e) => setYear(e.target.value)}
-                  placeholder="2023"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: '2px solid #d1d5db',
-                    borderRadius: '0.5rem',
-                    textAlign: 'right',
-                    outline: 'none',
-                  }}
-                />
-              </div>
+              {/* Brand */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>الماركة</label>
-                <input
-                  type="text"
+                <select
                   value={make}
-                  onChange={(e) => setMake(e.target.value)}
-                  placeholder="تويوتا"
+                  onChange={(e) => { setMake(e.target.value); setModel('') }}
                   style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: '2px solid #d1d5db',
-                    borderRadius: '0.5rem',
-                    textAlign: 'right',
-                    outline: 'none',
+                    width: '100%', padding: '0.75rem 1rem',
+                    border: '2px solid #d1d5db', borderRadius: '0.5rem',
+                    textAlign: 'right', outline: 'none', backgroundColor: 'white',
+                    fontSize: '0.95rem', color: make ? '#111827' : '#9ca3af',
                   }}
-                />
+                >
+                  <option value="">-- اختر الماركة --</option>
+                  {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
               </div>
+
+              {/* Model */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>الموديل</label>
-                <input
-                  type="text"
+                <select
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  placeholder="كامري"
+                  disabled={!make}
                   style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: '2px solid #d1d5db',
-                    borderRadius: '0.5rem',
-                    textAlign: 'right',
-                    outline: 'none',
+                    width: '100%', padding: '0.75rem 1rem',
+                    border: '2px solid #d1d5db', borderRadius: '0.5rem',
+                    textAlign: 'right', outline: 'none', backgroundColor: make ? 'white' : '#f9fafb',
+                    fontSize: '0.95rem', color: model ? '#111827' : '#9ca3af',
+                    cursor: make ? 'pointer' : 'not-allowed',
                   }}
-                />
+                >
+                  <option value="">-- اختر الموديل --</option>
+                  {(VEHICLES[make] || []).map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+
+              {/* Year */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>السنة</label>
+                <select
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  style={{
+                    width: '100%', padding: '0.75rem 1rem',
+                    border: '2px solid #d1d5db', borderRadius: '0.5rem',
+                    textAlign: 'right', outline: 'none', backgroundColor: 'white',
+                    fontSize: '0.95rem', color: year ? '#111827' : '#9ca3af',
+                  }}
+                >
+                  <option value="">-- اختر السنة --</option>
+                  {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
               </div>
             </div>
 
