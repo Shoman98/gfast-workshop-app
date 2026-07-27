@@ -12,6 +12,7 @@ import authRoutes from './routes/auth.js';
 import estimateRoutes from './routes/estimates.js';
 import insuranceRoutes from './routes/insurance.js';
 import imageRoutes from './routes/images.js';
+import pricingRoutes from './routes/pricing.js';
 // Use SHARED module from wreck-vision - SINGLE SOURCE OF TRUTH
 import pkg from '@gfast/analysis-core';
 const { runAnalysisPipeline, enrichDamageData, PARTS_DATABASE, DAMAGE_TYPE_INDEX, PART_NAME_ALIASES } = pkg;
@@ -165,6 +166,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/estimates', estimateRoutes);
 app.use('/api/insurance', insuranceRoutes);
 app.use('/api/images', imageRoutes);
+app.use('/api/pricing', pricingRoutes);
 
 // Analysis route - Real Gemini Vision Analysis (with fallback to mock if API unavailable)
 app.post('/api/analysis', async (req, res, next) => {

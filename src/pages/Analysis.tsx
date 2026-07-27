@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiUrl } from '@/lib/api'
 import { INSURANCE_COMPANIES } from '@/mock/insurance'
@@ -6,7 +6,141 @@ import vehiclesData from '@/data/vehicles.json'
 
 const VEHICLES: Record<string, string[]> = vehiclesData
 const BRANDS = Object.keys(VEHICLES).sort()
-const YEARS = Array.from({ length: 2027 - 2020 + 1 }, (_, i) => 2027 - i)
+const YEARS = Array.from({ length: 2027 - 2000 + 1 }, (_, i) => String(2027 - i))
+
+interface SearchableSelectProps {
+  label: string
+  placeholder: string
+  options: string[]
+  value: string
+  onChange: (val: string) => void
+  disabled?: boolean
+}
+
+function SearchableSelect({ label, placeholder, options, value, onChange, disabled }: SearchableSelectProps) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const filtered = query.trim()
+    ? options.filter(o => o.toLowerCase().includes(query.toLowerCase()))
+    : options
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+        setQuery('')
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const handleSelect = (opt: string) => {
+    onChange(opt)
+    setQuery('')
+    setOpen(false)
+  }
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onChange('')
+    setQuery('')
+    setOpen(false)
+  }
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '700', color: '#374151', marginBottom: '0.4rem' }}>
+        {label}
+      </label>
+      <div
+        onClick={() => { if (!disabled) { setOpen(true); setTimeout(() => inputRef.current?.focus(), 50) } }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          border: `2px solid ${open ? '#2563eb' : '#d1d5db'}`,
+          borderRadius: '0.6rem',
+          backgroundColor: disabled ? '#f3f4f6' : 'white',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          overflow: 'hidden',
+          minHeight: '48px',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        <input
+          ref={inputRef}
+          value={open ? query : value}
+          onChange={e => setQuery(e.target.value)}
+          onFocus={() => { if (!disabled) setOpen(true) }}
+          placeholder={open ? 'ابحث...' : (value || placeholder)}
+          disabled={disabled}
+          style={{
+            flex: 1,
+            border: 'none',
+            outline: 'none',
+            padding: '0.75rem 1rem',
+            fontSize: '1rem',
+            textAlign: 'right',
+            direction: 'rtl',
+            backgroundColor: 'transparent',
+            color: value && !open ? '#111827' : open ? '#111827' : '#9ca3af',
+            cursor: disabled ? 'not-allowed' : 'text',
+          }}
+        />
+        {value && !open && (
+          <button onClick={handleClear} style={{ background: 'none', border: 'none', padding: '0 0.75rem', cursor: 'pointer', color: '#9ca3af', fontSize: '1rem', lineHeight: 1 }}>✕</button>
+        )}
+        <span style={{ padding: '0 0.75rem', color: '#9ca3af', fontSize: '0.8rem', pointerEvents: 'none' }}>
+          {open ? '▲' : '▼'}
+        </span>
+      </div>
+
+      {open && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 4px)',
+          left: 0, right: 0,
+          backgroundColor: 'white',
+          border: '1.5px solid #e5e7eb',
+          borderRadius: '0.6rem',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+          zIndex: 999,
+          maxHeight: '220px',
+          overflowY: 'auto',
+          direction: 'rtl',
+        }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: '1rem', color: '#9ca3af', textAlign: 'center', fontSize: '0.9rem' }}>لا توجد نتائج</div>
+          ) : (
+            filtered.map(opt => (
+              <div
+                key={opt}
+                onMouseDown={() => handleSelect(opt)}
+                style={{
+                  padding: '0.75rem 1rem',
+                  cursor: 'pointer',
+                  fontSize: '0.95rem',
+                  color: opt === value ? '#2563eb' : '#111827',
+                  backgroundColor: opt === value ? '#eff6ff' : 'transparent',
+                  fontWeight: opt === value ? '600' : '400',
+                  borderBottom: '1px solid #f3f4f6',
+                  transition: 'background 0.1s',
+                }}
+                onMouseEnter={e => { if (opt !== value) (e.currentTarget as HTMLElement).style.backgroundColor = '#f9fafb' }}
+                onMouseLeave={e => { if (opt !== value) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' }}
+              >
+                {opt}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function AnalysisPage() {
   const navigate = useNavigate()
@@ -22,6 +156,26 @@ export default function AnalysisPage() {
   const [insuranceCompanyId, setInsuranceCompanyId] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState('')
+  const [parentEstimateId, setParentEstimateId] = useState<string | null>(null)
+  const [isSupplementary, setIsSupplementary] = useState(false)
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem('supplementData')
+    if (!raw) return
+    sessionStorage.removeItem('supplementData')
+    const sup = JSON.parse(raw)
+    setParentEstimateId(sup.parentEstimateId)
+    setIsSupplementary(true)
+    if (sup.vehicle) {
+      setYear(String(sup.vehicle.year || ''))
+      setMake(sup.vehicle.make || '')
+      setModel(sup.vehicle.model || '')
+      setVinNumber(sup.vehicle.vin_number || '')
+      setCustomerName(sup.vehicle.customer_name || '')
+      setCustomerMobile(sup.vehicle.customer_mobile || '')
+      setInsuranceCompanyId(sup.vehicle.insurance_company_id || '')
+    }
+  }, [])
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'general' | 'damage') => {
     const files = Array.from(e.target.files || [])
@@ -92,7 +246,7 @@ export default function AnalysisPage() {
         body: JSON.stringify({
           images: rawImages,
           vehicleInfo: {
-            year: parseInt(year),
+            year: parseInt(year) || 0,
             make,
             model,
           },
@@ -133,14 +287,16 @@ export default function AnalysisPage() {
 
         sessionStorage.setItem('analysisResult', JSON.stringify(data.analysis))
         sessionStorage.setItem('vehicleInfo', JSON.stringify({
-          year: parseInt(year),
+          year: parseInt(year) || 0,
           make,
           model,
           vin_number: vinNumber,
           customer_name: customerName,
           customer_mobile: customerMobile,
           insurance_company_id: insuranceCompanyId || null,
+          parent_estimate_id: parentEstimateId || null,
         }))
+        sessionStorage.removeItem('supplementData')
         const isInsurance = window.location.pathname.startsWith('/insurance')
         navigate(isInsurance ? '/insurance/estimate/new' : '/estimate/new')
       }
@@ -196,115 +352,62 @@ export default function AnalysisPage() {
         }}>
           {/* Vehicle Info */}
           <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #e5e7eb' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>معلومات المركبة</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-              {/* Brand */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>الماركة</label>
-                <select
-                  value={make}
-                  onChange={(e) => { setMake(e.target.value); setModel('') }}
-                  style={{
-                    width: '100%', padding: '0.75rem 1rem',
-                    border: '2px solid #d1d5db', borderRadius: '0.5rem',
-                    textAlign: 'right', outline: 'none', backgroundColor: 'white',
-                    fontSize: '0.95rem', color: make ? '#111827' : '#9ca3af',
-                  }}
-                >
-                  <option value="">-- اختر الماركة --</option>
-                  {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-                </select>
-              </div>
-
-              {/* Model */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>الموديل</label>
-                <select
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  disabled={!make}
-                  style={{
-                    width: '100%', padding: '0.75rem 1rem',
-                    border: '2px solid #d1d5db', borderRadius: '0.5rem',
-                    textAlign: 'right', outline: 'none', backgroundColor: make ? 'white' : '#f9fafb',
-                    fontSize: '0.95rem', color: model ? '#111827' : '#9ca3af',
-                    cursor: make ? 'pointer' : 'not-allowed',
-                  }}
-                >
-                  <option value="">-- اختر الموديل --</option>
-                  {(VEHICLES[make] || []).map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
-
-              {/* Year */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>السنة</label>
-                <select
-                  value={year}
-                  onChange={(e) => setYear(e.target.value)}
-                  style={{
-                    width: '100%', padding: '0.75rem 1rem',
-                    border: '2px solid #d1d5db', borderRadius: '0.5rem',
-                    textAlign: 'right', outline: 'none', backgroundColor: 'white',
-                    fontSize: '0.95rem', color: year ? '#111827' : '#9ca3af',
-                  }}
-                >
-                  <option value="">-- اختر السنة --</option>
-                  {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0, color: '#111827' }}>معلومات المركبة</h2>
+              {isSupplementary && <span style={{ background: '#f5f3ff', color: '#7c3aed', border: '1.5px solid #ddd6fe', borderRadius: '999px', padding: '0.2rem 0.85rem', fontSize: '0.78rem', fontWeight: 700 }}>تقدير تكميلي</span>}
             </div>
-
-            {/* VIN Number */}
-            <div style={{ marginTop: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>رقم الشاسيه (VIN)</label>
-              <input
-                type="text"
-                value={vinNumber}
-                onChange={(e) => setVinNumber(e.target.value)}
-                placeholder="WBADT43452G296706"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  border: '2px solid #d1d5db',
-                  borderRadius: '0.5rem',
-                  textAlign: 'right',
-                  outline: 'none',
-                }}
-              />
-            </div>
-
-            {/* Insurance company field */}
-            <div style={{ marginTop: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>
-                شركة التأمين <span style={{ color: '#9ca3af', fontWeight: 400 }}>(اختياري)</span>
-              </label>
-              <select
-                value={insuranceCompanyId}
-                onChange={(e) => setInsuranceCompanyId(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  border: '2px solid #d1d5db',
-                  borderRadius: '0.5rem',
-                  textAlign: 'right',
-                  outline: 'none',
-                  backgroundColor: 'white',
-                  fontSize: '0.95rem',
-                  color: insuranceCompanyId ? '#111827' : '#9ca3af',
-                }}
-              >
-                <option value="">-- بدون شركة تأمين --</option>
-                {INSURANCE_COMPANIES.map((c) => (
-                  <option key={c.id} value={c.id}>{c.nameAr}</option>
+            {isSupplementary ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
+                {[
+                  ['الماركة', make],
+                  ['الموديل', model],
+                  ['السنة', year],
+                  ['رقم الشاسيه', vinNumber],
+                  ['شركة التأمين', insuranceCompanyId ? (INSURANCE_COMPANIES.find(c => c.id === insuranceCompanyId)?.nameAr || insuranceCompanyId) : '—'],
+                ].map(([label, val]) => (
+                  <div key={label}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#374151', marginBottom: '0.4rem' }}>{label}</label>
+                    <div style={{ padding: '0.75rem 1rem', background: '#f3f4f6', border: '2px solid #e5e7eb', borderRadius: '0.5rem', color: '#374151', fontWeight: 600 }}>{val || '—'}</div>
+                  </div>
                 ))}
-              </select>
-            </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                  <SearchableSelect label="الماركة" placeholder="-- اختر الماركة --" options={BRANDS} value={make} onChange={(v) => { setMake(v); setModel('') }} />
+                  <SearchableSelect label="الموديل" placeholder={make ? '-- اختر الموديل --' : 'اختر الماركة أولاً'} options={VEHICLES[make] || []} value={model} onChange={setModel} disabled={!make} />
+                  <SearchableSelect label="السنة" placeholder="-- اختر السنة --" options={YEARS} value={year} onChange={setYear} />
+                </div>
+                <div style={{ marginTop: '1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>رقم الشاسيه (VIN)</label>
+                  <input type="text" value={vinNumber} onChange={(e) => setVinNumber(e.target.value)} placeholder="WBADT43452G296706" style={{ width: '100%', padding: '0.75rem 1rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', textAlign: 'right', outline: 'none' }} />
+                </div>
+                <div style={{ marginTop: '1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>
+                    شركة التأمين <span style={{ color: '#9ca3af', fontWeight: 400 }}>(اختياري)</span>
+                  </label>
+                  <select value={insuranceCompanyId} onChange={(e) => setInsuranceCompanyId(e.target.value)} style={{ width: '100%', padding: '0.75rem 1rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', textAlign: 'right', outline: 'none', backgroundColor: 'white', fontSize: '0.95rem', color: insuranceCompanyId ? '#111827' : '#9ca3af' }}>
+                    <option value="">-- بدون شركة تأمين --</option>
+                    {INSURANCE_COMPANIES.map((c) => (<option key={c.id} value={c.id}>{c.nameAr}</option>))}
+                  </select>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Customer Details */}
           <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #e5e7eb' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827' }}>بيانات العميل</h2>
+            {isSupplementary ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                {[['اسم العميل', customerName], ['رقم الهاتف', customerMobile]].map(([label, val]) => (
+                  <div key={label}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#374151', marginBottom: '0.4rem' }}>{label}</label>
+                    <div style={{ padding: '0.75rem 1rem', background: '#f3f4f6', border: '2px solid #e5e7eb', borderRadius: '0.5rem', color: '#374151', fontWeight: 600 }}>{val || '—'}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>اسم العميل</label>
@@ -341,6 +444,7 @@ export default function AnalysisPage() {
                 />
               </div>
             </div>
+            )}
           </div>
 
           {/* General Images */}

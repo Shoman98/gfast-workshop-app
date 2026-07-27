@@ -1,0 +1,1844 @@
+[
+  {
+    "partId": "PT_0001",
+    "key": "hood",
+    "nameAr": "كبوت",
+    "nameEn": "hood"
+  },
+  {
+    "partId": "PT_0002",
+    "key": "front_windshield",
+    "nameAr": "زجاج أمامي",
+    "nameEn": "front windshield"
+  },
+  {
+    "partId": "PT_0003",
+    "key": "front_wipers",
+    "nameAr": "مسّاحات أمامي",
+    "nameEn": "front wipers"
+  },
+  {
+    "partId": "PT_0004",
+    "key": "a_pillars",
+    "nameAr": "(قائم أمامي)",
+    "nameEn": "A pillars"
+  },
+  {
+    "partId": "PT_0005",
+    "key": "roof",
+    "nameAr": "سقف",
+    "nameEn": "roof"
+  },
+  {
+    "partId": "PT_0006",
+    "key": "grille",
+    "nameAr": "شبكة أمامية",
+    "nameEn": "grille"
+  },
+  {
+    "partId": "PT_0007",
+    "key": "front_right_headlight",
+    "nameAr": "فانوس أمامي يمين",
+    "nameEn": "front right headlight"
+  },
+  {
+    "partId": "PT_0008",
+    "key": "front_left_headlight",
+    "nameAr": "فانوس أمامي شمال",
+    "nameEn": "front left headlight"
+  },
+  {
+    "partId": "PT_0009",
+    "key": "upper_bumper",
+    "nameAr": "اكصدام أمامي علوي",
+    "nameEn": "upper bumper"
+  },
+  {
+    "partId": "PT_0010",
+    "key": "front_car_logo",
+    "nameAr": "شعار العربية (امامي)",
+    "nameEn": "front car logo"
+  },
+  {
+    "partId": "PT_0011",
+    "key": "trim_nickel_grille",
+    "nameAr": "كروم/حلية الشبكة",
+    "nameEn": "trim nickel grille"
+  },
+  {
+    "partId": "PT_0012",
+    "key": "lower_grille",
+    "nameAr": "شبكة سفلية",
+    "nameEn": "lower grille"
+  },
+  {
+    "partId": "PT_0013",
+    "key": "front_right_foglight",
+    "nameAr": "كشاف ضباب يمين",
+    "nameEn": "front right foglight"
+  },
+  {
+    "partId": "PT_0014",
+    "key": "front_left_foglight",
+    "nameAr": "كشاف ضباب شمال",
+    "nameEn": "front left foglight"
+  },
+  {
+    "partId": "PT_0015",
+    "key": "lower_bumper",
+    "nameAr": "اكصدام أمامي سفلي",
+    "nameEn": "lower bumper"
+  },
+  {
+    "partId": "PT_0016",
+    "key": "front_left_fog_trim",
+    "nameAr": "إطار/تريم كشاف الضباب شمال",
+    "nameEn": "front left fog trim"
+  },
+  {
+    "partId": "PT_0017",
+    "key": "front_right_fog_trim",
+    "nameAr": "إطار/تريم كشاف الضباب يمين",
+    "nameEn": "front right fog trim"
+  },
+  {
+    "partId": "PT_0018",
+    "key": "front_left_fender",
+    "nameAr": "رفرف أمامي شمال",
+    "nameEn": "front left fender"
+  },
+  {
+    "partId": "PT_0019",
+    "key": "left_rocker_panel",
+    "nameAr": "عتبة جنب شمال",
+    "nameEn": "left rocker panel"
+  },
+  {
+    "partId": "PT_0020",
+    "key": "front_left_door",
+    "nameAr": "باب أمامي شمال",
+    "nameEn": "front left door"
+  },
+  {
+    "partId": "PT_0021",
+    "key": "rear_left_door",
+    "nameAr": "باب خلفي شمال",
+    "nameEn": "rear left door"
+  },
+  {
+    "partId": "PT_0022",
+    "key": "left_quarter_panel",
+    "nameAr": "رفرف خلفي شمال",
+    "nameEn": "left quarter panel"
+  },
+  {
+    "partId": "PT_0023",
+    "key": "left_mirror",
+    "nameAr": "مراية شمال",
+    "nameEn": "left mirror"
+  },
+  {
+    "partId": "PT_0024",
+    "key": "front_left_door_window",
+    "nameAr": "زجاج باب أمامي شمال",
+    "nameEn": "front left door window"
+  },
+  {
+    "partId": "PT_0025",
+    "key": "rear_left_door_window",
+    "nameAr": "زجاج باب خلفي شمال",
+    "nameEn": "rear left door window"
+  },
+  {
+    "partId": "PT_0026",
+    "key": "front_left_door_handle",
+    "nameAr": "أوكره/مقبض باب أمامي شمال",
+    "nameEn": "front left door handle"
+  },
+  {
+    "partId": "PT_0027",
+    "key": "rear_left_door_handle",
+    "nameAr": "أوكره/مقبض باب خلفي شمال",
+    "nameEn": "rear left door handle"
+  },
+  {
+    "partId": "PT_0028",
+    "key": "front_right_fender",
+    "nameAr": "رفرف أمامي يمين",
+    "nameEn": "front right fender"
+  },
+  {
+    "partId": "PT_0029",
+    "key": "right_rocker_panel",
+    "nameAr": "عتبة جنب يمين",
+    "nameEn": "right rocker panel"
+  },
+  {
+    "partId": "PT_0030",
+    "key": "front_right_door",
+    "nameAr": "باب أمامي يمين",
+    "nameEn": "front right door"
+  },
+  {
+    "partId": "PT_0031",
+    "key": "rear_right_door",
+    "nameAr": "باب خلفي يمين",
+    "nameEn": "rear right door"
+  },
+  {
+    "partId": "PT_0032",
+    "key": "rear_right_quarter_panel",
+    "nameAr": "رفرف خلفي يمين",
+    "nameEn": "rear right quarter panel"
+  },
+  {
+    "partId": "PT_0033",
+    "key": "b_pillar",
+    "nameAr": "قايم وسط",
+    "nameEn": "B pillar"
+  },
+  {
+    "partId": "PT_0034",
+    "key": "right_mirror",
+    "nameAr": "مراية يمين",
+    "nameEn": "right mirror"
+  },
+  {
+    "partId": "PT_0035",
+    "key": "front_right_door_window",
+    "nameAr": "زجاج باب أمامي يمين",
+    "nameEn": "front right door window"
+  },
+  {
+    "partId": "PT_0036",
+    "key": "rear_right_door_window",
+    "nameAr": "زجاج باب خلفي يمين",
+    "nameEn": "rear right door window"
+  },
+  {
+    "partId": "PT_0037",
+    "key": "front_right_door_trim",
+    "nameAr": "تريم/حلية باب أمامي يمين",
+    "nameEn": "front right door trim"
+  },
+  {
+    "partId": "PT_0038",
+    "key": "rear_right_door_trim",
+    "nameAr": "تريم/حلية باب خلفي يمين",
+    "nameEn": "rear right door trim"
+  },
+  {
+    "partId": "PT_0039",
+    "key": "front_right_door_handle",
+    "nameAr": "أوكره/مقبض باب أمامي يمين",
+    "nameEn": "front right door handle"
+  },
+  {
+    "partId": "PT_0040",
+    "key": "rear_right_door_handle",
+    "nameAr": "أوكره/مقبض باب خلفي يمين",
+    "nameEn": "rear right door handle"
+  },
+  {
+    "partId": "PT_0041",
+    "key": "rear_bumper_upper",
+    "nameAr": "اكصدام خلفي علوي",
+    "nameEn": "rear bumper upper"
+  },
+  {
+    "partId": "PT_0042",
+    "key": "rear_bumper_lower",
+    "nameAr": "اكصدام خلفي سفلي",
+    "nameEn": "rear bumper lower"
+  },
+  {
+    "partId": "PT_0043",
+    "key": "rear_wiper",
+    "nameAr": "مسّاحة خلفي",
+    "nameEn": "rear wiper"
+  },
+  {
+    "partId": "PT_0044",
+    "key": "c_pillar",
+    "nameAr": "قايم خلفي",
+    "nameEn": "C pillar"
+  },
+  {
+    "partId": "PT_0045",
+    "key": "rear_windshield",
+    "nameAr": "زجاج خلفي",
+    "nameEn": "rear windshield"
+  },
+  {
+    "partId": "PT_0046",
+    "key": "rear_left_headlight_inner",
+    "nameAr": "فانوس خلفي شمال (داخلي)",
+    "nameEn": "rear left headlight inner"
+  },
+  {
+    "partId": "PT_0047",
+    "key": "rear_right_headlight_inner",
+    "nameAr": "فانوس خلفي يمين (داخلي)",
+    "nameEn": "rear right headlight inner"
+  },
+  {
+    "partId": "PT_0048",
+    "key": "rear_left_headlight_outer",
+    "nameAr": "فانوس خلفي شمال (خارجي)",
+    "nameEn": "rear left headlight outer"
+  },
+  {
+    "partId": "PT_0049",
+    "key": "rear_right_headlight_outer",
+    "nameAr": "فانوس خلفي يمين (خارجي)",
+    "nameEn": "rear right headlight outer"
+  },
+  {
+    "partId": "PT_0050",
+    "key": "trunk_door",
+    "nameAr": "باب الشنطة",
+    "nameEn": "trunk door"
+  },
+  {
+    "partId": "PT_0051",
+    "key": "rear_car_logo",
+    "nameAr": "شعار العربية (خلفي)",
+    "nameEn": "rear car logo"
+  },
+  {
+    "partId": "PT_0052",
+    "key": "front_left_tire",
+    "nameAr": "كوتش أمامي شمال",
+    "nameEn": "front left tire"
+  },
+  {
+    "partId": "PT_0053",
+    "key": "front_right_tire",
+    "nameAr": "كوتش أمامي يمين",
+    "nameEn": "front right tire"
+  },
+  {
+    "partId": "PT_0054",
+    "key": "rear_right_tire",
+    "nameAr": "كوتش خلفي يمين",
+    "nameEn": "rear right tire"
+  },
+  {
+    "partId": "PT_0055",
+    "key": "rear_left_tire",
+    "nameAr": "كوتش خلفي شمال",
+    "nameEn": "rear left tire"
+  },
+  {
+    "partId": "PT_0056",
+    "key": "front_left_wheel",
+    "nameAr": "جنط أمامي شمال",
+    "nameEn": "front left wheel"
+  },
+  {
+    "partId": "PT_0057",
+    "key": "front_right_wheel",
+    "nameAr": "جنط أمامي يمين",
+    "nameEn": "front right wheel"
+  },
+  {
+    "partId": "PT_0058",
+    "key": "rear_right_wheel",
+    "nameAr": "جنط خلفي يمين",
+    "nameEn": "rear right wheel"
+  },
+  {
+    "partId": "PT_0059",
+    "key": "rear_left_wheel",
+    "nameAr": "جنط خلفي شمال",
+    "nameEn": "rear left wheel"
+  },
+  {
+    "partId": "PT_0060",
+    "key": "roof_window",
+    "nameAr": "فتحة سقف",
+    "nameEn": "roof window"
+  },
+  {
+    "partId": "PT_0061",
+    "key": "roof_trims",
+    "nameAr": "حليات/تريم السقف",
+    "nameEn": "roof trims"
+  },
+  {
+    "partId": "PT_0062",
+    "key": "aerial",
+    "nameAr": "أريال",
+    "nameEn": "aerial"
+  },
+  {
+    "partId": "PT_0063",
+    "key": "front_left_fender_liner",
+    "nameAr": "داير رفرف امامي شمال",
+    "nameEn": "front left fender liner"
+  },
+  {
+    "partId": "PT_0064",
+    "key": "front_right_fender_liner",
+    "nameAr": "داير رفرف امامي يمين",
+    "nameEn": "front right fender liner"
+  },
+  {
+    "partId": "PT_0065",
+    "key": "rear_left_fender_liner",
+    "nameAr": "داير رفرف خلفي شمال",
+    "nameEn": "rear left fender liner"
+  },
+  {
+    "partId": "PT_0066",
+    "key": "rear_right_fender_liner",
+    "nameAr": "داير رفرف خلفي يمين",
+    "nameEn": "rear right fender liner"
+  },
+  {
+    "partId": "PT_0067",
+    "key": "tableau",
+    "nameAr": "تابلوه",
+    "nameEn": "tableau"
+  },
+  {
+    "partId": "PT_0068",
+    "key": "dashboard_internal_structure",
+    "nameAr": "تابلوه",
+    "nameEn": "dashboard internal structure"
+  },
+  {
+    "partId": "PT_0069",
+    "key": "washer_fluid_reservoir",
+    "nameAr": "قربه مياه مساحات",
+    "nameEn": "washer fluid reservoir"
+  },
+  {
+    "partId": "PT_0070",
+    "key": "front_left_seatbelt",
+    "nameAr": "حزام امامي شمال",
+    "nameEn": "front left seatbelt"
+  },
+  {
+    "partId": "PT_0071",
+    "key": "front_right_seatbelt",
+    "nameAr": "حزام امامي يمين",
+    "nameEn": "front right seatbelt"
+  },
+  {
+    "partId": "PT_0072",
+    "key": "rear_left_seatbelt",
+    "nameAr": "حزام خلفي شمال",
+    "nameEn": "rear left seatbelt"
+  },
+  {
+    "partId": "PT_0073",
+    "key": "rear_right_seatbelt",
+    "nameAr": "حزام خلفي يمين",
+    "nameEn": "rear right seatbelt"
+  },
+  {
+    "partId": "PT_0074",
+    "key": "front_left_seatbelt_pretensioner",
+    "nameAr": "شدّاد حزام الأمان",
+    "nameEn": "front left seatbelt pretensioner"
+  },
+  {
+    "partId": "PT_0075",
+    "key": "front_right_seatbelt_pretensioner",
+    "nameAr": "شدّاد حزام الأمان",
+    "nameEn": "front right seatbelt pretensioner"
+  },
+  {
+    "partId": "PT_0076",
+    "key": "rear_left_seatbelt_pretensioner",
+    "nameAr": "شدّاد حزام الأمان",
+    "nameEn": "rear left seatbelt pretensioner"
+  },
+  {
+    "partId": "PT_0077",
+    "key": "rear_right_seatbelt_pretensioner",
+    "nameAr": "شدّاد حزام الأمان",
+    "nameEn": "rear right seatbelt pretensioner"
+  },
+  {
+    "partId": "PT_0078",
+    "key": "airbag_module",
+    "nameAr": "كنترول الايرباج",
+    "nameEn": "airbag module"
+  },
+  {
+    "partId": "PT_0079",
+    "key": "airbag_control_module",
+    "nameAr": "كنترول ايرباج",
+    "nameEn": "airbag control module"
+  },
+  {
+    "partId": "PT_0080",
+    "key": "side_curtain_airbag_system",
+    "nameAr": "ايرباجات قوايم",
+    "nameEn": "side curtain airbag system"
+  },
+  {
+    "partId": "PT_0081",
+    "key": "left_side_curtain_airbags",
+    "nameAr": "ايرباج قايم شمال",
+    "nameEn": "left-side curtain airbags"
+  },
+  {
+    "partId": "PT_0082",
+    "key": "right_side_curtain_airbags",
+    "nameAr": "ايرباج قايم يمين",
+    "nameEn": "right-side curtain airbags"
+  },
+  {
+    "partId": "PT_0083",
+    "key": "steering_wheel_driver_airbag",
+    "nameAr": "ايرباج سائق",
+    "nameEn": "steering wheel/driver airbag"
+  },
+  {
+    "partId": "PT_0084",
+    "key": "steering_wheel_airbag",
+    "nameAr": "ايرباج تابلوه",
+    "nameEn": "steering wheel airbag"
+  },
+  {
+    "partId": "PT_0085",
+    "key": "driver_knee_airbag",
+    "nameAr": "وسادة هوائية لركبة السائق",
+    "nameEn": "driver knee airbag"
+  },
+  {
+    "partId": "PT_0086",
+    "key": "airbag_impact_sensors",
+    "nameAr": "حساس تصادم ايرباج امامي",
+    "nameEn": "airbag impact sensors"
+  },
+  {
+    "partId": "PT_0087",
+    "key": "front_impact_sensor",
+    "nameAr": "حساس تصادم امامي",
+    "nameEn": "front impact sensor"
+  },
+  {
+    "partId": "PT_0088",
+    "key": "bcm_module",
+    "nameAr": "كنترول BCM",
+    "nameEn": "bcm module"
+  },
+  {
+    "partId": "PT_0089",
+    "key": "ecm_module",
+    "nameAr": "كنترول ECM",
+    "nameEn": "ecm module"
+  },
+  {
+    "partId": "PT_0090",
+    "key": "tcm_module",
+    "nameAr": "كنترول TCM",
+    "nameEn": "tcm module"
+  },
+  {
+    "partId": "PT_0091",
+    "key": "adas_module",
+    "nameAr": "كنترول ADAS",
+    "nameEn": "adas module"
+  },
+  {
+    "partId": "PT_0092",
+    "key": "front_parking_sensors",
+    "nameAr": "حساسات ركن أمامي",
+    "nameEn": "front parking sensors"
+  },
+  {
+    "partId": "PT_0093",
+    "key": "rear_parking_sensors",
+    "nameAr": "حساسات ركن خلفي",
+    "nameEn": "rear parking sensors"
+  },
+  {
+    "partId": "PT_0094",
+    "key": "front_camera",
+    "nameAr": "كاميرا أمامية",
+    "nameEn": "front camera"
+  },
+  {
+    "partId": "PT_0095",
+    "key": "rear_camera",
+    "nameAr": "كاميرا خلفية",
+    "nameEn": "rear camera"
+  },
+  {
+    "partId": "PT_0096",
+    "key": "front_harness",
+    "nameAr": "ضفيرة أمامي",
+    "nameEn": "front harness"
+  },
+  {
+    "partId": "PT_0097",
+    "key": "rear_harness",
+    "nameAr": "ضفيرة خلفي",
+    "nameEn": "rear harness"
+  },
+  {
+    "partId": "PT_0098",
+    "key": "front_wiring_harness_and_sensors",
+    "nameAr": "ضفيره امامي بالحساسات",
+    "nameEn": "front wiring harness and sensors"
+  },
+  {
+    "partId": "PT_0099",
+    "key": "rear_parking_sensor_harness",
+    "nameAr": "ضفيره خلفي بالحساسات",
+    "nameEn": "rear parking sensor harness"
+  },
+  {
+    "partId": "PT_0100",
+    "key": "battery",
+    "nameAr": "بطارية",
+    "nameEn": "battery"
+  },
+  {
+    "partId": "PT_0101",
+    "key": "exhaust_manifold",
+    "nameAr": "مانيفولد الشكمان",
+    "nameEn": "exhaust manifold"
+  },
+  {
+    "partId": "PT_0102",
+    "key": "exhaust_front_pipe",
+    "nameAr": "ماسورة الشكمان الأمامية",
+    "nameEn": "exhaust front pipe"
+  },
+  {
+    "partId": "PT_0103",
+    "key": "exhaust_middle_pipe",
+    "nameAr": "ماسورة الشكمان الوسط",
+    "nameEn": "exhaust middle pipe"
+  },
+  {
+    "partId": "PT_0104",
+    "key": "exhaust_rear_pipe",
+    "nameAr": "ماسورة الشكمان الخلفية",
+    "nameEn": "exhaust rear pipe"
+  },
+  {
+    "partId": "PT_0105",
+    "key": "brake_hoses",
+    "nameAr": "خراطيم الفرامل",
+    "nameEn": "brake hoses"
+  },
+  {
+    "partId": "PT_0106",
+    "key": "gas_hoses",
+    "nameAr": "خراطيم البنزين",
+    "nameEn": "gas hoses"
+  },
+  {
+    "partId": "PT_0107",
+    "key": "fuel_tank",
+    "nameAr": "تانك البنزين",
+    "nameEn": "fuel tank"
+  },
+  {
+    "partId": "PT_0108",
+    "key": "engine_block",
+    "nameAr": "بلوك الموتور",
+    "nameEn": "engine block"
+  },
+  {
+    "partId": "PT_0109",
+    "key": "engine_oil_pan",
+    "nameAr": "كرتيرة زيت الموتور",
+    "nameEn": "engine oil pan"
+  },
+  {
+    "partId": "PT_0110",
+    "key": "transmission_housing",
+    "nameAr": "جسم/علبة الفتيس",
+    "nameEn": "transmission housing"
+  },
+  {
+    "partId": "PT_0111",
+    "key": "transmission_oil_pan",
+    "nameAr": "كرتيرة زيت الفتيس",
+    "nameEn": "transmission oil pan"
+  },
+  {
+    "partId": "PT_0112",
+    "key": "engine_mounts",
+    "nameAr": "قواعد الموتور",
+    "nameEn": "engine mounts"
+  },
+  {
+    "partId": "PT_0113",
+    "key": "transmission_mounts",
+    "nameAr": "قواعد الفتيس",
+    "nameEn": "transmission mounts"
+  },
+  {
+    "partId": "PT_0114",
+    "key": "driveshaft",
+    "nameAr": "عمود الكردان",
+    "nameEn": "driveshaft"
+  },
+  {
+    "partId": "PT_0115",
+    "key": "front_differential",
+    "nameAr": "دفرنس أمامي",
+    "nameEn": "front differential"
+  },
+  {
+    "partId": "PT_0116",
+    "key": "rear_differential",
+    "nameAr": "دفرنس خلفي",
+    "nameEn": "rear differential"
+  },
+  {
+    "partId": "PT_0117",
+    "key": "radiator",
+    "nameAr": "ردياتير",
+    "nameEn": "radiator"
+  },
+  {
+    "partId": "PT_0118",
+    "key": "ac_condenser",
+    "nameAr": "(سربنتينه التكييف)",
+    "nameEn": "ac condenser"
+  },
+  {
+    "partId": "PT_0119",
+    "key": "intercooler_turbo",
+    "nameAr": "انتركولر التيربو",
+    "nameEn": "intercooler turbo"
+  },
+  {
+    "partId": "PT_0120",
+    "key": "radiator_cap",
+    "nameAr": "غطا الردياتير",
+    "nameEn": "radiator cap"
+  },
+  {
+    "partId": "PT_0121",
+    "key": "transmission_cooler",
+    "nameAr": "مبرد الفتيس",
+    "nameEn": "transmission cooler"
+  },
+  {
+    "partId": "PT_0122",
+    "key": "coolant_pump",
+    "nameAr": "طلمبة مياه",
+    "nameEn": "coolant pump"
+  },
+  {
+    "partId": "PT_0123",
+    "key": "radiator_hoses",
+    "nameAr": "خراطيم الردياتير",
+    "nameEn": "radiator hoses"
+  },
+  {
+    "partId": "PT_0124",
+    "key": "turbo_coolant_hoses",
+    "nameAr": "خراطيم مياه التيربو",
+    "nameEn": "turbo coolant hoses"
+  },
+  {
+    "partId": "PT_0125",
+    "key": "radiator_fan",
+    "nameAr": "مروحة الردياتير",
+    "nameEn": "radiator fan"
+  },
+  {
+    "partId": "PT_0126",
+    "key": "fan_motor",
+    "nameAr": "موتور المروحة",
+    "nameEn": "fan motor"
+  },
+  {
+    "partId": "PT_0127",
+    "key": "front_right_shock_absorber",
+    "nameAr": "مساعد أمامي يمين",
+    "nameEn": "front right shock absorber"
+  },
+  {
+    "partId": "PT_0128",
+    "key": "front_left_shock_absorber",
+    "nameAr": "مساعد أمامي شمال",
+    "nameEn": "front left shock absorber"
+  },
+  {
+    "partId": "PT_0129",
+    "key": "rear_left_shock_absorber",
+    "nameAr": "مساعد خلفي شمال",
+    "nameEn": "rear left shock absorber"
+  },
+  {
+    "partId": "PT_0130",
+    "key": "rear_right_shock_absorber",
+    "nameAr": "مساعد خلفي يمين",
+    "nameEn": "rear right shock absorber"
+  },
+  {
+    "partId": "PT_0131",
+    "key": "front_right_control_arm",
+    "nameAr": "مقص أمامي يمين",
+    "nameEn": "front right control arm"
+  },
+  {
+    "partId": "PT_0132",
+    "key": "front_left_control_arm",
+    "nameAr": "مقص أمامي شمال",
+    "nameEn": "front left control arm"
+  },
+  {
+    "partId": "PT_0133",
+    "key": "rear_right_control_arm",
+    "nameAr": "مقص خلفي يمين",
+    "nameEn": "rear right control arm"
+  },
+  {
+    "partId": "PT_0134",
+    "key": "rear_left_control_arm",
+    "nameAr": "مقص خلفي شمال",
+    "nameEn": "rear left control arm"
+  },
+  {
+    "partId": "PT_0135",
+    "key": "front_right_steering_knuckle",
+    "nameAr": "شمعدان امامي يمين",
+    "nameEn": "front right steering knuckle"
+  },
+  {
+    "partId": "PT_0136",
+    "key": "front_left_steering_knuckle",
+    "nameAr": "شمعدان امامي شمال",
+    "nameEn": "front left steering knuckle"
+  },
+  {
+    "partId": "PT_0137",
+    "key": "rear_right_steering_knuckle",
+    "nameAr": "شمعدان خلفي يمين",
+    "nameEn": "rear right steering knuckle"
+  },
+  {
+    "partId": "PT_0138",
+    "key": "rear_left_steering_knuckle",
+    "nameAr": "شمعدان خلفي شمال",
+    "nameEn": "rear left steering knuckle"
+  },
+  {
+    "partId": "PT_0139",
+    "key": "steering_rack",
+    "nameAr": "علبة الدريكسيون",
+    "nameEn": "steering rack"
+  },
+  {
+    "partId": "PT_0140",
+    "key": "steering_column",
+    "nameAr": "عمود الدريكسيون",
+    "nameEn": "steering column"
+  },
+  {
+    "partId": "PT_0141",
+    "key": "inner_tie_rod",
+    "nameAr": "باره داخلي",
+    "nameEn": "inner tie rod"
+  },
+  {
+    "partId": "PT_0142",
+    "key": "outer_tie_rod",
+    "nameAr": "باره خارجي",
+    "nameEn": "outer tie rod"
+  },
+  {
+    "partId": "PT_0143",
+    "key": "suspension_control_arms",
+    "nameAr": "مقصات امامي",
+    "nameEn": "suspension control arms"
+  },
+  {
+    "partId": "PT_0144",
+    "key": "tie_rods",
+    "nameAr": "بارات خارجي",
+    "nameEn": "tie rods"
+  },
+  {
+    "partId": "PT_0145",
+    "key": "front_left_suspension_assembly",
+    "nameAr": "مساعد امامي شمال",
+    "nameEn": "front left suspension assembly"
+  },
+  {
+    "partId": "PT_0146",
+    "key": "front_right_suspension_assembly",
+    "nameAr": "مساعد امامي يمين",
+    "nameEn": "front right suspension assembly"
+  },
+  {
+    "partId": "PT_0147",
+    "key": "rear_left_suspension_assembly",
+    "nameAr": "مساعد خلفي شمال",
+    "nameEn": "rear left suspension assembly"
+  },
+  {
+    "partId": "PT_0148",
+    "key": "rear_right_suspension_assembly",
+    "nameAr": "مساعد خلفي يمين",
+    "nameEn": "rear right suspension assembly"
+  },
+  {
+    "partId": "PT_0149",
+    "key": "cooling_system",
+    "nameAr": "طقم تبريد",
+    "nameEn": "cooling system"
+  },
+  {
+    "partId": "PT_0150",
+    "key": "cooling_fan_assembly",
+    "nameAr": "مروحه تبريد",
+    "nameEn": "cooling fan assembly"
+  },
+  {
+    "partId": "PT_0151",
+    "key": "radiator_and_cooling_fan_assembly",
+    "nameAr": "طقم تبريد",
+    "nameEn": "radiator and cooling fan assembly"
+  },
+  {
+    "partId": "PT_0152",
+    "key": "radiator_and_condenser",
+    "nameAr": "طقم تبريد بدون مروحه",
+    "nameEn": "radiator and condenser"
+  },
+  {
+    "partId": "PT_0153",
+    "key": "underbody_chassis",
+    "nameAr": "بطن العربية/الشاسيه السفلي",
+    "nameEn": "underbody chassis"
+  },
+  {
+    "partId": "PT_0154",
+    "key": "engine_shield",
+    "nameAr": "غطاء/درع حماية الموتور السفلي",
+    "nameEn": "engine shield"
+  },
+  {
+    "partId": "PT_0155",
+    "key": "rear_shield",
+    "nameAr": "غطاء/درع حماية خلفي",
+    "nameEn": "rear shield"
+  },
+  {
+    "partId": "PT_0156",
+    "key": "front_shield",
+    "nameAr": "غطاء/درع حماية أمامي",
+    "nameEn": "front shield"
+  },
+  {
+    "partId": "PT_0157",
+    "key": "front_bumper_chassis_bar",
+    "nameAr": "عارضة/حديد الصدام الأمامي",
+    "nameEn": "front bumper chassis bar"
+  },
+  {
+    "partId": "PT_0158",
+    "key": "front_carrier",
+    "nameAr": "صدر أمامي (حامل ردياتير)",
+    "nameEn": "front carrier"
+  },
+  {
+    "partId": "PT_0159",
+    "key": "rear_bumper_chassis_bar",
+    "nameAr": "عارضة/حديد الصدام الخلفي",
+    "nameEn": "rear bumper chassis bar"
+  },
+  {
+    "partId": "PT_0160",
+    "key": "rear_bumper_crash_foam",
+    "nameAr": "فوم اكصدام خلفي",
+    "nameEn": "rear bumper crash foam"
+  },
+  {
+    "partId": "PT_0161",
+    "key": "front_right_cross_member",
+    "nameAr": "فرده شاسيه أمامية يمين",
+    "nameEn": "front right cross member"
+  },
+  {
+    "partId": "PT_0162",
+    "key": "front_left_cross_member",
+    "nameAr": "فرده شاسيه أمامية شمال",
+    "nameEn": "front left cross member"
+  },
+  {
+    "partId": "PT_0163",
+    "key": "hood_latch",
+    "nameAr": "كالون/قفل الكبوت",
+    "nameEn": "hood latch"
+  },
+  {
+    "partId": "PT_0164",
+    "key": "hood_latch_assembly",
+    "nameAr": "كالون كبود",
+    "nameEn": "hood latch assembly"
+  },
+  {
+    "partId": "PT_0165",
+    "key": "front_right_rail",
+    "nameAr": "سلاح رفرف امامي يمين",
+    "nameEn": "front rail right"
+  },
+  {
+    "partId": "PT_0166",
+    "key": "front_left_rail",
+    "nameAr": "سلاح رفرف امامي شمال",
+    "nameEn": "front rail left"
+  },
+  {
+    "partId": "PT_0167",
+    "key": "front_left_pan_panel",
+    "nameAr": "كرتيره صاج امامي شمال",
+    "nameEn": "front left pan panel"
+  },
+  {
+    "partId": "PT_0168",
+    "key": "front_right_pan_panel",
+    "nameAr": "كرتيره صاج امامي يمين",
+    "nameEn": "front right pan panel"
+  },
+  {
+    "partId": "PT_0169",
+    "key": "rear_right_cross_member",
+    "nameAr": "فرده شاسيه خلفية يمين",
+    "nameEn": "rear right cross member"
+  },
+  {
+    "partId": "PT_0170",
+    "key": "rear_left_cross_member",
+    "nameAr": "فرده شاسيه خلفية شمال",
+    "nameEn": "rear left cross member"
+  },
+  {
+    "partId": "PT_0171",
+    "key": "spare_tire_pan",
+    "nameAr": "حله الاستبن",
+    "nameEn": "spare tire pan"
+  },
+  {
+    "partId": "PT_0172",
+    "key": "rear_right_pan_panel",
+    "nameAr": "كرتيره صاج خلفي يمين",
+    "nameEn": "rear right pan panel"
+  },
+  {
+    "partId": "PT_0173",
+    "key": "rear_left_pan_panel",
+    "nameAr": "كرتيره صاج خلفي شمال",
+    "nameEn": "rear left pan panel"
+  },
+  {
+    "partId": "PT_0174",
+    "key": "rear_right_inner_pillar",
+    "nameAr": "قايم داخلي خلفي يمين",
+    "nameEn": "rear right inner pillar"
+  },
+  {
+    "partId": "PT_0175",
+    "key": "rear_left_inner_pillar",
+    "nameAr": "قايم داخلي خلفي شمال",
+    "nameEn": "rear left inner pillar"
+  },
+  {
+    "partId": "PT_0176",
+    "key": "front_right_inner_pillar",
+    "nameAr": "قايم داخلي أمامي يمين",
+    "nameEn": "front right inner pillar"
+  },
+  {
+    "partId": "PT_0177",
+    "key": "front_left_inner_pillar",
+    "nameAr": "قايم داخلي أمامي شمال",
+    "nameEn": "front left inner pillar"
+  },
+  {
+    "partId": "PT_0178",
+    "key": "front_right_door_hinge",
+    "nameAr": "مفصلة باب أمامي يمين",
+    "nameEn": "front right door hinge"
+  },
+  {
+    "partId": "PT_0179",
+    "key": "front_left_door_hinge",
+    "nameAr": "مفصلة باب أمامي شمال",
+    "nameEn": "front left door hinge"
+  },
+  {
+    "partId": "PT_0180",
+    "key": "rear_right_door_hinge",
+    "nameAr": "مفصلة باب خلفي يمين",
+    "nameEn": "rear right door hinge"
+  },
+  {
+    "partId": "PT_0181",
+    "key": "rear_left_door_hinge",
+    "nameAr": "مفصلة باب خلفي شمال",
+    "nameEn": "rear left door hinge"
+  },
+  {
+    "partId": "PT_0182",
+    "key": "left_front_door_hinges",
+    "nameAr": "مفصلات أبواب شمال",
+    "nameEn": "left front door hinges"
+  },
+  {
+    "partId": "PT_0183",
+    "key": "rear_panel",
+    "nameAr": "ضهر صاج خلفي",
+    "nameEn": "rear panel"
+  },
+  {
+    "partId": "PT_0184",
+    "key": "rear_body_panel",
+    "nameAr": "ضهر صاج",
+    "nameEn": "rear body panel"
+  },
+  {
+    "partId": "PT_0185",
+    "key": "front_impact_bar",
+    "nameAr": "شاسيه اكصدام امامي",
+    "nameEn": "front impact bar"
+  },
+  {
+    "partId": "PT_0186",
+    "key": "rear_impact_bar",
+    "nameAr": "شاسيه اكصدام خلفي",
+    "nameEn": "rear impact bar"
+  },
+  {
+    "partId": "PT_0187",
+    "key": "radiator_support",
+    "nameAr": "صدر فبر",
+    "nameEn": "radiator support"
+  },
+  {
+    "partId": "PT_0188",
+    "key": "radiator_support_core_support",
+    "nameAr": "صدر فبر",
+    "nameEn": "Radiator Support / Core Support"
+  },
+  {
+    "partId": "PT_0189",
+    "key": "radiator_core_support",
+    "nameAr": "صدر فبر",
+    "nameEn": "radiator core support"
+  },
+  {
+    "partId": "PT_0190",
+    "key": "headlight_mounting_brackets",
+    "nameAr": "قواعد فوانيس امامي",
+    "nameEn": "headlight mounting brackets"
+  },
+  {
+    "partId": "PT_0191",
+    "key": "trunk_latch_and_striker",
+    "nameAr": "كالون شنطه",
+    "nameEn": "trunk latch and striker"
+  },
+  {
+    "partId": "PT_0192",
+    "key": "trunk_latch",
+    "nameAr": "كالون شنطه",
+    "nameEn": "trunk latch"
+  },
+  {
+    "partId": "PT_0193",
+    "key": "liftgate_struts",
+    "nameAr": "مساعدين شنطه",
+    "nameEn": "liftgate struts"
+  },
+  {
+    "partId": "PT_0194",
+    "key": "rear_bumper_brackets",
+    "nameAr": "قواعد اكصدام خلفي",
+    "nameEn": "rear bumper brackets"
+  },
+  {
+    "partId": "PT_0195",
+    "key": "front_right_apron",
+    "nameAr": "كرتيره رفرف يمين",
+    "nameEn": "front right apron"
+  },
+  {
+    "partId": "PT_0196",
+    "key": "front_left_apron",
+    "nameAr": "كرتيره رفرف شمال",
+    "nameEn": "front left apron"
+  },
+  {
+    "partId": "PT_0197",
+    "key": "rear_floor_pan_and_spare_tire_well",
+    "nameAr": "حله استبن",
+    "nameEn": "rear floor pan and spare tire well"
+  },
+  {
+    "partId": "PT_0198",
+    "key": "trunk_floor",
+    "nameAr": "حله استبن",
+    "nameEn": "trunk Floor"
+  },
+  {
+    "partId": "PT_0199",
+    "key": "rear_frame_rail_left",
+    "nameAr": "سلاح رفرف خلفي شمال",
+    "nameEn": "rear frame rail left"
+  },
+  {
+    "partId": "PT_0200",
+    "key": "rear_frame_rail_right",
+    "nameAr": "سلاح رفرف خلفي يمين",
+    "nameEn": "rear frame rail right"
+  },
+  {
+    "partId": "PT_0201",
+    "key": "front_left_chassis_rail",
+    "nameAr": "سلاح رفرف امامي شمال",
+    "nameEn": "front left chassis rail"
+  },
+  {
+    "partId": "PT_0202",
+    "key": "front_bulkhead",
+    "nameAr": "صدر السيارة",
+    "nameEn": "front bulkhead"
+  },
+  {
+    "partId": "PT_0203",
+    "key": "trunk_hinges",
+    "nameAr": "مفصلات شنطه",
+    "nameEn": "Trunk hinges"
+  },
+  {
+    "partId": "PT_0204",
+    "key": "trunk_chrome_trim",
+    "nameAr": "نيكل شنطة",
+    "nameEn": "Trunk chrome trim / garnish"
+  },
+  {
+    "partId": "PT_0205",
+    "key": "trunk_emblems",
+    "nameAr": "علامات شنطه",
+    "nameEn": "Trunk emblems / badges"
+  },
+  {
+    "partId": "PT_0206",
+    "key": "trunk_interior_lining",
+    "nameAr": "فرش شنطه",
+    "nameEn": "Trunk interior trim/lining"
+  },
+  {
+    "partId": "PT_0207",
+    "key": "trunk_interior_plastic_trim",
+    "nameAr": "فيبر شنطة داخلي",
+    "nameEn": "Trunk interior plastic trim"
+  },
+  {
+    "partId": "PT_0208",
+    "key": "rear_parcel_shelf",
+    "nameAr": "رف شنطه فيبر",
+    "nameEn": "Rear parcel shelf (plastic)"
+  },
+  {
+    "partId": "PT_0209",
+    "key": "rear_bumper_lower_valance",
+    "nameAr": "كساحه اكصدام خلفي فيبر",
+    "nameEn": "Rear bumper lower valance (plastic)"
+  },
+  {
+    "partId": "PT_0210",
+    "key": "rear_reflector_right",
+    "nameAr": "عاكس خلفي يمين",
+    "nameEn": "Rear reflector\\"
+  },
+  {
+    "partId": "PT_0211",
+    "key": "rear_reflector_left",
+    "nameAr": "عاكس خلفي شمال",
+    "nameEn": "Rear reflector\\"
+  },
+  {
+    "partId": "PT_0212",
+    "key": "trunk_mounted_tail_light",
+    "nameAr": "فانوس شنطه",
+    "nameEn": "Trunk-mounted tail light"
+  },
+  {
+    "partId": "PT_0213",
+    "key": "trunk_spoiler",
+    "nameAr": "اسبويلر شنطه",
+    "nameEn": "Trunk spoiler"
+  },
+  {
+    "partId": "PT_0214",
+    "key": "rear_bumper_chrome_trim",
+    "nameAr": "نيكل اكصدام خلفي",
+    "nameEn": "Rear bumper chrome trim"
+  },
+  {
+    "partId": "PT_0215",
+    "key": "exhaust_tip_trim",
+    "nameAr": "حليه شكامان",
+    "nameEn": "Exhaust tip trim/garnish"
+  },
+  {
+    "partId": "PT_0216",
+    "key": "trunk_sheet_metal",
+    "nameAr": "حلق شنطه صاج",
+    "nameEn": "Trunk (sheet metal)"
+  },
+  {
+    "partId": "PT_0217",
+    "key": "roof_trim_right",
+    "nameAr": "فيبره سقف يمين",
+    "nameEn": "Roof trim\\"
+  },
+  {
+    "partId": "PT_0218",
+    "key": "roof_trim_left",
+    "nameAr": "فيبره سقف شمال",
+    "nameEn": "Roof trim\\"
+  },
+  {
+    "partId": "PT_0219",
+    "key": "front_bumper_lower_valance",
+    "nameAr": "كساحه اكصدام امامي فيبر",
+    "nameEn": "Front bumper lower valance (plastic)"
+  },
+  {
+    "partId": "PT_0220",
+    "key": "front_bumper_brackets",
+    "nameAr": "قواعد اكصدام امامي",
+    "nameEn": "Front bumper brackets/mounts"
+  },
+  {
+    "partId": "PT_0221",
+    "key": "hood_hinges",
+    "nameAr": "مفصلات كبود",
+    "nameEn": "Hood hinges"
+  },
+  {
+    "partId": "PT_0222",
+    "key": "hood_struts",
+    "nameAr": "مساعدين كبود",
+    "nameEn": "Hood struts"
+  },
+  {
+    "partId": "PT_0223",
+    "key": "hood_shocks",
+    "nameAr": "مفجرات كبود",
+    "nameEn": "Hood shocks"
+  },
+  {
+    "partId": "PT_0224",
+    "key": "hood_to_fender_rubber_seal",
+    "nameAr": "شنب كبود",
+    "nameEn": "Hood-to-fender rubber seal"
+  },
+  {
+    "partId": "PT_0225",
+    "key": "front_bumper_chrome_trim",
+    "nameAr": "نيكل اكصدام امامي",
+    "nameEn": "Front bumper chrome trim"
+  },
+  {
+    "partId": "PT_0226",
+    "key": "front_bumper_chrome_trim_right",
+    "nameAr": "نيكل اكصدام امامي يمين",
+    "nameEn": "Front bumper chrome trim\\"
+  },
+  {
+    "partId": "PT_0227",
+    "key": "front_bumper_chrome_trim_left",
+    "nameAr": "نيكل اكصدام امامي شمال",
+    "nameEn": "Front bumper chrome trim\\"
+  },
+  {
+    "partId": "PT_0228",
+    "key": "rear_license_plate_bracket",
+    "nameAr": "فيبره نمره خلفي",
+    "nameEn": "Rear license plate trim/bracket"
+  },
+  {
+    "partId": "PT_0229",
+    "key": "rear_fender_arch_liner_right",
+    "nameAr": "كارتيره رفرف خلفي يمين",
+    "nameEn": "Rear fender arch liner\\"
+  },
+  {
+    "partId": "PT_0230",
+    "key": "rear_fender_arch_liner_left",
+    "nameAr": "كارتيره رفرف خلفي شمال",
+    "nameEn": "Rear fender arch liner\\"
+  },
+  {
+    "partId": "PT_0231",
+    "key": "front_bumper_foam",
+    "nameAr": "فوم اكصدام امامي",
+    "nameEn": "Front bumper foam"
+  },
+  {
+    "partId": "PT_0232",
+    "key": "alternator",
+    "nameAr": "دينامو",
+    "nameEn": "Alternator"
+  },
+  {
+    "partId": "PT_0233",
+    "key": "ac_compressor",
+    "nameAr": "كمبرسور تكييف",
+    "nameEn": "AC compressor"
+  },
+  {
+    "partId": "PT_0234",
+    "key": "ac_pipes_lines",
+    "nameAr": "مواسير تكييف",
+    "nameEn": "AC pipes/lines"
+  },
+  {
+    "partId": "PT_0235",
+    "key": "radiator_hoses_assembly",
+    "nameAr": "شجره مياه تبريد",
+    "nameEn": "Radiator hoses"
+  },
+  {
+    "partId": "PT_0236",
+    "key": "turbocharger",
+    "nameAr": "تربو",
+    "nameEn": "Turbocharger"
+  },
+  {
+    "partId": "PT_0237",
+    "key": "battery_tray",
+    "nameAr": "قاعده بطاريه",
+    "nameEn": "Battery tray"
+  },
+  {
+    "partId": "PT_0238",
+    "key": "air_filter_box",
+    "nameAr": "عمه هوا",
+    "nameEn": "Air filter box (airbox)"
+  },
+  {
+    "partId": "PT_0239",
+    "key": "air_intake_hose",
+    "nameAr": "خرطوم عمه هوا",
+    "nameEn": "Air intake hose"
+  },
+  {
+    "partId": "PT_0240",
+    "key": "engine_cover",
+    "nameAr": "كفر ماتور",
+    "nameEn": "Engine cover"
+  },
+  {
+    "partId": "PT_0241",
+    "key": "serpentine_belt",
+    "nameAr": "سير مجموعة",
+    "nameEn": "Serpentine / drive belt"
+  },
+  {
+    "partId": "PT_0242",
+    "key": "alternator_belt",
+    "nameAr": "سير دينامو",
+    "nameEn": "Alternator belt"
+  },
+  {
+    "partId": "PT_0243",
+    "key": "front_right_wheel_hub_bearing",
+    "nameAr": "صره عجل امامي يمين",
+    "nameEn": "Front right wheel hub/bearing"
+  },
+  {
+    "partId": "PT_0244",
+    "key": "front_left_wheel_hub_bearing",
+    "nameAr": "صره عجل امامي شمال",
+    "nameEn": "Front left wheel hub/bearing"
+  },
+  {
+    "partId": "PT_0245",
+    "key": "rear_right_wheel_hub_bearing",
+    "nameAr": "صره عجل خلفي يمين",
+    "nameEn": "Rear right wheel hub/bearing"
+  },
+  {
+    "partId": "PT_0246",
+    "key": "rear_left_wheel_hub_bearing",
+    "nameAr": "صره عجل خلفي شمال",
+    "nameEn": "Rear left wheel hub/bearing"
+  },
+  {
+    "partId": "PT_0247",
+    "key": "front_subframe_crossmember",
+    "nameAr": "قنطره اماميه",
+    "nameEn": "Front subframe/crossmember"
+  },
+  {
+    "partId": "PT_0248",
+    "key": "rear_subframe",
+    "nameAr": "دنجل خلفي",
+    "nameEn": "Rear subframe"
+  },
+  {
+    "partId": "PT_0249",
+    "key": "front_right_door_panel_trim",
+    "nameAr": "فرش باب امامي يمين",
+    "nameEn": "Front right door panel trim"
+  },
+  {
+    "partId": "PT_0250",
+    "key": "front_left_door_panel_trim",
+    "nameAr": "فرش باب امامي شمال",
+    "nameEn": "Front left door panel trim"
+  },
+  {
+    "partId": "PT_0251",
+    "key": "rear_right_door_panel_trim",
+    "nameAr": "فرش باب خلفي يمين",
+    "nameEn": "Rear right door panel trim"
+  },
+  {
+    "partId": "PT_0252",
+    "key": "rear_left_door_panel_trim",
+    "nameAr": "فرش باب خلفي شمال",
+    "nameEn": "Rear left door panel trim"
+  },
+  {
+    "partId": "PT_0253",
+    "key": "right_seat_upholstery",
+    "nameAr": "فرش كرسي يمين",
+    "nameEn": "Right seat upholstery"
+  },
+  {
+    "partId": "PT_0254",
+    "key": "left_seat_upholstery",
+    "nameAr": "فرش كرسي شمال",
+    "nameEn": "Left seat upholstery"
+  },
+  {
+    "partId": "PT_0255",
+    "key": "rear_bench_seat_upholstery",
+    "nameAr": "فرش كنبه",
+    "nameEn": "Rear bench seat upholstery"
+  },
+  {
+    "partId": "PT_0256",
+    "key": "armrest",
+    "nameAr": "مسند يد",
+    "nameEn": "Armrest"
+  },
+  {
+    "partId": "PT_0257",
+    "key": "center_console",
+    "nameAr": "كونصله",
+    "nameEn": "Center console"
+  },
+  {
+    "partId": "PT_0258",
+    "key": "glove_box",
+    "nameAr": "درج تابلوه",
+    "nameEn": "Glove box"
+  },
+  {
+    "partId": "PT_0259",
+    "key": "interior_rearview_mirror",
+    "nameAr": "مرايا صالون",
+    "nameEn": "Interior rearview mirror"
+  },
+  {
+    "partId": "PT_0260",
+    "key": "front_pillar_trim_right",
+    "nameAr": "قايم فيبر امامي يمين",
+    "nameEn": "Front pillar trim\\"
+  },
+  {
+    "partId": "PT_0261",
+    "key": "rear_pillar_trim_right",
+    "nameAr": "قايم فيبر خلفي يمين",
+    "nameEn": "Rear pillar trim\\"
+  },
+  {
+    "partId": "PT_0262",
+    "key": "front_pillar_trim_left",
+    "nameAr": "قايم فيبر امامي شمال",
+    "nameEn": "Front pillar trim\\"
+  },
+  {
+    "partId": "PT_0263",
+    "key": "rear_pillar_trim_left",
+    "nameAr": "قايم فيبر خلفي شمال",
+    "nameEn": "Rear pillar trim\\"
+  },
+  {
+    "partId": "PT_0264",
+    "key": "middle_b_pillar_trim_right",
+    "nameAr": "قايم فيبر وسط يمين",
+    "nameEn": "Middle (B-)pillar trim\\"
+  },
+  {
+    "partId": "PT_0265",
+    "key": "middle_b_pillar_trim_left",
+    "nameAr": "قايم فيبر وسط شمال",
+    "nameEn": "Middle (B-)pillar trim\\"
+  },
+  {
+    "partId": "PT_0266",
+    "key": "head_unit_infotainment_screen",
+    "nameAr": "شاشه كاسيت",
+    "nameEn": "Head unit / infotainment screen"
+  },
+  {
+    "partId": "PT_0267",
+    "key": "ac_vent_right",
+    "nameAr": "هوايه تكييف يمين",
+    "nameEn": "AC vent\\"
+  },
+  {
+    "partId": "PT_0268",
+    "key": "ac_vent_left",
+    "nameAr": "هوايه تكييف شمال",
+    "nameEn": "AC vent\\"
+  },
+  {
+    "partId": "PT_0269",
+    "key": "ac_vent_middle_right",
+    "nameAr": "هوايه تكييف وسط يمين",
+    "nameEn": "AC vent\\"
+  },
+  {
+    "partId": "PT_0270",
+    "key": "ac_vent_middle_left",
+    "nameAr": "هوايه تكييف وسط شمال",
+    "nameEn": "AC vent\\"
+  },
+  {
+    "partId": "PT_0271",
+    "key": "ac_vent_rear_right",
+    "nameAr": "هوايه تكييف خلفي يمين",
+    "nameEn": "AC vent\\"
+  },
+  {
+    "partId": "PT_0272",
+    "key": "ac_vent_rear_left",
+    "nameAr": "هوايه تكييف خلفي شمال",
+    "nameEn": "AC vent\\"
+  },
+  {
+    "partId": "PT_0273",
+    "key": "front_left_door_lock_latch",
+    "nameAr": "كالون باب امامي شمال",
+    "nameEn": "Front left door lock/latch"
+  },
+  {
+    "partId": "PT_0274",
+    "key": "front_right_door_lock_latch",
+    "nameAr": "كالون باب امامي يمين",
+    "nameEn": "Front right door lock/latch"
+  },
+  {
+    "partId": "PT_0275",
+    "key": "rear_left_door_lock_latch",
+    "nameAr": "كالون باب خلفي شمال",
+    "nameEn": "Rear left door lock/latch"
+  },
+  {
+    "partId": "PT_0276",
+    "key": "rear_right_door_lock_latch",
+    "nameAr": "كالون باب خلفي يمين",
+    "nameEn": "Rear right door lock/latch"
+  },
+  {
+    "partId": "PT_0277",
+    "key": "front_right_door_check_strap",
+    "nameAr": "شداد باب امامي يمين",
+    "nameEn": "Front right door check strap/limiter"
+  },
+  {
+    "partId": "PT_0278",
+    "key": "rear_left_door_check_strap",
+    "nameAr": "شداد باب خلفي شمال",
+    "nameEn": "Rear left door check strap/limiter"
+  },
+  {
+    "partId": "PT_0279",
+    "key": "front_left_door_check_strap",
+    "nameAr": "شداد باب امامي شمال",
+    "nameEn": "Front left door check strap/limiter"
+  },
+  {
+    "partId": "PT_0280",
+    "key": "rear_right_door_check_strap",
+    "nameAr": "شداد باب خلفي يمين",
+    "nameEn": "Rear right door check strap/limiter"
+  },
+  {
+    "partId": "PT_0281",
+    "key": "side_curtain_airbag_strip",
+    "nameAr": "شريط ايرباج",
+    "nameEn": "Side curtain airbag strip"
+  },
+  {
+    "partId": "PT_0282",
+    "key": "front_right_window_weatherstrip",
+    "nameAr": "استفه زجاج امامي يمين",
+    "nameEn": "Front right window weatherstrip/seal"
+  },
+  {
+    "partId": "PT_0283",
+    "key": "front_left_window_weatherstrip",
+    "nameAr": "استفه زجاج امامي شمال",
+    "nameEn": "Front left window weatherstrip/seal"
+  },
+  {
+    "partId": "PT_0284",
+    "key": "rear_right_window_weatherstrip",
+    "nameAr": "استفه زجاج خلفي يمين",
+    "nameEn": "Rear right window weatherstrip/seal"
+  },
+  {
+    "partId": "PT_0285",
+    "key": "rear_left_window_weatherstrip",
+    "nameAr": "استفه زجاج خلفي شمال",
+    "nameEn": "Rear left window weatherstrip/seal"
+  },
+  {
+    "partId": "PT_0286",
+    "key": "right_mirror_cover",
+    "nameAr": "كفر مرايا يمين",
+    "nameEn": "Right mirror cover/cap"
+  },
+  {
+    "partId": "PT_0287",
+    "key": "left_mirror_cover",
+    "nameAr": "كفر مرايا شمال",
+    "nameEn": "Left mirror cover/cap"
+  },
+  {
+    "partId": "PT_0288",
+    "key": "right_mirror_turn_signal",
+    "nameAr": "غماز مرايا يمين",
+    "nameEn": "Right mirror turn signal"
+  },
+  {
+    "partId": "PT_0289",
+    "key": "left_mirror_turn_signal",
+    "nameAr": "غماز مرايا شمال",
+    "nameEn": "Left mirror turn signal"
+  },
+  {
+    "partId": "PT_0290",
+    "key": "front_right_door_chrome_trim",
+    "nameAr": "نيكل باب امامي يمين",
+    "nameEn": "Front right door chrome trim"
+  },
+  {
+    "partId": "PT_0291",
+    "key": "rear_right_door_chrome_trim",
+    "nameAr": "نيكل باب خلفي يمين",
+    "nameEn": "Rear right door chrome trim"
+  },
+  {
+    "partId": "PT_0292",
+    "key": "front_left_door_chrome_trim",
+    "nameAr": "نيكل باب امامي شمال",
+    "nameEn": "Front left door chrome trim"
+  },
+  {
+    "partId": "PT_0293",
+    "key": "rear_left_door_chrome_trim",
+    "nameAr": "نيكل باب خلفي شمال",
+    "nameEn": "Rear left door chrome trim"
+  },
+  {
+    "partId": "PT_0294",
+    "key": "rear_right_quarter_vent_glass",
+    "nameAr": "شراعه زجاج خلفي يمين",
+    "nameEn": "Rear right quarter/vent glass"
+  },
+  {
+    "partId": "PT_0295",
+    "key": "rear_left_quarter_vent_glass",
+    "nameAr": "شراعه زجاج خلفي شمال",
+    "nameEn": "Rear left quarter/vent glass"
+  },
+  {
+    "partId": "PT_0296",
+    "key": "ambient_air_temperature_sensor",
+    "nameAr": "حساس هوا خارجي",
+    "nameEn": "Outside/ambient air temperature sensor"
+  },
+  {
+    "partId": "PT_0297",
+    "key": "oxygen_o2_sensor",
+    "nameAr": "حساس اكسجين",
+    "nameEn": "Oxygen (O2) sensor"
+  },
+  {
+    "partId": "PT_0298",
+    "key": "thermostat_sensor",
+    "nameAr": "حساس ثرموستات",
+    "nameEn": "Thermostat sensor"
+  },
+  {
+    "partId": "PT_0299",
+    "key": "rain_sensor",
+    "nameAr": "حساس مطر",
+    "nameEn": "Rain sensor"
+  },
+  {
+    "partId": "PT_0300",
+    "key": "transmission_input_speed_sensor",
+    "nameAr": "حساس فتيس علوي",
+    "nameEn": "Transmission input speed sensor"
+  },
+  {
+    "partId": "PT_0301",
+    "key": "transmission_output_speed_sensor",
+    "nameAr": "حساس فتيس سفلي",
+    "nameEn": "Transmission output speed sensor"
+  },
+  {
+    "partId": "PT_0302",
+    "key": "front_right_wheel_speed_sensor_abs",
+    "nameAr": "حساس عجل امامي يمين",
+    "nameEn": "Front right wheel speed sensor (ABS)"
+  },
+  {
+    "partId": "PT_0303",
+    "key": "front_left_wheel_speed_sensor_abs",
+    "nameAr": "حساس عجل امامي شمال",
+    "nameEn": "Front left wheel speed sensor (ABS)"
+  },
+  {
+    "partId": "PT_0304",
+    "key": "rear_right_wheel_speed_sensor_abs",
+    "nameAr": "حساس عجل خلفي يمين",
+    "nameEn": "Rear right wheel speed sensor (ABS)"
+  },
+  {
+    "partId": "PT_0305",
+    "key": "rear_left_wheel_speed_sensor_abs",
+    "nameAr": "حساس عجل خلفي شمال",
+    "nameEn": "Rear left wheel speed sensor (ABS)"
+  },
+  {
+    "partId": "PT_0306",
+    "key": "rear_left_headlight",
+    "nameAr": "فانوس خلفي يمين",
+    "nameEn": "rear left headlight"
+  },
+  {
+    "partId": "PT_0307",
+    "key": "rear_right_headlight",
+    "nameAr": "فانوس خلفي شمال",
+    "nameEn": "rear right headlight"
+  }
+]
