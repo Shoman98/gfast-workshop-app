@@ -144,6 +144,7 @@ function SearchableSelect({ label, placeholder, options, value, onChange, disabl
 
 export default function AnalysisPage() {
   const navigate = useNavigate()
+  const workshopId = JSON.parse(localStorage.getItem('workshop') || '{}').workshop_id
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [generalImages, setGeneralImages] = useState<File[]>([])
   const [damageImages, setDamageImages] = useState<File[]>([])
@@ -382,15 +383,17 @@ export default function AnalysisPage() {
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>رقم الشاسيه (VIN)</label>
                   <input type="text" value={vinNumber} onChange={(e) => setVinNumber(e.target.value)} placeholder="WBADT43452G296706" style={{ width: '100%', padding: '0.75rem 1rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', textAlign: 'right', outline: 'none' }} />
                 </div>
-                <div style={{ marginTop: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>
-                    شركة التأمين <span style={{ color: '#9ca3af', fontWeight: 400 }}>(اختياري)</span>
-                  </label>
-                  <select value={insuranceCompanyId} onChange={(e) => setInsuranceCompanyId(e.target.value)} style={{ width: '100%', padding: '0.75rem 1rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', textAlign: 'right', outline: 'none', backgroundColor: 'white', fontSize: '0.95rem', color: insuranceCompanyId ? '#111827' : '#9ca3af' }}>
-                    <option value="">-- بدون شركة تأمين --</option>
-                    {INSURANCE_COMPANIES.map((c) => (<option key={c.id} value={c.id}>{c.nameAr}</option>))}
-                  </select>
-                </div>
+                {workshopId === 'workshop-001' && (
+                  <div style={{ marginTop: '1rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', color: '#374151', marginBottom: '0.5rem' }}>
+                      شركة التأمين <span style={{ color: '#9ca3af', fontWeight: 400 }}>(اختياري)</span>
+                    </label>
+                    <select value={insuranceCompanyId} onChange={(e) => setInsuranceCompanyId(e.target.value)} style={{ width: '100%', padding: '0.75rem 1rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', textAlign: 'right', outline: 'none', backgroundColor: 'white', fontSize: '0.95rem', color: insuranceCompanyId ? '#111827' : '#9ca3af' }}>
+                      <option value="">-- بدون شركة تأمين --</option>
+                      {INSURANCE_COMPANIES.map((c) => (<option key={c.id} value={c.id}>{c.nameAr}</option>))}
+                    </select>
+                  </div>
+                )}
               </>
             )}
           </div>

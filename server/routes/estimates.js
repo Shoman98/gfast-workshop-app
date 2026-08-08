@@ -333,13 +333,43 @@ router.post('/', authenticate, async (req, res, next) => {
       } : 'NULL',
     });
 
+    // RULE: an estimate + all its supplementary estimates belong to exactly
+    // ONE vehicle, identified by its VIN. So when this is a supplement
+    // (parent_estimate_id set), the vehicle/VIN is inherited from the parent
+    // (root) estimate and is authoritative — client-sent values are ignored,
+    // preventing a supplement from ever drifting to a different VIN.
+    let vehYear = year, vehMake = make, vehModel = model, vehVin = vin_number || null;
+    if (parent_estimate_id) {
+      const { data: parent, error: parentErr } = await supabase
+        .from('estimates')
+        .select('vin_number, vehicle_year, vehicle_make, vehicle_model, workshop_id')
+        .eq('estimate_id', parent_estimate_id)
+        .single();
+      if (parentErr || !parent) {
+        return res.status(400).json({ error: 'المقايسة الأصلية غير موجودة' });
+      }
+      if (parent.workshop_id !== workshopId) {
+        return res.status(403).json({ error: 'غير مصرح بإضافة ملحق لهذه المقايسة' });
+      }
+      vehVin   = parent.vin_number ?? null;
+      vehYear  = parent.vehicle_year;
+      vehMake  = parent.vehicle_make;
+      vehModel = parent.vehicle_model;
+    }
+
+    // RULE: VIN is required for a root estimate (supplements inherit it).
+    // Enforce once the estimate is being confirmed (drafts may still be incomplete).
+    if (!parent_estimate_id && status === 'confirmed' && !String(vehVin || '').trim()) {
+      return res.status(400).json({ error: 'رقم الشاسيه (VIN) مطلوب لتأكيد المقايسة' });
+    }
+
     // Create estimate
     const estimateData = {
       workshop_id: workshopId,
-      vehicle_year: year,
-      vehicle_make: make,
-      vehicle_model: model,
-      vin_number: vin_number || null,
+      vehicle_year: vehYear,
+      vehicle_make: vehMake,
+      vehicle_model: vehModel,
+      vin_number: vehVin,
       customer_name: customer_name || null,
       customer_mobile: customer_mobile || null,
       status: status || 'draft',
@@ -511,6 +541,11 @@ router.post('/:estimateId/confirm', authenticate, async (req, res, next) => {
 
     if (checkError || !estimate) {
       return res.status(403).json({ error: 'Estimate not found or access denied' });
+    }
+
+    // RULE: VIN is required to confirm a root estimate (supplements inherit it).
+    if (!estimate.parent_estimate_id && !String(estimate.vin_number || '').trim()) {
+      return res.status(400).json({ error: 'رقم الشاسيه (VIN) مطلوب لتأكيد المقايسة' });
     }
 
     // Calculate totals from parts

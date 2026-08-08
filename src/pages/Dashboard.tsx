@@ -11,6 +11,7 @@ interface Estimate {
   vehicle_year: number
   vehicle_make: string
   vehicle_model: string
+  vin_number?: string | null
   status: EstimateStatus
   insurance_company_id?: string | null
   insurance_action?: string | null
@@ -290,7 +291,8 @@ export default function DashboardPage() {
     return (
       est.vehicle_make.toLowerCase().includes(q) ||
       est.vehicle_model.toLowerCase().includes(q) ||
-      est.vehicle_year.toString().includes(q)
+      est.vehicle_year.toString().includes(q) ||
+      (est.vin_number || '').toLowerCase().includes(q)
     )
   })
 
@@ -364,15 +366,26 @@ export default function DashboardPage() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', direction: 'rtl' }}>
       {/* Header */}
-      <div style={{ backgroundColor: 'white', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 40 }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2563eb', margin: 0 }}>G-Fast</h1>
-            {workshop && <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem', margin: 0 }}>{workshop.workshop_name}</p>}
+      <div style={{ backgroundColor: '#6b7280', borderBottom: '1px solid #4b5563', position: 'sticky', top: 0, zIndex: 40 }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button onClick={() => navigate('/pricing')} style={{ padding: '0.5rem 1.25rem', backgroundColor: '#2563eb', color: 'white', borderRadius: '0.5rem', fontWeight: '500', border: 'none', cursor: 'pointer' }}>
+              💷 الأسعار
+            </button>
+            <button onClick={handleLogout} style={{ padding: '0.5rem 1.25rem', backgroundColor: '#dc2626', color: 'white', borderRadius: '0.5rem', fontWeight: '500', border: 'none', cursor: 'pointer' }}>
+              🚪 خروج
+            </button>
           </div>
-          <button onClick={handleLogout} style={{ padding: '0.5rem 1.25rem', backgroundColor: '#dc2626', color: 'white', borderRadius: '0.5rem', fontWeight: '500', border: 'none', cursor: 'pointer' }}>
-            🚪 خروج
-          </button>
+          {workshop && (
+            <div style={{ flex: 1, textAlign: 'center', minWidth: 0 }}>
+              <span style={{ color: 'white', fontWeight: 700, fontSize: '1.15rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'inline-block', maxWidth: '100%' }}>
+                {workshop.workshop_name}
+              </span>
+            </div>
+          )}
+          <div>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa', margin: 0 }}>G-Fast</h1>
+          </div>
         </div>
       </div>
 
@@ -390,31 +403,33 @@ export default function DashboardPage() {
             <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <input
                 type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث عن الماركة أو الموديل أو السنة..."
+                placeholder="ابحث بالماركة أو الموديل أو السنة أو رقم الشاسيه (VIN)..."
                 style={{ flex: 1, minWidth: '200px', padding: '0.75rem 1rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', textAlign: 'right', outline: 'none' }}
                 onFocus={(e) => e.target.style.borderColor = '#2563eb'}
                 onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
               />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', whiteSpace: 'nowrap' }}>
-                <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: 600 }}>رد التامين:</span>
-                <select
-                  value={insuranceFilter}
-                  onChange={e => setInsuranceFilter(e.target.value)}
-                  style={{ padding: '0.65rem 0.75rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', fontSize: '0.85rem', color: '#374151', background: 'white', cursor: 'pointer', fontWeight: 600, outline: 'none' }}
-                  onFocus={(e) => e.target.style.borderColor = '#2563eb'}
-                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
-                >
-                  <option value="all">الكل</option>
-                  <option value="waiting">⏳ بانتظار التأمين</option>
-                  <option value="approved_by_insurance">✅ موافقه من التامين</option>
-                  <option value="rejected_by_insurance">❌ مرفوض</option>
-                  <option value="without_commitment">بدون التزام</option>
-                  <option value="counter_offer">🔄 تفاوض</option>
-                  <option value="workshop_revised">🕐 تم الرد — بانتظار التأمين</option>
-                  <option value="workshop_accepted">✔ وافقت على العرض</option>
-                  <option value="no_insurance">— بدون تأمين</option>
-                </select>
-              </div>
+              {workshop?.workshop_id === 'workshop-001' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: 600 }}>رد التامين:</span>
+                  <select
+                    value={insuranceFilter}
+                    onChange={e => setInsuranceFilter(e.target.value)}
+                    style={{ padding: '0.65rem 0.75rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', fontSize: '0.85rem', color: '#374151', background: 'white', cursor: 'pointer', fontWeight: 600, outline: 'none' }}
+                    onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+                    onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                  >
+                    <option value="all">الكل</option>
+                    <option value="waiting">⏳ بانتظار التأمين</option>
+                    <option value="approved_by_insurance">✅ موافقه من التامين</option>
+                    <option value="rejected_by_insurance">❌ مرفوض</option>
+                    <option value="without_commitment">بدون التزام</option>
+                    <option value="counter_offer">🔄 تفاوض</option>
+                    <option value="workshop_revised">🕐 تم الرد — بانتظار التأمين</option>
+                    <option value="workshop_accepted">✔ وافقت على العرض</option>
+                    <option value="no_insurance">— بدون تأمين</option>
+                  </select>
+                </div>
+              )}
             </div>
           )}
 
@@ -442,13 +457,15 @@ export default function DashboardPage() {
                   <tr style={{ backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 1 }}>
                     <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '110px' }}>الماركة</th>
                     <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '110px' }}>الموديل</th>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '150px' }}>رقم الشاسيه (VIN)</th>
                     <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '80px' }}>السنة</th>
                     <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '100px' }}>التاريخ</th>
                     <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '80px' }}>الصور</th>
-                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '160px' }}>رد التامين</th>
-                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '90px' }}>صور الورشة</th>
+                    {workshop?.workshop_id === 'workshop-001' && <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '160px' }}>رد التامين</th>}
+                    {workshop?.workshop_id === 'workshop-001' && <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '90px' }}>صور الورشة</th>}
                     <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '100px' }}>التقرير</th>
                     <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '160px' }}>ملاحق المقايسه</th>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '120px' }}>سجل التعديلات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -479,6 +496,11 @@ export default function DashboardPage() {
                             {estimate.vehicle_model}
                           </td>
 
+                          {/* VIN */}
+                          <td style={{ padding: '0.85rem 1rem', textAlign: 'center', color: '#6b7280', fontFamily: 'monospace', fontSize: '0.8rem', letterSpacing: '0.02em' }}>
+                            {estimate.vin_number || '—'}
+                          </td>
+
                           {/* Year */}
                           <td style={{ padding: '0.85rem 1rem', textAlign: 'center', color: '#6b7280', fontWeight: 600 }}>
                             {estimate.vehicle_year}
@@ -507,31 +529,35 @@ export default function DashboardPage() {
                             </button>
                           </td>
 
-                          {/* Insurance status */}
-                          <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
-                            <InsuranceBadge
-                              status={estimate.status}
-                              insuranceAction={estimate.insurance_action}
-                              insuranceCompanyId={estimate.insurance_company_id}
-                              estimateId={estimate.estimate_id}
-                              navigate={navigate}
-                            />
-                          </td>
+                          {/* Insurance status — workshop-001 only */}
+                          {workshop?.workshop_id === 'workshop-001' && (
+                            <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
+                              <InsuranceBadge
+                                status={estimate.status}
+                                insuranceAction={estimate.insurance_action}
+                                insuranceCompanyId={estimate.insurance_company_id}
+                                estimateId={estimate.estimate_id}
+                                navigate={navigate}
+                              />
+                            </td>
+                          )}
 
-                          {/* Workshop extra images */}
-                          <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
-                            {(() => {
-                              const imgs = estimate.extra_images_by_workshop || []
-                              return (
-                                <button
-                                  onClick={() => setExtraImagesModal({ images: imgs, label: `${estimate.vehicle_make} ${estimate.vehicle_model} ${estimate.vehicle_year}` })}
-                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.75rem', background: imgs.length > 0 ? '#f5f3ff' : '#f9fafb', border: `1.5px solid ${imgs.length > 0 ? '#7c3aed' : '#e5e7eb'}`, borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', color: imgs.length > 0 ? '#7c3aed' : '#9ca3af', whiteSpace: 'nowrap' }}
-                                >
-                                  🖼{imgs.length > 0 ? ` ${imgs.length}` : ''}
-                                </button>
-                              )
-                            })()}
-                          </td>
+                          {/* Workshop extra images — workshop-001 only */}
+                          {workshop?.workshop_id === 'workshop-001' && (
+                            <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
+                              {(() => {
+                                const imgs = estimate.extra_images_by_workshop || []
+                                return (
+                                  <button
+                                    onClick={() => setExtraImagesModal({ images: imgs, label: `${estimate.vehicle_make} ${estimate.vehicle_model} ${estimate.vehicle_year}` })}
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.75rem', background: imgs.length > 0 ? '#f5f3ff' : '#f9fafb', border: `1.5px solid ${imgs.length > 0 ? '#7c3aed' : '#e5e7eb'}`, borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', color: imgs.length > 0 ? '#7c3aed' : '#9ca3af', whiteSpace: 'nowrap' }}
+                                  >
+                                    🖼{imgs.length > 0 ? ` ${imgs.length}` : ''}
+                                  </button>
+                                )
+                              })()}
+                            </td>
+                          )}
 
                           {/* Report */}
                           <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
@@ -572,12 +598,20 @@ export default function DashboardPage() {
                               )
                             })()}
                           </td>
+
+                          {/* Audit trail */}
+                          <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
+                            <button
+                              onClick={() => navigate(`/estimate/${estimate.estimate_id}/audit`)}
+                              style={{ padding: '0.4rem 0.9rem', background: '#fffbeb', border: '1.5px solid #d97706', color: '#d97706', borderRadius: '0.5rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                            >📋 السجل</button>
+                          </td>
                         </tr>
 
                         {/* Rejection comment row */}
                         {estimate.status === 'rejected_by_insurance' && estimate.insurance_comment && (
                           <tr key={`rej-${estimate.estimate_id}`} style={{ backgroundColor: '#fef2f2', borderBottom: '1px solid #fecaca' }}>
-                            <td colSpan={8} style={{ padding: '0.5rem 1rem 0.65rem', fontSize: '0.8rem' }}>
+                            <td colSpan={workshop?.workshop_id === 'workshop-001' ? 10 : 8} style={{ padding: '0.5rem 1rem 0.65rem', fontSize: '0.8rem' }}>
                               <span style={{ fontWeight: 700, color: '#dc2626' }}>سبب الرفض: </span>
                               <span style={{ color: '#7f1d1d' }}>{estimate.insurance_comment}</span>
                             </td>

@@ -9,6 +9,8 @@ import ReportPage from '@/pages/Report'
 import NegotiateReview from '@/pages/NegotiateReview'
 import CounterOfferPage from '@/pages/CounterOfferPage'
 import SupplementaryPage from '@/pages/SupplementaryPage'
+import PricingPage from '@/pages/PricingPage'
+import AuditTrailPage from '@/pages/AuditTrailPage'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import InsuranceLoginPage from '@/pages/InsuranceLogin'
 import InsuranceDashboard from '@/pages/InsuranceDashboard'
@@ -69,6 +71,8 @@ export default function App() {
           <Route path="/estimate/:estimateId/negotiate" element={<NegotiateReview />} />
           <Route path="/estimate/:estimateId/counter-offer" element={<CounterOfferPage />} />
           <Route path="/estimate/:estimateId/supplements" element={<SupplementaryPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/estimate/:estimateId/audit" element={<AuditTrailPage />} />
         </Route>
         {/* Insurance routes */}
         <Route path="/insurance/login" element={<Navigate to="/login" replace />} />

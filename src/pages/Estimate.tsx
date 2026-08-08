@@ -522,7 +522,7 @@ export default function EstimatePage() {
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/estimates/${estimateId}/audit-logs`, {
+      const response = await fetch(apiUrl(`/api/estimates/${estimateId}/audit-logs`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -817,6 +817,13 @@ export default function EstimatePage() {
     const token = localStorage.getItem('token')
     if (!token) {
       navigate('/login')
+      return
+    }
+
+    // RULE: VIN is required to confirm a root estimate (supplements inherit it).
+    if (!parentEstimateId && !String(vehicleInfo.vin_number || '').trim()) {
+      setShowConfirmDialog(false)
+      setError('رقم الشاسيه (VIN) مطلوب لتأكيد المقايسة')
       return
     }
 
@@ -1263,10 +1270,18 @@ export default function EstimatePage() {
                     value={pp.price || ''}
                     min="0"
                     disabled={estimateStatus === 'confirmed'}
+                    onFocus={(e) => { e.target.dataset.oldPrice = e.target.value }}
                     onChange={(e) => {
                       const updated = [...editablePartPrices]
                       updated[i] = { ...updated[i], price: Math.max(0, parseFloat(e.target.value) || 0) }
                       setEditablePartPrices(updated)
+                    }}
+                    onBlur={(e) => {
+                      const oldPrice = e.target.dataset.oldPrice || '0'
+                      const newPrice = String(Math.max(0, parseFloat(e.target.value) || 0))
+                      if (oldPrice !== newPrice) {
+                        logAudit('price_changed', `تم تغيير سعر ${pp.part_name_ar} من ${oldPrice} إلى ${newPrice} ج.م`, 'price', oldPrice, newPrice)
+                      }
                     }}
                     style={{
                       width: '100px', padding: '0.35rem 0.5rem', border: '1px solid #fecdd3',

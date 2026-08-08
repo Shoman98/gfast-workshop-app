@@ -18,6 +18,18 @@ export function generateToken(workshopId) {
 }
 
 /**
+ * Generate a short-lived, scoped token for the pricing section.
+ * Issued only after a successful step-up (single-use access code).
+ */
+export function generatePricingToken(workshopId) {
+  return jwt.sign(
+    { workshop_id: workshopId, scope: 'pricing' },
+    JWT_SECRET,
+    { expiresIn: '2h' }
+  );
+}
+
+/**
  * Verify JWT token
  */
 export function verifyToken(token) {
@@ -45,7 +57,20 @@ export function authenticate(req, res, next) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 
-  // Attach workshop_id to request
+  // Attach workshop_id (and scope, if any) to request
   req.workshop_id = decoded.workshop_id;
+  req.token_scope = decoded.scope || null;
+  next();
+}
+
+/**
+ * Guard for pricing-section data routes: requires a token minted by the
+ * step-up flow (scope 'pricing'). A normal login token is rejected with 403
+ * so the client knows to run the step-up.
+ */
+export function requirePricingScope(req, res, next) {
+  if (req.token_scope !== 'pricing') {
+    return res.status(403).json({ error: 'step-up required', code: 'STEP_UP_REQUIRED' });
+  }
   next();
 }

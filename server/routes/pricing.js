@@ -1,8 +1,16 @@
 import express from 'express'
 import { supabase } from '../db/supabase.js'
 import { authenticate } from '../middleware/auth.js'
+import { resolvePricing } from '../lib/pricingResolver.js'
 
 const router = express.Router()
+
+// Keep one resolved row per part_id (first wins) so it can override a global row.
+function dedupeByPart(rows) {
+  const m = {}
+  for (const r of rows) if (!m[r.part_id]) m[r.part_id] = r
+  return Object.values(m)
+}
 
 const LABOR_TYPES = [
   { key: 'refitting_labor_hrs', nameAr: 'اعمال فك و تركيب' },
@@ -102,8 +110,26 @@ router.post('/', authenticate, async (req, res, next) => {
     if (repairRes.error)  throw repairRes.error
     if (replaceRes.error) throw replaceRes.error
 
-    const repair  = buildGroups(repairRes.data  || [], repairParts,  false)
-    const replace = buildGroups(replaceRes.data || [], replaceParts, true)
+    // Workshop-synced prices (catalog + manual overrides) via the shared resolver.
+    // Policy: workshop price wins per part_id; fall back to the global tables.
+    const [wsRepair, wsReplace] = await Promise.all([
+      repairIds.length > 0
+        ? resolvePricing({ workshop_id: req.workshop_id, pricing_type: 'repair',  filters: { vehicle_make: make, vehicle_model: model, part_ids: repairIds } }).catch(() => [])
+        : [],
+      replaceIds.length > 0
+        ? resolvePricing({ workshop_id: req.workshop_id, pricing_type: 'replace', filters: { vehicle_make: make, vehicle_model: model, part_ids: replaceIds } }).catch(() => [])
+        : [],
+    ])
+
+    // Strip prices from global rows only — workshops set their own prices via their catalog.
+    // Hours (dent_hrs, paint_hrs, etc.) are kept so labor types still appear correctly.
+    // Workshop catalog rows (wsRepair/wsReplace) retain their prices and override global rows.
+    const stripPrices = rows => (rows || []).map(r => ({ ...r, hr_price_egp: 0, part_price: 0 }))
+    const repairRates  = [ ...stripPrices(repairRes.data),  ...dedupeByPart(wsRepair) ]
+    const replaceRates = [ ...stripPrices(replaceRes.data), ...dedupeByPart(wsReplace) ]
+
+    const repair  = buildGroups(repairRates,  repairParts,  false)
+    const replace = buildGroups(replaceRates, replaceParts, true)
 
     res.json({ success: true, repair, replace })
   } catch (err) {
