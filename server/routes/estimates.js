@@ -10,6 +10,23 @@ import { authenticate } from '../middleware/auth.js';
 const router = express.Router();
 
 /**
+ * GET /api/estimates/consumer-bookings
+ * Must be defined BEFORE /:estimateId routes to avoid wildcard capture
+ */
+router.get('/consumer-bookings', authenticate, async (req, res, next) => {
+  try {
+    const { data, error } = await supabase
+      .from('consumer_bookings')
+      .select('*')
+      .eq('workshop_id', req.workshop_id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json({ success: true, bookings: data || [] });
+  } catch (err) { next(err); }
+});
+
+/**
  * GET /api/estimates
  * List all estimates for the authenticated workshop
  */

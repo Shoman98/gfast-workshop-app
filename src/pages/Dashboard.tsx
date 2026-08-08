@@ -282,6 +282,10 @@ export default function DashboardPage() {
   const [photosModal, setPhotosModal] = useState<Estimate | null>(null)
   const [extraImagesModal, setExtraImagesModal] = useState<{ images: ExtraImage[]; label: string } | null>(null)
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
+  const [mainTab, setMainTab] = useState<'estimates' | 'bookings'>('estimates')
+  const [bookings, setBookings] = useState<any[]>([])
+  const [bookingsLoading, setBookingsLoading] = useState(false)
+  const [bookingPhotoModal, setBookingPhotoModal] = useState<string[] | null>(null)
 
   // Top-level confirmed estimates only (supplements are visible inside the Report chain)
   const topLevel = estimates.filter(e => !e.parent_estimate_id && e.status !== 'draft' && e.status !== 'exported' as any)
@@ -360,7 +364,22 @@ export default function DashboardPage() {
     }
   }
 
+  const loadBookings = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+    setBookingsLoading(true)
+    try {
+      const res = await fetch(apiUrl('/api/estimates/consumer-bookings'), {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.success) setBookings(data.bookings || [])
+    } catch { /* silent */ }
+    finally { setBookingsLoading(false) }
+  }
+
   const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('ar-EG')
+  const formatDateTime = (dateStr: string) => new Date(dateStr).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })
   const handleLogout = () => { localStorage.clear(); navigate('/login') }
 
   return (
@@ -369,6 +388,11 @@ export default function DashboardPage() {
       <div style={{ backgroundColor: '#6b7280', borderBottom: '1px solid #4b5563', position: 'sticky', top: 0, zIndex: 40 }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
+            {workshop?.is_super_admin && (
+              <button onClick={() => navigate('/admin')} style={{ padding: '0.5rem 1.25rem', backgroundColor: '#7c3aed', color: 'white', borderRadius: '0.5rem', fontWeight: '500', border: 'none', cursor: 'pointer' }}>
+                ⚙️ Admin
+              </button>
+            )}
             <button onClick={() => navigate('/pricing')} style={{ padding: '0.5rem 1.25rem', backgroundColor: '#2563eb', color: 'white', borderRadius: '0.5rem', fontWeight: '500', border: 'none', cursor: 'pointer' }}>
               💷 الأسعار
             </button>
@@ -391,13 +415,98 @@ export default function DashboardPage() {
 
       {/* Main */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1.5rem' }}>
-        <button
-          onClick={() => navigate('/analysis')}
-          style={{ marginBottom: '2rem', padding: '0.75rem 1.5rem', backgroundColor: '#2563eb', color: 'white', borderRadius: '0.5rem', fontWeight: 'bold', fontSize: '1.125rem', border: 'none', cursor: 'pointer' }}
-        >➕ تقدير جديد</button>
 
+        {/* Action buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => navigate('/analysis')}
+            style={{ padding: '0.75rem 1.5rem', backgroundColor: '#2563eb', color: 'white', borderRadius: '0.5rem', fontWeight: 'bold', fontSize: '1.125rem', border: 'none', cursor: 'pointer' }}
+          >➕ تقدير جديد</button>
+          <button
+            onClick={() => { setMainTab(mainTab === 'bookings' ? 'estimates' : 'bookings'); if (mainTab !== 'bookings' && bookings.length === 0) loadBookings() }}
+            style={{ padding: '0.6rem 1.25rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', background: mainTab === 'bookings' ? '#111827' : 'white', color: mainTab === 'bookings' ? 'white' : '#374151', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
+          >📥 حجوزات العملاء</button>
+        </div>
+
+        {/* ── BOOKINGS TAB ── */}
+        {mainTab === 'bookings' && (
+          <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', boxShadow: '0 4px 12px rgba(0,0,0,0.07)', padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: 0, color: '#111827' }}>📥 حجوزات العملاء</h2>
+              <button onClick={loadBookings} style={{ padding: '0.4rem 0.9rem', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, color: '#374151' }}>🔄 تحديث</button>
+            </div>
+            {bookingsLoading ? (
+              <div style={{ textAlign: 'center', padding: '2.5rem', color: '#6b7280' }}>⏳ جارٍ التحميل...</div>
+            ) : bookings.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2.5rem', color: '#6b7280' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📭</div>
+                لا توجد حجوزات بعد
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {bookings.map((b: any) => (
+                  <div key={b.id} style={{ border: '1.5px solid #e5e7eb', borderRadius: '0.75rem', padding: '1.1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {/* Header row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 800, fontSize: '1rem', color: '#111827', direction: 'ltr' }}>{b.customer_mobile}</span>
+                        {b.vehicle_make && (
+                          <span style={{ color: '#6b7280', fontSize: '0.85rem' }}>
+                            {[b.vehicle_make, b.vehicle_model, b.vehicle_year].filter(Boolean).join(' ')}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.78rem', color: '#9ca3af' }}>{formatDateTime(b.created_at)}</span>
+                    </div>
+
+                    {/* Report link */}
+                    {b.report_url && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.82rem', color: '#6b7280', fontWeight: 600 }}>رابط التقرير:</span>
+                        <a href={b.report_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem', color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}>📄 عرض التقرير</a>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(b.report_url); }}
+                          style={{ padding: '0.2rem 0.6rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '0.35rem', cursor: 'pointer', fontSize: '0.75rem', color: '#1d4ed8', fontWeight: 600 }}
+                        >نسخ الرابط</button>
+                      </div>
+                    )}
+
+                    {/* Photos */}
+                    {b.image_urls && b.image_urls.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: '0.82rem', color: '#6b7280', fontWeight: 600, marginBottom: '0.4rem' }}>صور التحليل ({b.image_urls.length})</div>
+                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          {b.image_urls.slice(0, 6).map((url: string, i: number) => (
+                            <img
+                              key={i}
+                              src={url}
+                              alt=""
+                              onClick={() => setBookingPhotoModal(b.image_urls)}
+                              style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: '0.4rem', border: '1px solid #e5e7eb', cursor: 'pointer' }}
+                            />
+                          ))}
+                          {b.image_urls.length > 6 && (
+                            <button onClick={() => setBookingPhotoModal(b.image_urls)} style={{ width: 56, height: 56, borderRadius: '0.4rem', border: '1px solid #e5e7eb', background: '#f9fafb', cursor: 'pointer', fontSize: '0.75rem', color: '#6b7280', fontWeight: 700 }}>+{b.image_urls.length - 6}</button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Mobile CTA */}
+                    <div>
+                      <a href={`tel:${b.customer_mobile}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.9rem', background: '#16a34a', color: 'white', borderRadius: '0.4rem', textDecoration: 'none', fontSize: '0.82rem', fontWeight: 700 }}>
+                        📞 اتصل بالعميل
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {mainTab === 'estimates' && (
         <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#111827', marginTop: 0 }}>التقديرات</h2>
 
           {topLevel.length > 0 && (
             <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -625,7 +734,20 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+        )} {/* end estimates tab */}
       </div>
+
+      {/* Booking photos modal */}
+      {bookingPhotoModal && (
+        <div onClick={() => setBookingPhotoModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <button onClick={() => setBookingPhotoModal(null)} style={{ position: 'absolute', top: 16, left: 16, background: 'none', border: 'none', color: 'white', fontSize: '1.8rem', cursor: 'pointer' }}>✕</button>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center', maxHeight: '90vh', overflowY: 'auto' }}>
+            {bookingPhotoModal.map((url, i) => (
+              <img key={i} src={url} alt="" onClick={e => e.stopPropagation()} style={{ maxHeight: 260, maxWidth: '45vw', objectFit: 'contain', borderRadius: '0.5rem', border: '2px solid rgba(255,255,255,0.2)' }} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {photosModal && (
         <PhotosModal estimate={photosModal} images={estimateImages[photosModal.estimate_id] || []} onClose={() => setPhotosModal(null)} />

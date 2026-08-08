@@ -9,9 +9,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 /**
  * Generate JWT token for workshop
  */
-export function generateToken(workshopId) {
+export function generateToken(workshopId, isSuperAdmin = false) {
   return jwt.sign(
-    { workshop_id: workshopId },
+    { workshop_id: workshopId, is_super_admin: isSuperAdmin },
     JWT_SECRET,
     { expiresIn: '8h' }
   );
@@ -57,9 +57,10 @@ export function authenticate(req, res, next) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 
-  // Attach workshop_id (and scope, if any) to request
+  // Attach workshop_id, scope, and super-admin flag to request
   req.workshop_id = decoded.workshop_id;
   req.token_scope = decoded.scope || null;
+  req.is_super_admin = decoded.is_super_admin === true;
   next();
 }
 

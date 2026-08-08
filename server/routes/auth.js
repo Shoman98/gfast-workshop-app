@@ -72,8 +72,8 @@ router.post('/login', loginLimiter, async (req, res, next) => {
       }
     }
 
-    // Generate JWT token
-    const token = generateToken(workshop_id);
+    // Generate JWT token (embed super-admin flag so it's available without a DB hit)
+    const token = generateToken(workshop_id, workshop.is_super_admin === true);
 
     console.log(`✅ Login successful: ${workshop_name || workshop.workshop_name} (${workshop_id})`);
 
@@ -82,6 +82,7 @@ router.post('/login', loginLimiter, async (req, res, next) => {
       token,
       workshop: {
         workshop_id: workshop.workshop_id,
+        is_super_admin: workshop.is_super_admin === true,
         workshop_name: workshop_name || workshop.workshop_name,
         category: workshop.category,
         city: location || workshop.city,
