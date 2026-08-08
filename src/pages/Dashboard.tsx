@@ -400,15 +400,13 @@ export default function DashboardPage() {
               🚪 خروج
             </button>
           </div>
-          {workshop && (
-            <div style={{ flex: 1, textAlign: 'center', minWidth: 0 }}>
-              <span style={{ color: 'white', fontWeight: 700, fontSize: '1.15rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'inline-block', maxWidth: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: 0 }}>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa', margin: 0, lineHeight: 1.1 }}>G-Fast</h1>
+            {workshop && (
+              <span style={{ color: 'white', fontWeight: 600, fontSize: '0.9rem', marginTop: '0.15rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '45vw', textAlign: 'right' }}>
                 {workshop.workshop_name}
               </span>
-            </div>
-          )}
-          <div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa', margin: 0 }}>G-Fast</h1>
+            )}
           </div>
         </div>
       </div>

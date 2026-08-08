@@ -15,6 +15,7 @@ import imageRoutes from './routes/images.js';
 import pricingRoutes from './routes/pricing.js';
 import workshopPricingRoutes from './routes/workshopPricing.js';
 import adminRoutes from './routes/admin.js';
+import { notifyWorkshopAnalysisAsync } from './lib/telegram-notify.js';
 // Use SHARED module from wreck-vision - SINGLE SOURCE OF TRUTH
 import pkg from '@gfast/analysis-core';
 const { runAnalysisPipeline, enrichDamageData, PARTS_DATABASE, DAMAGE_TYPE_INDEX, PART_NAME_ALIASES } = pkg;
@@ -186,6 +187,19 @@ app.post('/api/analysis', async (req, res, next) => {
     }
 
     console.log(`📊 Analysis starting: ${imageCount} image(s), ${vehicleInfo.year} ${vehicleInfo.make} ${vehicleInfo.model}`);
+
+    // Fire-and-forget Telegram notification for every workshop analysis
+    notifyWorkshopAnalysisAsync({
+      workshop_id: vehicleInfo.workshop_id,
+      workshop_name: vehicleInfo.workshop_name,
+      customer_name: vehicleInfo.customer_name,
+      customer_mobile: vehicleInfo.customer_mobile,
+      year: vehicleInfo.year,
+      make: vehicleInfo.make,
+      model: vehicleInfo.model,
+      vin_number: vehicleInfo.vin_number,
+      images_count: imageCount,
+    }, process.env);
 
     // Use SHARED analysis pipeline from @gfast/analysis-core
     // This ensures 100% consistency with wreck-vision تحليل المركبه

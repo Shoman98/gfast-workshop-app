@@ -295,26 +295,22 @@ export default function ReportPage() {
                 return (
                   <div style={{ marginBottom: '2.5rem' }}>
                     {sectionTitle('المصنعيات')}
-                    <table style={{ width: '100%', fontSize: '0.9rem', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#faf5ff', borderBottom: '2px solid #7c3aed' }}>
-                          <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#5b21b6', textAlign: 'right', width: '200px' }}>العمل</th>
-                          <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#5b21b6', textAlign: 'right' }}>القطع</th>
-                          <th style={{ padding: '0.75rem', fontWeight: 'bold', color: '#5b21b6', textAlign: 'center', width: '130px' }}>التكلفة (ج.م)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rows.map(([name, val], i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid #ede9fe', verticalAlign: 'top' }}>
-                            <td style={{ padding: '0.75rem', fontWeight: '700', color: '#5b21b6', whiteSpace: 'nowrap' }}>{name}</td>
-                            <td style={{ padding: '0.75rem', color: '#374151', lineHeight: '1.8', textAlign: 'right' }}>
-                              {val.parts.length > 0 ? val.parts.join('، ') : <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>—</span>}
-                            </td>
-                            <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '700', color: '#7c3aed', whiteSpace: 'nowrap' }}>{val.total.toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <div style={{ border: '1px solid #ede9fe', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                      {rows.map(([name, val], i) => (
+                        <div key={i} style={{ padding: '0.75rem 1rem', borderBottom: i < rows.length - 1 ? '1px solid #ede9fe' : 'none', backgroundColor: i % 2 === 0 ? '#faf5ff' : 'white' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.75rem' }}>
+                            <span style={{ fontWeight: '700', color: '#5b21b6', fontSize: '0.95rem' }}>{name}</span>
+                            <span style={{ fontWeight: '700', color: '#7c3aed', whiteSpace: 'nowrap', fontSize: '0.95rem' }}>{val.total.toLocaleString()} ج.م</span>
+                          </div>
+                          {val.parts.length > 0 && (
+                            <div style={{ marginTop: '0.4rem', color: '#4b5563', lineHeight: '1.7', fontSize: '0.85rem', textAlign: 'right' }}>
+                              <span style={{ color: '#9ca3af', fontWeight: '600', marginLeft: '0.35rem' }}>القطع:</span>
+                              {val.parts.join('، ')}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                     {totalBox('إجمالى المصنعيات', totalLabor, '#5b21b6', '#faf5ff')}
                   </div>
                 )
@@ -359,12 +355,12 @@ export default function ReportPage() {
           {/* ── SHARE ── */}
           <div style={{ backgroundColor: '#f3f4f6', padding: '1.5rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>
             <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#0f172a', marginTop: 0, marginBottom: '1rem' }}>شارك التقرير</h3>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               <input type="text" value={shareUrl} readOnly
-                style={{ flex: 1, padding: '0.75rem 1rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.85rem', color: '#6b7280', textAlign: 'right' }}
+                style={{ flex: '1 1 180px', minWidth: 0, padding: '0.75rem 1rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.85rem', color: '#6b7280', textAlign: 'right' }}
               />
               <button onClick={copyToClipboard}
-                style={{ padding: '0.75rem 1.5rem', backgroundColor: copied ? '#16a34a' : '#2563eb', color: 'white', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                style={{ flex: '1 1 140px', padding: '0.75rem 1rem', backgroundColor: copied ? '#16a34a' : '#2563eb', color: 'white', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                 {copied ? '✅ تم النسخ' : '📋 نسخ الرابط'}
               </button>
             </div>

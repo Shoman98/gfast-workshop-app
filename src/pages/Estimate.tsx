@@ -1551,38 +1551,6 @@ export default function EstimatePage() {
             )}
           </div>
 
-          {/* Activity Log */}
-          <div style={{
-            marginTop: '2rem',
-            padding: '1.5rem',
-            backgroundColor: '#f3f4f6',
-            borderRadius: '0.5rem',
-            border: '1px solid #e5e7eb',
-          }}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1rem', color: '#111827' }}>سجل الأنشطة</h3>
-            {auditLogs.length === 0 ? (
-              <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>لم تقم بأي تعديلات بعد</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto' }}>
-                {auditLogs.map((log) => (
-                  <div key={log.id} style={{
-                    padding: '0.75rem',
-                    backgroundColor: 'white',
-                    borderRadius: '0.375rem',
-                    borderRight: '3px solid #2563eb',
-                  }}>
-                    <p style={{ margin: '0 0 0.25rem 0', color: '#111827', fontSize: '0.875rem', fontWeight: '500' }}>
-                      {log.action_description_ar}
-                    </p>
-                    <p style={{ margin: 0, color: '#6b7280', fontSize: '0.75rem' }}>
-                      {new Date(log.timestamp).toLocaleTimeString('ar-EG')}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Actions */}
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button
