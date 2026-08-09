@@ -305,14 +305,6 @@ export default function EstimatePage() {
   const navigate = useNavigate()
   const [parts, setParts] = useState<Part[]>([])
   const [needsCheckParts, setNeedsCheckParts] = useState<Part[]>([])
-  const [newPart, setNewPart] = useState<Part>({
-    part_name_en: '',
-    part_name_ar: '',
-    damage_type: 'Unknown',
-    severity_label: 'Repair',
-    price: 0,
-  })
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [confirming, setConfirming] = useState(false)
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
@@ -326,7 +318,6 @@ export default function EstimatePage() {
   const [manualLaborEntries, setManualLaborEntries] = useState<Record<string, { id: string; part_name_ar: string; cost: number }[]>>({})
   const [pendingManualAdd, setPendingManualAdd] = useState<Record<string, { partName: string; costStr: string }>>({})
   const [extraLaborGroups, setExtraLaborGroups] = useState<{ repair: string[]; replace: string[] }>({ repair: [], replace: [] })
-  const [pendingLaborTypeAdd, setPendingLaborTypeAdd] = useState<{ repair: string; replace: string }>({ repair: '', replace: '' })
   const [unifiedAddType, setUnifiedAddType] = useState<Record<string, 'repair' | 'replace'>>({})
   const [pendingLaborNewKey, setPendingLaborNewKey] = useState('')
   const [pendingLaborPick, setPendingLaborPick] = useState<{ index: number; newSeverity: 'Repair' | 'Replace'; selected: string[] } | null>(null)
@@ -575,18 +566,6 @@ export default function EstimatePage() {
     return dbTotal + manualTotal
   }
 
-  const addManualEntry = (type: string, laborKey: string) => {
-    const key = `${type}_${laborKey}`
-    const pending = pendingManualAdd[key]
-    if (!pending?.partName) return
-    const cost = parseFloat(pending.costStr || '0') || 0
-    setManualLaborEntries(prev => ({
-      ...prev,
-      [key]: [...(prev[key] || []), { id: Date.now().toString(), part_name_ar: pending.partName, cost }]
-    }))
-    setPendingManualAdd(prev => ({ ...prev, [key]: { partName: '', costStr: '' } }))
-  }
-
   const removeManualEntry = (type: string, laborKey: string, id: string) => {
     const key = `${type}_${laborKey}`
     setManualLaborEntries(prev => ({ ...prev, [key]: (prev[key] || []).filter(m => m.id !== id) }))
@@ -668,13 +647,6 @@ export default function EstimatePage() {
     }
   }
 
-  const addExtraLaborGroup = (type: 'repair' | 'replace') => {
-    const key = pendingLaborTypeAdd[type]
-    if (!key) return
-    setExtraLaborGroups(prev => ({ ...prev, [type]: [...prev[type], key] }))
-    setPendingLaborTypeAdd(prev => ({ ...prev, [type]: '' }))
-  }
-
   const refreshPricing = (updatedParts: Part[]) => {
     fetchPricing(updatedParts, vehicleInfo.make, vehicleInfo.model, vehicleInfo.year)
   }
@@ -741,31 +713,6 @@ export default function EstimatePage() {
     logAudit('reject_needs_check', `تم رفض القطعة المحتاجة للفحص: ${part.part_name_ar}`, undefined, JSON.stringify(part))
   }
 
-  const addLabor = () => {
-    if (estimateStatus === 'confirmed') return
-    if (!newLabor.labor_name_ar.trim()) {
-      setError('يرجى إدخال اسم العمل')
-      return
-    }
-    if (newLabor.price <= 0) {
-      setError('يرجى إدخال سعر صحيح')
-      return
-    }
-    const labor = { ...newLabor, id: Date.now().toString() }
-    setLabors([...labors, labor])
-    logAudit('add_labor', `تم إضافة عمل جديد: ${newLabor.labor_name_ar} (السعر: ${newLabor.price})`)
-    setNewLabor({ labor_name_ar: '', price: 0 })
-    setError('')
-  }
-
-  const removeLabor = (index: number) => {
-    if (estimateStatus === 'confirmed') return
-
-    const labor = labors[index]
-    setLabors(labors.filter((_, i) => i !== index))
-    logAudit('remove_labor', `تم حذف العمل: ${labor.labor_name_ar}`)
-  }
-
   const updateLabor = (index: number, field: keyof Labor, value: any) => {
     if (estimateStatus === 'confirmed') return
     const labor = labors[index]
@@ -781,21 +728,6 @@ export default function EstimatePage() {
     if (field === 'price') {
       logAudit('edit_labor', `تم تغيير السعر من ${oldValue || '0'} إلى ${newValue} للعمل ${labor.labor_name_ar}`, 'price', oldValue, newValue)
     }
-  }
-
-  const addPart = () => {
-    if (estimateStatus === 'confirmed') return
-
-    if (!newPart.part_name_ar.trim()) {
-      setError('يرجى إدخال اسم الجزء')
-      return
-    }
-    const updated = [...parts, { ...newPart, is_ai_detected: false, ai_original_severity: null as any }]
-    setParts(updated)
-    logAudit('add_part', `تم إضافة قطعة جديدة: ${newPart.part_name_ar}`, undefined, undefined, JSON.stringify(newPart))
-    setNewPart({ part_name_en: '', part_name_ar: '', damage_type: 'Unknown', severity_label: 'Repair', price: 0 })
-    refreshPricing(updated)
-    setError('')
   }
 
   const confirmEstimate = async () => {
