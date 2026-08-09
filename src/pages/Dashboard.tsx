@@ -393,10 +393,10 @@ export default function DashboardPage() {
                 ⚙️ Admin
               </button>
             )}
-            <button onClick={() => navigate('/pricing')} style={{ padding: '0.5rem 1.25rem', backgroundColor: '#2563eb', color: 'white', borderRadius: '0.5rem', fontWeight: '500', border: 'none', cursor: 'pointer' }}>
+            <button onClick={() => navigate('/pricing')} style={{ padding: '0.45rem 0.75rem', backgroundColor: '#2563eb', color: 'white', borderRadius: '0.5rem', fontWeight: '500', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}>
               💷 الأسعار
             </button>
-            <button onClick={handleLogout} style={{ padding: '0.5rem 1.25rem', backgroundColor: '#dc2626', color: 'white', borderRadius: '0.5rem', fontWeight: '500', border: 'none', cursor: 'pointer' }}>
+            <button onClick={handleLogout} style={{ padding: '0.45rem 0.75rem', backgroundColor: '#dc2626', color: 'white', borderRadius: '0.5rem', fontWeight: '500', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}>
               🚪 خروج
             </button>
           </div>
@@ -568,65 +568,73 @@ export default function DashboardPage() {
                 const canAddSup = hasInsurance ? estimate.status === 'approved_by_insurance' : estimate.status !== 'draft'
                 const extraImgs = estimate.extra_images_by_workshop || []
 
+                // For non-insurance workshops, "confirmed" just means confirmed — not "sent to insurance"
+                const isInsuranceWorkshop = workshop?.workshop_id === 'workshop-001'
+                const statusLabel = (!isInsuranceWorkshop && estimate.status === 'confirmed') ? 'مؤكد' : cfg.label
+                const statusColor = (!isInsuranceWorkshop && estimate.status === 'confirmed') ? '#16a34a' : cfg.color
+                const statusBg    = (!isInsuranceWorkshop && estimate.status === 'confirmed') ? '#f0fdf4' : cfg.bg
+                const statusBorder = (!isInsuranceWorkshop && estimate.status === 'confirmed') ? '#bbf7d0' : cfg.border
+
                 return (
-                  <div key={estimate.estimate_id} style={{ border: `1.5px solid ${cfg.border}`, borderRadius: '0.65rem', backgroundColor: cfg.bg, overflow: 'hidden' }}>
+                  <div key={estimate.estimate_id} style={{ border: `1.5px solid #e5e7eb`, borderRadius: '0.65rem', backgroundColor: 'white', overflow: 'hidden' }}>
                     {/* Card header — vehicle + date */}
-                    <div style={{ padding: '0.65rem 0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', borderBottom: '1px solid #e5e7eb', backgroundColor: 'white' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>
+                    <div style={{ padding: '0.65rem 0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', borderBottom: '1px solid #f3f4f6' }}>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#111827', lineHeight: 1.3 }}>
                           {estimate.vehicle_make} {estimate.vehicle_model}
-                          <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '0.85rem', marginRight: '0.4rem' }}>{estimate.vehicle_year}</span>
+                          {' · '}
+                          <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '0.85rem' }}>{estimate.vehicle_year}</span>
                         </div>
                         {estimate.vin_number && (
-                          <div style={{ fontSize: '0.75rem', color: '#9ca3af', fontFamily: 'monospace', marginTop: '0.15rem' }}>VIN: {estimate.vin_number}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#9ca3af', fontFamily: 'monospace', marginTop: '0.15rem' }}>VIN: {estimate.vin_number}</div>
                         )}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem', flexShrink: 0 }}>
-                        <span style={{ fontSize: '0.72rem', color: '#9ca3af', whiteSpace: 'nowrap' }}>{formatDate(estimate.created_at)}</span>
-                        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: cfg.color, backgroundColor: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: '999px', padding: '0.1rem 0.5rem', whiteSpace: 'nowrap' }}>{cfg.label}</span>
+                        <span style={{ fontSize: '0.7rem', color: '#9ca3af', whiteSpace: 'nowrap' }}>{formatDate(estimate.created_at)}</span>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: statusColor, backgroundColor: statusBg, border: `1px solid ${statusBorder}`, borderRadius: '999px', padding: '0.1rem 0.5rem', whiteSpace: 'nowrap' }}>{statusLabel}</span>
                       </div>
                     </div>
 
-                    {/* Insurance rejection reason */}
-                    {estimate.status === 'rejected_by_insurance' && estimate.insurance_comment && (
+                    {/* Insurance rejection reason — insurance workshop only */}
+                    {isInsuranceWorkshop && estimate.status === 'rejected_by_insurance' && estimate.insurance_comment && (
                       <div style={{ padding: '0.4rem 0.75rem', backgroundColor: '#fef2f2', fontSize: '0.78rem' }}>
                         <span style={{ fontWeight: 700, color: '#dc2626' }}>سبب الرفض: </span>
                         <span style={{ color: '#7f1d1d' }}>{estimate.insurance_comment}</span>
                       </div>
                     )}
 
-                    {/* Action buttons row */}
+                    {/* Action buttons — fixed order: photos · report (wide) · audit · supplement */}
                     <div style={{ padding: '0.55rem 0.6rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
 
                       {/* Photos */}
                       <button onClick={() => setPhotosModal(estimate)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.45rem 0.75rem', backgroundColor: '#7c3aed', color: 'white', border: 'none', borderRadius: '0.45rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.45rem 0.75rem', backgroundColor: '#7c3aed', color: 'white', border: 'none', borderRadius: '0.45rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', flexShrink: 0 }}>
                         {firstImg ? <img src={firstImg.cloudinary_url} alt="" style={{ width: '20px', height: '20px', objectFit: 'cover', borderRadius: '3px' }} /> : '📷'}
                         {imgs.length > 0 && <span>{imgs.length}</span>}
                       </button>
 
-                      {/* Report */}
+                      {/* Report — flex:1 so it fills available width */}
                       <button onClick={() => navigate(`/report/${estimate.estimate_id}`)}
-                        style={{ padding: '0.45rem 0.75rem', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '0.45rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                        📄 تقرير
+                        style={{ flex: 1, padding: '0.45rem 0.75rem', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '0.45rem', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                        📄 عرض التقرير
                       </button>
-
-                      {/* Supplements */}
-                      {(sups.length > 0 || canAddSup) && (
-                        <button onClick={() => navigate(`/estimate/${estimate.estimate_id}/supplements`)}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.45rem 0.75rem', background: sups.length > 0 ? '#f5f3ff' : '#faf5ff', border: `1.5px solid ${sups.length > 0 ? '#a78bfa' : '#ddd6fe'}`, borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', color: '#7c3aed', whiteSpace: 'nowrap' }}>
-                          📋 {sups.length > 0 ? `${sups.length} ملحق` : '➕ ملحق'}
-                        </button>
-                      )}
 
                       {/* Audit */}
                       <button onClick={() => navigate(`/estimate/${estimate.estimate_id}/audit`)}
-                        style={{ padding: '0.45rem 0.75rem', background: '#fffbeb', border: '1.5px solid #d97706', color: '#d97706', borderRadius: '0.45rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                        📋 السجل
+                        style={{ padding: '0.45rem 0.75rem', background: '#fffbeb', border: '1.5px solid #d97706', color: '#d97706', borderRadius: '0.45rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        السجل
                       </button>
 
-                      {/* Insurance — workshop-001 only */}
-                      {workshop?.workshop_id === 'workshop-001' && (
+                      {/* Supplements — after audit */}
+                      {(sups.length > 0 || canAddSup) && (
+                        <button onClick={() => navigate(`/estimate/${estimate.estimate_id}/supplements`)}
+                          style={{ padding: '0.45rem 0.75rem', background: sups.length > 0 ? '#f5f3ff' : '#faf5ff', border: `1.5px solid ${sups.length > 0 ? '#a78bfa' : '#ddd6fe'}`, borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', color: '#7c3aed', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {sups.length > 0 ? `📋 ${sups.length} ملحق` : '➕ ملحق'}
+                        </button>
+                      )}
+
+                      {/* Insurance badge — workshop-001 only */}
+                      {isInsuranceWorkshop && (
                         <InsuranceBadge
                           status={estimate.status}
                           insuranceAction={estimate.insurance_action}
@@ -637,7 +645,7 @@ export default function DashboardPage() {
                       )}
 
                       {/* Workshop extra images — workshop-001 only */}
-                      {workshop?.workshop_id === 'workshop-001' && (
+                      {isInsuranceWorkshop && (
                         <button
                           onClick={() => setExtraImagesModal({ images: extraImgs, label: `${estimate.vehicle_make} ${estimate.vehicle_model} ${estimate.vehicle_year}` })}
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.45rem 0.75rem', background: extraImgs.length > 0 ? '#f5f3ff' : '#f9fafb', border: `1.5px solid ${extraImgs.length > 0 ? '#7c3aed' : '#e5e7eb'}`, borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', color: extraImgs.length > 0 ? '#7c3aed' : '#9ca3af', whiteSpace: 'nowrap' }}>
