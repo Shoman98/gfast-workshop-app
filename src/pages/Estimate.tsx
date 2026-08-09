@@ -301,6 +301,48 @@ function AddPartForm({ onAdd, disabled, existingParts }: AddPartFormProps) {
   )
 }
 
+// Custom dropdown that stays within its container — native <select> dropdowns
+// are OS-rendered and can't be constrained with CSS on RTL pages.
+function PartSelect({ value, onChange, options, placeholder }: {
+  value: string
+  onChange: (v: string) => void
+  options: { label: string; value: string }[]
+  placeholder: string
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+  const selected = options.find(o => o.value === value)
+  return (
+    <div ref={ref} style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', padding: '0.22rem 0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.75rem', textAlign: 'right', direction: 'rtl', backgroundColor: 'white', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: selected ? '#111827' : '#9ca3af' }}>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected ? selected.label : placeholder}</span>
+        <span style={{ flexShrink: 0, marginRight: '0.25rem', fontSize: '0.6rem' }}>▼</span>
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', bottom: '100%', right: 0, left: 0, backgroundColor: 'white', border: '1px solid #d1d5db', borderRadius: '0.375rem', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 100, maxHeight: '180px', overflowY: 'auto', direction: 'rtl' }}>
+          {options.map(o => (
+            <div key={o.value} onClick={() => { onChange(o.value); setOpen(false) }}
+              style={{ padding: '0.4rem 0.6rem', fontSize: '0.75rem', cursor: 'pointer', backgroundColor: o.value === value ? '#f5f3ff' : 'white', color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f5f3ff')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = o.value === value ? '#f5f3ff' : 'white')}>
+              {o.label}
+            </div>
+          ))}
+          {options.length === 0 && <div style={{ padding: '0.5rem', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center' }}>لا توجد خيارات</div>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function EstimatePage() {
   const { estimateId } = useParams()
   const navigate = useNavigate()
@@ -1396,12 +1438,12 @@ export default function EstimatePage() {
                                       <option value="replace">استبدال</option>
                                     </select>
                                   )}
-                                  <select value={pendingAdd.partName}
-                                    onChange={(e2) => setPendingManualAdd(prev => ({ ...prev, [activeManKey]: { ...pendingAdd, partName: e2.target.value } }))}
-                                    style={{ flex: 1, minWidth: 0, maxWidth: '100%', padding: '0.22rem 0.4rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.75rem', textAlign: 'right', direction: 'rtl' }}>
-                                    <option value="">-- اختر جزء --</option>
-                                    {parts.map((p, pi) => <option key={pi} value={p.part_name_ar}>{p.part_name_ar}</option>)}
-                                  </select>
+                                  <PartSelect
+                                    value={pendingAdd.partName}
+                                    onChange={(v) => setPendingManualAdd(prev => ({ ...prev, [activeManKey]: { ...pendingAdd, partName: v } }))}
+                                    options={parts.map(p => ({ label: p.part_name_ar, value: p.part_name_ar }))}
+                                    placeholder="-- اختر جزء --"
+                                  />
                                 </div>
                               )}
                             </div>
@@ -1422,11 +1464,12 @@ export default function EstimatePage() {
                             style={{ padding: '0.35rem 0.9rem', backgroundColor: pendingLaborNewKey ? '#7c3aed' : '#9ca3af', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.8rem', fontWeight: '700', cursor: pendingLaborNewKey ? 'pointer' : 'not-allowed', flexShrink: 0 }}>
                             + إضافة عمل
                           </button>
-                          <select value={pendingLaborNewKey} onChange={(e) => setPendingLaborNewKey(e.target.value)}
-                            style={{ flex: 1, minWidth: 0, maxWidth: '100%', padding: '0.35rem 0.5rem', border: '1px solid #ddd6fe', borderRadius: '0.375rem', fontSize: '0.8rem', textAlign: 'right', direction: 'rtl' }}>
-                            <option value="">-- اختر نوع العمل --</option>
-                            {availableLaborTypes.map(lt => <option key={lt.key} value={lt.key}>{lt.nameAr}</option>)}
-                          </select>
+                          <PartSelect
+                            value={pendingLaborNewKey}
+                            onChange={setPendingLaborNewKey}
+                            options={availableLaborTypes.map(lt => ({ label: lt.nameAr, value: lt.key }))}
+                            placeholder="-- اختر نوع العمل --"
+                          />
                         </div>
                       )}
                     </div>
