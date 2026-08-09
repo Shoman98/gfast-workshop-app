@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { apiUrl } from '@/lib/api'
+import { loadAnalysisImages, clearAnalysisImages } from '@/lib/imageStore'
 import partsDb from '@/data/parts.json'
 
 const PARTS_LIST: { partId: string; key: string; nameAr: string; nameEn: string }[] = partsDb
@@ -813,12 +814,16 @@ export default function EstimatePage() {
 
         // Upload images if any exist
         if (createdEstimateId) {
-          const analysisImages = sessionStorage.getItem('analysisImages')
-          console.log('🔍 Checking for analysisImages in sessionStorage:', analysisImages ? 'Found' : 'Not found')
+          let images: string[] | null = null
+          try {
+            images = await loadAnalysisImages()
+          } catch (loadErr) {
+            console.error('💥 Error loading analysisImages:', loadErr)
+          }
+          console.log('🔍 Checking for analysisImages in IndexedDB:', images ? 'Found' : 'Not found')
 
-          if (analysisImages) {
+          if (images && images.length > 0) {
             try {
-              const images = JSON.parse(analysisImages)
               console.log('📸 Uploading', images.length, 'images...')
 
               for (const imageBase64 of images) {
@@ -878,9 +883,9 @@ export default function EstimatePage() {
                   console.error('💥 Error uploading single image:', imgErr)
                 }
               }
-              sessionStorage.removeItem('analysisImages')
+              await clearAnalysisImages()
             } catch (parseErr) {
-              console.error('💥 Error parsing analysisImages:', parseErr)
+              console.error('💥 Error uploading analysisImages:', parseErr)
             }
           }
         }

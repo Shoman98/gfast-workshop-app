@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiUrl } from '@/lib/api'
+import { saveAnalysisImages } from '@/lib/imageStore'
 import { INSURANCE_COMPANIES } from '@/mock/insurance'
 import vehiclesData from '@/data/vehicles.json'
 
@@ -297,11 +298,18 @@ export default function AnalysisPage() {
           full_response: data.analysis
         });
 
-        // Store the already-compressed images for later Cloudinary upload after
-        // estimate confirmation (keeps sessionStorage small on mobile).
+        // Store the already-compressed images in IndexedDB for later Cloudinary
+        // upload after estimate confirmation. sessionStorage's ~2-5MB cap
+        // overflows on mobile with several photos (QuotaExceededError), which is
+        // what surfaced as "quota has been exceeded". Non-fatal: the analysis has
+        // already succeeded, so never block navigation if caching fails.
         if (compressedDataUrls.length > 0) {
-          sessionStorage.setItem('analysisImages', JSON.stringify(compressedDataUrls))
-          console.log('📸 Stored', compressedDataUrls.length, 'images for upload after confirmation')
+          try {
+            await saveAnalysisImages(compressedDataUrls)
+            console.log('📸 Stored', compressedDataUrls.length, 'images for upload after confirmation')
+          } catch (storeErr) {
+            console.warn('⚠️ Could not cache images for later upload:', storeErr)
+          }
         }
 
         sessionStorage.setItem('analysisResult', JSON.stringify(data.analysis))
