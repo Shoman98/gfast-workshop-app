@@ -25,13 +25,11 @@ const LABOR_TYPES = [
 ]
 
 function buildGroups(rates, parts, includePartPrice) {
-  // Map partId → part info from the request
-  const partMap = {}
-  parts.forEach(p => { partMap[p.partId] = p })
-
-  // Map partId → DB row
+  // Map part_name_ar → DB row. We match by NAME, not part_id: the AI-detected
+  // parts carry a reliable part_name_ar, but their part_id doesn't align with
+  // the catalog's PT_xxxx ids, so id-matching silently misses every part.
   const rateMap = {}
-  rates.forEach(r => { rateMap[r.part_id] = r })
+  rates.forEach(r => { if (r.part_name_ar) rateMap[r.part_name_ar] = r })
 
   const groups = []
   let grandTotal = 0
@@ -40,7 +38,7 @@ function buildGroups(rates, parts, includePartPrice) {
     const entries = []
 
     for (const part of parts) {
-      const rate = rateMap[part.partId]
+      const rate = rateMap[part.part_name_ar]
       if (!rate) continue
       const hrs = rate[key]
       if (!hrs || hrs <= 0) continue
@@ -62,7 +60,7 @@ function buildGroups(rates, parts, includePartPrice) {
     const partPrices = []
     let partsTotal = 0
     for (const part of parts) {
-      const rate = rateMap[part.partId]
+      const rate = rateMap[part.part_name_ar]
       if (!rate) continue
       const price = rate.part_price || 0
       partPrices.push({ part_name_ar: part.part_name_ar, partId: part.partId, part_price: price })
@@ -90,20 +88,24 @@ router.post('/', authenticate, async (req, res, next) => {
       return res.status(400).json({ error: 'parts, make, model required' })
     }
 
-    const repairParts  = parts.filter(p => p.severity_label === 'Repair'  && p.partId)
-    const replaceParts = parts.filter(p => p.severity_label === 'Replace' && p.partId)
+    const repairParts  = parts.filter(p => p.severity_label === 'Repair'  && p.part_name_ar)
+    const replaceParts = parts.filter(p => p.severity_label === 'Replace' && p.part_name_ar)
 
-    const repairIds  = [...new Set(repairParts.map(p => p.partId))]
-    const replaceIds = [...new Set(replaceParts.map(p => p.partId))]
+    // Match global rates by part NAME (AI part_ids don't align with the catalog).
+    const repairNames  = [...new Set(repairParts.map(p => p.part_name_ar))]
+    const replaceNames = [...new Set(replaceParts.map(p => p.part_name_ar))]
+    // Keep any real part_ids for the workshop-price resolver below.
+    const repairIds  = [...new Set(repairParts.map(p => p.partId).filter(Boolean))]
+    const replaceIds = [...new Set(replaceParts.map(p => p.partId).filter(Boolean))]
 
     // Batch fetch both tables in parallel — filter by make+model only
     // (year column currently stores a range string; will filter by year when data is year-specific)
     const [repairRes, replaceRes] = await Promise.all([
-      repairIds.length > 0
-        ? supabase.from('labor_rates_repair').select('*').in('part_id', repairIds).eq('vehicle_make', make).eq('vehicle_model', model)
+      repairNames.length > 0
+        ? supabase.from('labor_rates_repair').select('*').in('part_name_ar', repairNames).eq('vehicle_make', make).eq('vehicle_model', model)
         : { data: [] },
-      replaceIds.length > 0
-        ? supabase.from('labor_rates_replace').select('*').in('part_id', replaceIds).eq('vehicle_make', make).eq('vehicle_model', model)
+      replaceNames.length > 0
+        ? supabase.from('labor_rates_replace').select('*').in('part_name_ar', replaceNames).eq('vehicle_make', make).eq('vehicle_model', model)
         : { data: [] },
     ])
 

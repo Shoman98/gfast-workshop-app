@@ -379,40 +379,6 @@ export default function EstimatePage() {
             replace: { ...data.replace, groups: mergeGroups(data.replace.groups, 'Replace') },
           }
         }
-        // Repair parts with no matching labor-rate mapping would otherwise vanish
-        // entirely (unlike Replace parts, which fall back to manual price rows).
-        // Surface them under a generic "أعمال إصلاح" group so the workshop can
-        // enter the labor cost per part manually.
-        const coveredRepairParts = new Set<string>()
-        ;(data.repair?.groups || []).forEach((g: LaborGroup) =>
-          g.entries.forEach((e: PricingEntry) => coveredRepairParts.add(e.part_name_ar))
-        )
-        const orphanRepair = allParts.filter(
-          (p) => p.severity_label === 'Repair' && !coveredRepairParts.has(p.part_name_ar)
-        )
-        if (orphanRepair.length > 0) {
-          const GENERIC_REPAIR_KEY = 'general_repair'
-          const genericEntries: PricingEntry[] = orphanRepair.map((p) => ({
-            part_name_ar: p.part_name_ar, hrs: 0, hr_price: 0, cost: 0, isUnknown: true,
-          }))
-          const existing = (data.repair?.groups || []).find(
-            (g: LaborGroup) => g.labor_key === GENERIC_REPAIR_KEY
-          )
-          if (existing) {
-            existing.entries.push(...genericEntries)
-          } else {
-            data = {
-              ...data,
-              repair: {
-                ...data.repair,
-                groups: [
-                  ...(data.repair?.groups || []),
-                  { labor_key: GENERIC_REPAIR_KEY, labor_name_ar: 'أعمال إصلاح', entries: genericEntries, total: 0 },
-                ],
-              },
-            }
-          }
-        }
         setPricingData(data)
         console.log('✅ fetchPricing: setPricingData called')
         // Pre-populate labors (for saving to DB)
