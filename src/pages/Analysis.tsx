@@ -390,7 +390,9 @@ export default function AnalysisPage() {
                   ['الموديل', model],
                   ['السنة', year],
                   ['رقم الشاسيه', vinNumber],
-                  ['شركة التأمين', insuranceCompanyId ? (INSURANCE_COMPANIES.find(c => c.id === insuranceCompanyId)?.nameAr || insuranceCompanyId) : '—'],
+                  ...(workshopId === 'workshop-001'
+                    ? [['شركة التأمين', insuranceCompanyId ? (INSURANCE_COMPANIES.find(c => c.id === insuranceCompanyId)?.nameAr || insuranceCompanyId) : '—']]
+                    : []),
                 ].map(([label, val]) => (
                   <div key={label}>
                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#374151', marginBottom: '0.4rem' }}>{label}</label>
