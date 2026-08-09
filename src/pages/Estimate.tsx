@@ -310,10 +310,12 @@ export default function EstimatePage() {
   const [confirming, setConfirming] = useState(false)
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
   const [labors, setLabors] = useState<Labor[]>([])
+  // One workshop-entered price per labor NAME (keyed by labor_key). Parts under a
+  // labor are listed without individual cost; the labor price is the group total.
+  const [laborGroupPrices, setLaborGroupPrices] = useState<Record<string, number>>({})
   const [pricingData, setPricingData] = useState<PricingData | null>(null)
   const [pricingLoading, setPricingLoading] = useState(false)
   const [editablePartPrices, setEditablePartPrices] = useState<{ partId: string; part_name_ar: string; price: number }[]>([])
-  const [editableEntryCosts, setEditableEntryCosts] = useState<Record<string, number>>({})
   const [deletedEntries, setDeletedEntries] = useState<Set<string>>(new Set())
   const [deleteConfirm, setDeleteConfirm] = useState<{ ek: string; label: string } | null>(null)
   const [manualLaborEntries, setManualLaborEntries] = useState<Record<string, { id: string; part_name_ar: string; cost: number }[]>>({})
@@ -422,17 +424,6 @@ export default function EstimatePage() {
           id: String(i + 1), labor_name_ar, price,
         }))
         setLabors(newLabors)
-        // Initialize editableEntryCosts from all entries — preserve user edits
-        setEditableEntryCosts(prev => {
-          const next: Record<string, number> = { ...prev }
-          ;[...(data.repair?.groups || []), ...(data.replace?.groups || [])].forEach((g: LaborGroup) => {
-            g.entries.forEach((e: PricingEntry) => {
-              const ek = `${g.labor_key}_${e.part_name_ar}`
-              if (!(ek in prev)) next[ek] = e.cost
-            })
-          })
-          return next
-        })
         // Pre-populate editable part prices (preserve user edits, include unknown replace parts)
         const incoming = (data.replace?.part_prices || []) as PartPrice[]
         const incomingIds = new Set(incoming.map(p => p.partId))
@@ -593,33 +584,28 @@ export default function EstimatePage() {
     refreshPricing(updated)
   }
 
-  const getGroupTotal = (laborKey: string, entries: PricingEntry[], type: string) => {
-    const dbTotal = entries
-      .filter(e => !deletedEntries.has(`${laborKey}_${e.part_name_ar}`))
-      .reduce((s, e) => s + (editableEntryCosts[`${laborKey}_${e.part_name_ar}`] ?? e.cost), 0)
-    const manualTotal = (manualLaborEntries[`${type}_${laborKey}`] || []).reduce((s, m) => s + m.cost, 0)
-    return dbTotal + manualTotal
-  }
+  // The labor group total is now simply the workshop-entered price for that labor name.
+  const getGroupTotal = (laborKey: string) => laborGroupPrices[laborKey] ?? 0
 
   const removeManualEntry = (type: string, laborKey: string, id: string) => {
     const key = `${type}_${laborKey}`
     setManualLaborEntries(prev => ({ ...prev, [key]: (prev[key] || []).filter(m => m.id !== id) }))
   }
 
-  const updateManualEntryCost = (type: string, laborKey: string, id: string, cost: number) => {
-    const key = `${type}_${laborKey}`
-    setManualLaborEntries(prev => ({
-      ...prev,
-      [key]: (prev[key] || []).map(m => m.id === id ? { ...m, cost } : m)
-    }))
-  }
-
-  const getExtraGroupTotal = (type: string, laborKey: string) =>
-    (manualLaborEntries[`${type}_${laborKey}`] || []).reduce((s, m) => s + m.cost, 0)
 
   const buildPricingSnapshot = () => {
     const repairGroups: any[] = []
     const replaceGroups: any[] = []
+
+    // Each labor NAME carries one price (getGroupTotal). A labor may appear on
+    // both the repair and replace side; assign its price once (to the repair
+    // side when present) so the report — which merges by name — doesn't double it.
+    const pricedLaborKeys = new Set<string>()
+    const priceOnce = (laborKey: string) => {
+      if (pricedLaborKeys.has(laborKey)) return 0
+      pricedLaborKeys.add(laborKey)
+      return getGroupTotal(laborKey)
+    }
 
     // Capture DB pricing groups (when vehicle has known rates)
     ;(pricingData?.repair?.groups || []).forEach((g: LaborGroup) => {
@@ -632,8 +618,7 @@ export default function EstimatePage() {
       ;(manualLaborEntries[`repair_${g.labor_key}`] || []).forEach((m: any) => {
         groupParts.push(m.part_name_ar)
       })
-      const total = getGroupTotal(g.labor_key, g.entries, 'repair')
-      repairGroups.push({ labor_name_ar: g.labor_name_ar, total, parts: groupParts })
+      repairGroups.push({ labor_name_ar: g.labor_name_ar, total: priceOnce(g.labor_key), parts: groupParts })
     })
 
     ;(pricingData?.replace?.groups || []).forEach((g: LaborGroup) => {
@@ -646,25 +631,20 @@ export default function EstimatePage() {
       ;(manualLaborEntries[`replace_${g.labor_key}`] || []).forEach((m: any) => {
         groupParts.push(m.part_name_ar)
       })
-      const total = getGroupTotal(g.labor_key, g.entries, 'replace')
-      replaceGroups.push({ labor_name_ar: g.labor_name_ar, total, parts: groupParts })
+      replaceGroups.push({ labor_name_ar: g.labor_name_ar, total: priceOnce(g.labor_key), parts: groupParts })
     })
 
     // Capture manually added extra labor groups
     extraLaborGroups.repair.forEach((lk: string) => {
-      const entries = manualLaborEntries[`repair_${lk}`] || []
-      const total = entries.reduce((s: number, e: any) => s + e.cost, 0)
-      const groupParts = entries.map((e: any) => e.part_name_ar)
+      const groupParts = (manualLaborEntries[`repair_${lk}`] || []).map((e: any) => e.part_name_ar)
       const laborName = LABOR_TYPES.find(l => l.key === lk)?.nameAr || lk
-      repairGroups.push({ labor_name_ar: laborName, total, parts: groupParts })
+      repairGroups.push({ labor_name_ar: laborName, total: priceOnce(lk), parts: groupParts })
     })
 
     extraLaborGroups.replace.forEach((lk: string) => {
-      const entries = manualLaborEntries[`replace_${lk}`] || []
-      const total = entries.reduce((s: number, e: any) => s + e.cost, 0)
-      const groupParts = entries.map((e: any) => e.part_name_ar)
+      const groupParts = (manualLaborEntries[`replace_${lk}`] || []).map((e: any) => e.part_name_ar)
       const laborName = LABOR_TYPES.find(l => l.key === lk)?.nameAr || lk
-      replaceGroups.push({ labor_name_ar: laborName, total, parts: groupParts })
+      replaceGroups.push({ labor_name_ar: laborName, total: priceOnce(lk), parts: groupParts })
     })
 
     const totalRepair = repairGroups.reduce((s, g) => s + g.total, 0)
@@ -800,6 +780,16 @@ export default function EstimatePage() {
       setShowConfirmDialog(false)
 
       if (estimateId === 'new') {
+        const snapshot = buildPricingSnapshot()
+        // Derive the saved `labors` from the snapshot: one row per labor name
+        // with its workshop-entered price (merged across repair/replace sides).
+        const laborPriceByName: Record<string, number> = {}
+        ;[...snapshot.repair_groups, ...snapshot.replace_groups].forEach((g: any) => {
+          laborPriceByName[g.labor_name_ar] = (laborPriceByName[g.labor_name_ar] || 0) + (g.total || 0)
+        })
+        const laborsForSave = Object.entries(laborPriceByName).map(([labor_name_ar, price], i) => ({
+          id: String(i + 1), labor_name_ar, price,
+        }))
         const payload = {
           vehicle_year: vehicleInfo.year || 2023,
           vehicle_make: vehicleInfo.make || 'Unknown',
@@ -809,9 +799,9 @@ export default function EstimatePage() {
           customer_mobile: vehicleInfo.customer_mobile || null,
           insurance_company_id: vehicleInfo.insurance_company_id || null,
           parts: parts.map(p => ({ ...p, ai_original_severity: (p as any).ai_original_severity || null })),
-          labors,
+          labors: laborsForSave,
           status: 'confirmed',
-          pricing_data: buildPricingSnapshot(),
+          pricing_data: snapshot,
           parent_estimate_id: parentEstimateId || null,
         }
 
@@ -1309,11 +1299,7 @@ export default function EstimatePage() {
               })
               const unifiedGroups = Array.from(unifiedMap.values())
 
-              const totalLabor =
-                pricingData.repair.groups.reduce((s, g) => s + getGroupTotal(g.labor_key, g.entries, 'repair'), 0) +
-                pricingData.replace.groups.reduce((s, g) => s + getGroupTotal(g.labor_key, g.entries, 'replace'), 0) +
-                extraLaborGroups.repair.reduce((s, lk) => s + getExtraGroupTotal('repair', lk), 0) +
-                extraLaborGroups.replace.reduce((s, lk) => s + getExtraGroupTotal('replace', lk), 0)
+              const totalLabor = unifiedGroups.reduce((s, g) => s + (laborGroupPrices[g.laborKey] ?? 0), 0)
               const totalParts = editablePartPrices.reduce((s, p) => s + (p.price || 0), 0)
 
               const usedLaborKeys = new Set([
@@ -1336,9 +1322,7 @@ export default function EstimatePage() {
                       </div>
 
                       {unifiedGroups.map(({ laborKey, laborNameAr, repairGroup, replaceGroup, isExtraRepair, isExtraReplace }) => {
-                        const repairTotal = repairGroup ? getGroupTotal(laborKey, repairGroup.entries, 'repair') : (isExtraRepair ? getExtraGroupTotal('repair', laborKey) : 0)
-                        const replaceTotal = replaceGroup ? getGroupTotal(laborKey, replaceGroup.entries, 'replace') : (isExtraReplace ? getExtraGroupTotal('replace', laborKey) : 0)
-                        const groupTotal = repairTotal + replaceTotal
+                        const groupTotal = laborGroupPrices[laborKey] ?? 0
 
                         const repManKey = `repair_${laborKey}`
                         const rplManKey = `replace_${laborKey}`
@@ -1352,9 +1336,19 @@ export default function EstimatePage() {
 
                         return (
                           <div key={laborKey} style={{ borderBottom: '1px solid #ede9fe' }}>
-                            {/* Group header */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 1.25rem', backgroundColor: '#f5f3ff' }}>
-                              <span style={{ fontWeight: '700', color: '#7c3aed', fontSize: '0.88rem' }}>{groupTotal.toLocaleString()} ج.م</span>
+                            {/* Group header — one price per labor name */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 1.25rem', backgroundColor: '#f5f3ff', gap: '0.75rem' }}>
+                              {estimateStatus !== 'confirmed' ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
+                                  <input type="number" min="0" value={laborGroupPrices[laborKey] ?? ''} placeholder="0"
+                                    onChange={(e2) => setLaborGroupPrices(prev => ({ ...prev, [laborKey]: Math.max(0, parseFloat(e2.target.value) || 0) }))}
+                                    style={{ width: '95px', padding: '0.35rem 0.5rem', border: '1.5px solid #c4b5fd', borderRadius: '0.375rem', textAlign: 'center', fontSize: '0.85rem', direction: 'ltr', color: '#7c3aed', fontWeight: '700', outline: 'none' }}
+                                  />
+                                  <span style={{ fontSize: '0.72rem', color: '#7c3aed', fontWeight: '700' }}>ج.م</span>
+                                </div>
+                              ) : (
+                                <span style={{ fontWeight: '700', color: '#7c3aed', fontSize: '0.88rem' }}>{groupTotal.toLocaleString()} ج.م</span>
+                              )}
                               <span style={{ fontWeight: '700', color: '#111827', fontSize: '0.9rem' }}>{laborNameAr}</span>
                             </div>
 
@@ -1370,11 +1364,7 @@ export default function EstimatePage() {
                                       <button onClick={() => setDeleteConfirm({ ek, label: e.part_name_ar })}
                                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '0.7rem', padding: '0 2px', flexShrink: 0 }}>✕</button>
                                     )}
-                                    <input type="number" value={editableEntryCosts[ek] ?? e.cost} min="0" disabled={estimateStatus === 'confirmed'}
-                                      onChange={(e2) => setEditableEntryCosts(prev => ({ ...prev, [ek]: Math.max(0, parseFloat(e2.target.value) || 0) }))}
-                                      style={{ width: '80px', padding: '0.2rem 0.4rem', border: '1px solid #ddd6fe', borderRadius: '0.375rem', textAlign: 'center', fontSize: '0.8rem', direction: 'ltr', color: '#7c3aed', flexShrink: 0 }}
-                                    />
-                                    <span style={{ flex: 1, textAlign: 'right' }}>{e.part_name_ar}{!e.isUnknown && ` (${e.hrs} س × ${e.hr_price} ج.م)`}</span>
+                                    <span style={{ flex: 1, textAlign: 'right' }}>{e.part_name_ar}</span>
                                     <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#f0fdf4', color: '#059669', fontWeight: '700', whiteSpace: 'nowrap' }}>إصلاح</span>
                                   </div>
                                 )
@@ -1387,10 +1377,6 @@ export default function EstimatePage() {
                                     <button onClick={() => removeManualEntry('repair', laborKey, m.id)}
                                       style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '0.7rem', padding: '0 2px', flexShrink: 0 }}>✕</button>
                                   )}
-                                  <input type="number" value={m.cost} min="0" disabled={estimateStatus === 'confirmed'}
-                                    onChange={(e2) => updateManualEntryCost('repair', laborKey, m.id, Math.max(0, parseFloat(e2.target.value) || 0))}
-                                    style={{ width: '80px', padding: '0.2rem 0.4rem', border: '1px solid #ddd6fe', borderRadius: '0.375rem', textAlign: 'center', fontSize: '0.8rem', direction: 'ltr', color: '#7c3aed', flexShrink: 0 }}
-                                  />
                                   <span style={{ flex: 1, textAlign: 'right' }}>{m.part_name_ar}</span>
                                   {hasBothSides && <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#f0fdf4', color: '#059669', fontWeight: '700', whiteSpace: 'nowrap' }}>إصلاح</span>}
                                 </div>
@@ -1405,11 +1391,7 @@ export default function EstimatePage() {
                                       <button onClick={() => setDeleteConfirm({ ek, label: e.part_name_ar })}
                                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '0.7rem', padding: '0 2px', flexShrink: 0 }}>✕</button>
                                     )}
-                                    <input type="number" value={editableEntryCosts[ek] ?? e.cost} min="0" disabled={estimateStatus === 'confirmed'}
-                                      onChange={(e2) => setEditableEntryCosts(prev => ({ ...prev, [ek]: Math.max(0, parseFloat(e2.target.value) || 0) }))}
-                                      style={{ width: '80px', padding: '0.2rem 0.4rem', border: '1px solid #ddd6fe', borderRadius: '0.375rem', textAlign: 'center', fontSize: '0.8rem', direction: 'ltr', color: '#7c3aed', flexShrink: 0 }}
-                                    />
-                                    <span style={{ flex: 1, textAlign: 'right' }}>{e.part_name_ar}{!e.isUnknown && ` (${e.hrs} س × ${e.hr_price} ج.م)`}</span>
+                                    <span style={{ flex: 1, textAlign: 'right' }}>{e.part_name_ar}</span>
                                     <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#fef2f2', color: '#dc2626', fontWeight: '700', whiteSpace: 'nowrap' }}>استبدال</span>
                                   </div>
                                 )
@@ -1422,10 +1404,6 @@ export default function EstimatePage() {
                                     <button onClick={() => removeManualEntry('replace', laborKey, m.id)}
                                       style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '0.7rem', padding: '0 2px', flexShrink: 0 }}>✕</button>
                                   )}
-                                  <input type="number" value={m.cost} min="0" disabled={estimateStatus === 'confirmed'}
-                                    onChange={(e2) => updateManualEntryCost('replace', laborKey, m.id, Math.max(0, parseFloat(e2.target.value) || 0))}
-                                    style={{ width: '80px', padding: '0.2rem 0.4rem', border: '1px solid #ddd6fe', borderRadius: '0.375rem', textAlign: 'center', fontSize: '0.8rem', direction: 'ltr', color: '#7c3aed', flexShrink: 0 }}
-                                  />
                                   <span style={{ flex: 1, textAlign: 'right' }}>{m.part_name_ar}</span>
                                   {hasBothSides && <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#fef2f2', color: '#dc2626', fontWeight: '700', whiteSpace: 'nowrap' }}>استبدال</span>}
                                 </div>
@@ -1437,10 +1415,10 @@ export default function EstimatePage() {
                                   <button
                                     onClick={() => {
                                       if (!pendingAdd.partName) return
-                                      const cost = parseFloat(pendingAdd.costStr || '0') || 0
+                                      // Parts under a labor carry no individual cost — the labor price is per name.
                                       setManualLaborEntries(prev => ({
                                         ...prev,
-                                        [activeManKey]: [...(prev[activeManKey] || []), { id: Date.now().toString(), part_name_ar: pendingAdd.partName, cost }]
+                                        [activeManKey]: [...(prev[activeManKey] || []), { id: Date.now().toString(), part_name_ar: pendingAdd.partName, cost: 0 }]
                                       }))
                                       setPendingManualAdd(prev => ({ ...prev, [activeManKey]: { partName: '', costStr: '' } }))
                                     }}
@@ -1453,10 +1431,6 @@ export default function EstimatePage() {
                                       <option value="replace">استبدال</option>
                                     </select>
                                   )}
-                                  <input type="text" inputMode="numeric" value={pendingAdd.costStr ?? ''} placeholder="التكلفة"
-                                    onChange={(e2) => setPendingManualAdd(prev => ({ ...prev, [activeManKey]: { ...pendingAdd, costStr: e2.target.value } }))}
-                                    style={{ width: '70px', padding: '0.22rem 0.4rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', textAlign: 'center', fontSize: '0.75rem', direction: 'ltr', flexShrink: 0 }}
-                                  />
                                   <select value={pendingAdd.partName}
                                     onChange={(e2) => setPendingManualAdd(prev => ({ ...prev, [activeManKey]: { ...pendingAdd, partName: e2.target.value } }))}
                                     style={{ flex: 1, padding: '0.22rem 0.4rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.75rem', textAlign: 'right', direction: 'rtl' }}>
