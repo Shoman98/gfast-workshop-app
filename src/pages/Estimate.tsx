@@ -954,7 +954,7 @@ export default function EstimatePage() {
         <div style={{
           maxWidth: '80rem',
           margin: '0 auto',
-          padding: '1rem 1.5rem',
+          padding: '0.75rem 0.75rem',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -977,12 +977,12 @@ export default function EstimatePage() {
       </div>
 
       {/* Content */}
-      <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '2rem 1.5rem' }}>
+      <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0.75rem 0.5rem' }}>
         <div style={{
           backgroundColor: 'white',
           borderRadius: '0.75rem',
           boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-          padding: '2rem',
+          padding: '1rem 0.75rem',
         }}>
           {error && (
             <div style={{
@@ -1206,8 +1206,8 @@ export default function EstimatePage() {
 
           {/* Add New Part */}
           <div style={{
-            marginBottom: '2rem',
-            padding: '1.5rem',
+            marginBottom: '1.25rem',
+            padding: '0.75rem',
             backgroundColor: '#f9fafb',
             borderRadius: '0.5rem',
             border: '2px solid #e5e7eb',

@@ -177,9 +177,9 @@ export default function ReportPage() {
   )
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', padding: '2rem 1rem', direction: 'rtl' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', padding: '0.5rem 0.25rem', direction: 'rtl' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        <div style={{ backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', overflow: 'hidden', padding: '2.5rem' }}>
+        <div style={{ backgroundColor: 'white', borderRadius: '0.5rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', overflow: 'hidden', padding: '1rem 0.75rem' }}>
 
           {/* ── HEADER ── */}
           <div style={{ textAlign: 'center', marginBottom: '1.5rem', borderBottom: '3px solid #1e3a8a', paddingBottom: '1rem' }}>
@@ -188,7 +188,7 @@ export default function ReportPage() {
           </div>
 
           {/* ── WORKSHOP & VEHICLE INFO ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem', fontSize: '0.9rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem', fontSize: '0.9rem' }}>
             <div style={{ textAlign: 'right' }}>
               {infoField('اسم الورشه', report.workshop.workshop_name)}
               {infoField('العنوان', report.workshop.city)}
@@ -202,7 +202,7 @@ export default function ReportPage() {
           </div>
 
           {/* ── CUSTOMER INFO ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '1.5rem', fontSize: '0.9rem', paddingBottom: '1.5rem', borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '1rem', fontSize: '0.9rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
             <div style={{ textAlign: 'right' }}>
               {report.customer_name && infoField('اسم العميل', report.customer_name)}
               {report.customer_mobile && infoField('رقم الهاتف', report.customer_mobile)}
@@ -353,7 +353,7 @@ export default function ReportPage() {
           </div>
 
           {/* ── SHARE ── */}
-          <div style={{ backgroundColor: '#f3f4f6', padding: '1.5rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>
+          <div style={{ backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>
             <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#0f172a', marginTop: 0, marginBottom: '1rem' }}>شارك التقرير</h3>
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               <input type="text" value={shareUrl} readOnly
