@@ -1377,11 +1377,10 @@ export default function EstimatePage() {
 
                               {/* Add entry row */}
                               {estimateStatus !== 'confirmed' && (
-                                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px dashed #ede9fe' }}>
+                                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px dashed #ede9fe', overflow: 'hidden' }}>
                                   <button
                                     onClick={() => {
                                       if (!pendingAdd.partName) return
-                                      // Parts under a labor carry no individual cost — the labor price is per name.
                                       setManualLaborEntries(prev => ({
                                         ...prev,
                                         [activeManKey]: [...(prev[activeManKey] || []), { id: Date.now().toString(), part_name_ar: pendingAdd.partName, cost: 0 }]
@@ -1392,14 +1391,14 @@ export default function EstimatePage() {
                                   {hasBothSides && (
                                     <select value={addType}
                                       onChange={(e2) => setUnifiedAddType(prev => ({ ...prev, [laborKey]: e2.target.value as 'repair' | 'replace' }))}
-                                      style={{ width: '72px', padding: '0.22rem 0.3rem', border: '1px solid #ddd6fe', borderRadius: '0.375rem', fontSize: '0.72rem', textAlign: 'right', color: addType === 'repair' ? '#059669' : '#dc2626', fontWeight: '700', flexShrink: 0 }}>
+                                      style={{ width: '72px', flexShrink: 0, padding: '0.22rem 0.3rem', border: '1px solid #ddd6fe', borderRadius: '0.375rem', fontSize: '0.72rem', textAlign: 'right', color: addType === 'repair' ? '#059669' : '#dc2626', fontWeight: '700' }}>
                                       <option value="repair">إصلاح</option>
                                       <option value="replace">استبدال</option>
                                     </select>
                                   )}
                                   <select value={pendingAdd.partName}
                                     onChange={(e2) => setPendingManualAdd(prev => ({ ...prev, [activeManKey]: { ...pendingAdd, partName: e2.target.value } }))}
-                                    style={{ flex: 1, padding: '0.22rem 0.4rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.75rem', textAlign: 'right', direction: 'rtl' }}>
+                                    style={{ flex: 1, minWidth: 0, maxWidth: '100%', padding: '0.22rem 0.4rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.75rem', textAlign: 'right', direction: 'rtl' }}>
                                     <option value="">-- اختر جزء --</option>
                                     {parts.map((p, pi) => <option key={pi} value={p.part_name_ar}>{p.part_name_ar}</option>)}
                                   </select>
@@ -1412,7 +1411,7 @@ export default function EstimatePage() {
 
                       {/* Add new labor type */}
                       {estimateStatus !== 'confirmed' && availableLaborTypes.length > 0 && (
-                        <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1.25rem', alignItems: 'center', backgroundColor: '#faf5ff', borderTop: '1px solid #ede9fe' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1.25rem', alignItems: 'center', backgroundColor: '#faf5ff', borderTop: '1px solid #ede9fe', overflow: 'hidden' }}>
                           <button
                             onClick={() => {
                               if (!pendingLaborNewKey) return
@@ -1424,7 +1423,7 @@ export default function EstimatePage() {
                             + إضافة عمل
                           </button>
                           <select value={pendingLaborNewKey} onChange={(e) => setPendingLaborNewKey(e.target.value)}
-                            style={{ flex: 1, padding: '0.35rem 0.5rem', border: '1px solid #ddd6fe', borderRadius: '0.375rem', fontSize: '0.8rem', textAlign: 'right', direction: 'rtl' }}>
+                            style={{ flex: 1, minWidth: 0, maxWidth: '100%', padding: '0.35rem 0.5rem', border: '1px solid #ddd6fe', borderRadius: '0.375rem', fontSize: '0.8rem', textAlign: 'right', direction: 'rtl' }}>
                             <option value="">-- اختر نوع العمل --</option>
                             {availableLaborTypes.map(lt => <option key={lt.key} value={lt.key}>{lt.nameAr}</option>)}
                           </select>
