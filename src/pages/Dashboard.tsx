@@ -403,7 +403,7 @@ export default function DashboardPage() {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: 0 }}>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa', margin: 0, lineHeight: 1.1 }}>G-Fast</h1>
             {workshop && (
-              <span style={{ color: 'white', fontWeight: 600, fontSize: '0.9rem', marginTop: '0.15rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '45vw', textAlign: 'right' }}>
+              <span style={{ color: 'white', fontWeight: 600, fontSize: '0.85rem', marginTop: '0.15rem', textAlign: 'right', maxWidth: '45vw', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.25 }}>
                 {workshop.workshop_name}
               </span>
             )}
