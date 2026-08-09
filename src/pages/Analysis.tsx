@@ -142,6 +142,35 @@ function SearchableSelect({ label, placeholder, options, value, onChange, disabl
   )
 }
 
+// Downscale + re-encode an image in the browser before upload.
+// Guarantees small JPEG payloads on every device — including iPhone HEIC and
+// full-resolution camera photos — so Gemini never receives originals that blow
+// past its token limit (the "quota exceeded" error on mobile multi-image uploads).
+// Returns a full data URL (data:image/jpeg;base64,...).
+async function fileToCompressedDataUrl(file: File, maxDim = 1600, quality = 0.8): Promise<string> {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' } as ImageBitmapOptions)
+    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height))
+    const w = Math.max(1, Math.round(bitmap.width * scale))
+    const h = Math.max(1, Math.round(bitmap.height * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('no 2d context')
+    ctx.drawImage(bitmap, 0, 0, w, h)
+    bitmap.close?.()
+    return canvas.toDataURL('image/jpeg', quality)
+  } catch {
+    // Fallback for browsers that can't decode the format via canvas.
+    return await new Promise<string>((resolve) => {
+      const reader = new FileReader()
+      reader.onload = (e) => resolve(e.target?.result as string)
+      reader.readAsDataURL(file)
+    })
+  }
+}
+
 export default function AnalysisPage() {
   const navigate = useNavigate()
   const workshopId = JSON.parse(localStorage.getItem('workshop') || '{}').workshop_id
@@ -215,21 +244,15 @@ export default function AnalysisPage() {
 
     try {
       const allImages = [...generalImages, ...damageImages]
-      const rawImages: string[] = []
 
-      // Send raw images (no frontend compression)
-      // Backend shared module handles compression for Gemini
+      // Compress/downscale in the browser (max 1600px, JPEG q0.8) so mobile
+      // full-resolution / HEIC photos don't exceed Gemini's token limit.
+      // Reused below for sessionStorage so we only decode+encode once.
+      const compressedDataUrls: string[] = []
       for (const file of allImages) {
-        const reader = new FileReader()
-        const base64 = await new Promise<string>((resolve) => {
-          reader.onload = (e) => {
-            const result = e.target?.result as string
-            resolve(result.split(',')[1])
-          }
-          reader.readAsDataURL(file)
-        })
-        rawImages.push(base64)
+        compressedDataUrls.push(await fileToCompressedDataUrl(file))
       }
+      const rawImages = compressedDataUrls.map((u) => u.split(',')[1])
 
       const token = localStorage.getItem('token')
       if (!token) {
@@ -274,21 +297,11 @@ export default function AnalysisPage() {
           full_response: data.analysis
         });
 
-        // Store images as base64 for later upload after estimate confirmation
-        const allImages = [...generalImages, ...damageImages]
-        if (allImages.length > 0) {
-          const imagePromises = allImages.map(file => {
-            return new Promise<string>((resolve) => {
-              const reader = new FileReader()
-              reader.onload = (e) => {
-                resolve(e.target?.result as string)
-              }
-              reader.readAsDataURL(file)
-            })
-          })
-          const imageBase64Array = await Promise.all(imagePromises)
-          sessionStorage.setItem('analysisImages', JSON.stringify(imageBase64Array))
-          console.log('📸 Stored', imageBase64Array.length, 'images for upload after confirmation')
+        // Store the already-compressed images for later Cloudinary upload after
+        // estimate confirmation (keeps sessionStorage small on mobile).
+        if (compressedDataUrls.length > 0) {
+          sessionStorage.setItem('analysisImages', JSON.stringify(compressedDataUrls))
+          console.log('📸 Stored', compressedDataUrls.length, 'images for upload after confirmation')
         }
 
         sessionStorage.setItem('analysisResult', JSON.stringify(data.analysis))
