@@ -301,8 +301,9 @@ function AddPartForm({ onAdd, disabled, existingParts }: AddPartFormProps) {
   )
 }
 
-// Custom dropdown that stays within its container — native <select> dropdowns
-// are OS-rendered and can't be constrained with CSS on RTL pages.
+// Custom dropdown — uses position:fixed for the list so no ancestor overflow:hidden
+// can clip it (the old absolute+bottom:100% was clipped by the labor container).
+// Uses pointerdown for close-on-outside-tap (works on mobile touch).
 function PartSelect({ value, onChange, options, placeholder }: {
   value: string
   onChange: (v: string) => void
@@ -310,33 +311,63 @@ function PartSelect({ value, onChange, options, placeholder }: {
   placeholder: string
 }) {
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [rect, setRect] = useState<DOMRect | null>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    const handler = (e: PointerEvent) => {
+      if (
+        btnRef.current && !btnRef.current.contains(e.target as Node) &&
+        listRef.current && !listRef.current.contains(e.target as Node)
+      ) setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('pointerdown', handler)
+    return () => document.removeEventListener('pointerdown', handler)
   }, [])
+
+  const handleOpen = () => {
+    if (btnRef.current) setRect(btnRef.current.getBoundingClientRect())
+    setOpen(o => !o)
+  }
+
   const selected = options.find(o => o.value === value)
+
+  // Position the fixed list directly below the button
+  const listStyle: React.CSSProperties = rect ? {
+    position: 'fixed',
+    top: rect.bottom + 4,
+    right: window.innerWidth - rect.right,
+    width: rect.width,
+    backgroundColor: 'white',
+    border: '1px solid #d1d5db',
+    borderRadius: '0.5rem',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+    zIndex: 9999,
+    maxHeight: '220px',
+    overflowY: 'auto',
+    direction: 'rtl',
+  } : { display: 'none' }
+
   return (
-    <div ref={ref} style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-      <button type="button" onClick={() => setOpen(o => !o)}
-        style={{ width: '100%', padding: '0.22rem 0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.75rem', textAlign: 'right', direction: 'rtl', backgroundColor: 'white', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: selected ? '#111827' : '#9ca3af' }}>
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected ? selected.label : placeholder}</span>
-        <span style={{ flexShrink: 0, marginRight: '0.25rem', fontSize: '0.6rem' }}>▼</span>
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <button ref={btnRef} type="button" onPointerDown={handleOpen}
+        style={{ width: '100%', padding: '0.4rem 0.6rem', border: '1.5px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.8rem', textAlign: 'right', direction: 'rtl', backgroundColor: 'white', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: selected ? '#111827' : '#9ca3af', minHeight: '36px' }}>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{selected ? selected.label : placeholder}</span>
+        <span style={{ flexShrink: 0, marginRight: '0.3rem', fontSize: '0.65rem', opacity: 0.6 }}>{open ? '▲' : '▼'}</span>
       </button>
       {open && (
-        <div style={{ position: 'absolute', bottom: '100%', right: 0, left: 0, backgroundColor: 'white', border: '1px solid #d1d5db', borderRadius: '0.375rem', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 100, maxHeight: '180px', overflowY: 'auto', direction: 'rtl' }}>
+        <div ref={listRef} style={listStyle}>
           {options.map(o => (
-            <div key={o.value} onClick={() => { onChange(o.value); setOpen(false) }}
-              style={{ padding: '0.4rem 0.6rem', fontSize: '0.75rem', cursor: 'pointer', backgroundColor: o.value === value ? '#f5f3ff' : 'white', color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f5f3ff')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = o.value === value ? '#f5f3ff' : 'white')}>
+            <div key={o.value}
+              onPointerDown={(e) => { e.preventDefault(); onChange(o.value); setOpen(false) }}
+              style={{ padding: '0.55rem 0.75rem', fontSize: '0.82rem', cursor: 'pointer', backgroundColor: o.value === value ? '#f5f3ff' : 'white', color: '#111827', borderBottom: '1px solid #f3f4f6' }}>
               {o.label}
             </div>
           ))}
-          {options.length === 0 && <div style={{ padding: '0.5rem', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center' }}>لا توجد خيارات</div>}
+          {options.length === 0 && (
+            <div style={{ padding: '0.75rem', fontSize: '0.8rem', color: '#9ca3af', textAlign: 'center' }}>لا توجد خيارات</div>
+          )}
         </div>
       )}
     </div>
@@ -1419,7 +1450,7 @@ export default function EstimatePage() {
 
                               {/* Add entry row */}
                               {estimateStatus !== 'confirmed' && (
-                                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px dashed #ede9fe', overflow: 'hidden' }}>
+                                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px dashed #ede9fe' }}>
                                   <button
                                     onClick={() => {
                                       if (!pendingAdd.partName) return
@@ -1453,7 +1484,7 @@ export default function EstimatePage() {
 
                       {/* Add new labor type */}
                       {estimateStatus !== 'confirmed' && availableLaborTypes.length > 0 && (
-                        <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1.25rem', alignItems: 'center', backgroundColor: '#faf5ff', borderTop: '1px solid #ede9fe', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1.25rem', alignItems: 'center', backgroundColor: '#faf5ff', borderTop: '1px solid #ede9fe' }}>
                           <button
                             onClick={() => {
                               if (!pendingLaborNewKey) return
