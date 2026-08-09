@@ -412,10 +412,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Main */}
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0.75rem 0.5rem' }}>
 
         {/* Action buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
           <button
             onClick={() => navigate('/analysis')}
             style={{ padding: '0.75rem 1.5rem', backgroundColor: '#2563eb', color: 'white', borderRadius: '0.5rem', fontWeight: 'bold', fontSize: '1.125rem', border: 'none', cursor: 'pointer' }}
@@ -504,14 +504,14 @@ export default function DashboardPage() {
         )}
 
         {mainTab === 'estimates' && (
-        <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: '2rem' }}>
+        <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: '0.75rem 0.5rem' }}>
 
           {topLevel.length > 0 && (
-            <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <input
                 type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث بالماركة أو الموديل أو السنة أو رقم الشاسيه (VIN)..."
-                style={{ flex: 1, minWidth: '200px', padding: '0.75rem 1rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', textAlign: 'right', outline: 'none' }}
+                placeholder="ابحث بالماركة أو الموديل أو السنة أو VIN..."
+                style={{ flex: 1, minWidth: '160px', padding: '0.6rem 0.75rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', fontSize: '0.9rem', textAlign: 'right', outline: 'none' }}
                 onFocus={(e) => e.target.style.borderColor = '#2563eb'}
                 onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
               />
@@ -558,177 +558,96 @@ export default function DashboardPage() {
               </p>
             </div>
           ) : (
-            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin', scrollbarColor: '#d1d5db #f9fafb' }}>
-              <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 1 }}>
-                    <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '110px' }}>الماركة</th>
-                    <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '110px' }}>الموديل</th>
-                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '150px' }}>رقم الشاسيه (VIN)</th>
-                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '80px' }}>السنة</th>
-                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '100px' }}>التاريخ</th>
-                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '80px' }}>الصور</th>
-                    {workshop?.workshop_id === 'workshop-001' && <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '160px' }}>رد التامين</th>}
-                    {workshop?.workshop_id === 'workshop-001' && <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '90px' }}>صور الورشة</th>}
-                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '100px' }}>التقرير</th>
-                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '160px' }}>ملاحق المقايسه</th>
-                    <th style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap', minWidth: '120px' }}>سجل التعديلات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayed.map((estimate, idx) => {
-                    const imgs = estimateImages[estimate.estimate_id] || []
-                    const cfg  = STATUS_CONFIG[estimate.status] || STATUS_CONFIG.confirmed
-                    const firstImg = imgs[0]
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {displayed.map((estimate) => {
+                const imgs = estimateImages[estimate.estimate_id] || []
+                const cfg  = STATUS_CONFIG[estimate.status] || STATUS_CONFIG.confirmed
+                const firstImg = imgs[0]
+                const sups = estimates.filter(s => s.parent_estimate_id === estimate.estimate_id)
+                const hasInsurance = !!estimate.insurance_company_id
+                const canAddSup = hasInsurance ? estimate.status === 'approved_by_insurance' : estimate.status !== 'draft'
+                const extraImgs = estimate.extra_images_by_workshop || []
 
-                    return (
-                      <>
-                        <tr
-                          key={estimate.estimate_id}
-                          style={{
-                            borderBottom: '1px solid #f3f4f6',
-                            backgroundColor: idx % 2 === 0 ? 'white' : '#fafafa',
-                            transition: 'background 0.1s',
-                          }}
-                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = cfg.bg)}
-                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = idx % 2 === 0 ? 'white' : '#fafafa')}
-                        >
-                          {/* Make */}
-                          <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: '#111827' }}>
-                            {estimate.vehicle_make}
-                          </td>
-
-                          {/* Model */}
-                          <td style={{ padding: '0.85rem 1rem', color: '#374151' }}>
-                            {estimate.vehicle_model}
-                          </td>
-
-                          {/* VIN */}
-                          <td style={{ padding: '0.85rem 1rem', textAlign: 'center', color: '#6b7280', fontFamily: 'monospace', fontSize: '0.8rem', letterSpacing: '0.02em' }}>
-                            {estimate.vin_number || '—'}
-                          </td>
-
-                          {/* Year */}
-                          <td style={{ padding: '0.85rem 1rem', textAlign: 'center', color: '#6b7280', fontWeight: 600 }}>
-                            {estimate.vehicle_year}
-                          </td>
-
-                          {/* Date */}
-                          <td style={{ padding: '0.85rem 1rem', textAlign: 'center', color: '#9ca3af', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                            {formatDate(estimate.created_at)}
-                          </td>
-
-                          {/* Images */}
-                          <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
-                            <button
-                              onClick={() => setPhotosModal(estimate)}
-                              style={{
-                                display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-                                padding: '0.4rem 0.85rem', backgroundColor: '#7c3aed', color: 'white',
-                                border: 'none', borderRadius: '0.5rem', fontWeight: 700,
-                                fontSize: '0.8rem', cursor: 'pointer',
-                              }}
-                            >
-                              {firstImg ? (
-                                <img src={firstImg.cloudinary_url} alt="" style={{ width: '24px', height: '24px', objectFit: 'cover', borderRadius: '3px' }} />
-                              ) : '📷'}
-                              {imgs.length > 0 && <span>{imgs.length}</span>}
-                            </button>
-                          </td>
-
-                          {/* Insurance status — workshop-001 only */}
-                          {workshop?.workshop_id === 'workshop-001' && (
-                            <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
-                              <InsuranceBadge
-                                status={estimate.status}
-                                insuranceAction={estimate.insurance_action}
-                                insuranceCompanyId={estimate.insurance_company_id}
-                                estimateId={estimate.estimate_id}
-                                navigate={navigate}
-                              />
-                            </td>
-                          )}
-
-                          {/* Workshop extra images — workshop-001 only */}
-                          {workshop?.workshop_id === 'workshop-001' && (
-                            <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
-                              {(() => {
-                                const imgs = estimate.extra_images_by_workshop || []
-                                return (
-                                  <button
-                                    onClick={() => setExtraImagesModal({ images: imgs, label: `${estimate.vehicle_make} ${estimate.vehicle_model} ${estimate.vehicle_year}` })}
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.4rem 0.75rem', background: imgs.length > 0 ? '#f5f3ff' : '#f9fafb', border: `1.5px solid ${imgs.length > 0 ? '#7c3aed' : '#e5e7eb'}`, borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', color: imgs.length > 0 ? '#7c3aed' : '#9ca3af', whiteSpace: 'nowrap' }}
-                                  >
-                                    🖼{imgs.length > 0 ? ` ${imgs.length}` : ''}
-                                  </button>
-                                )
-                              })()}
-                            </td>
-                          )}
-
-                          {/* Report */}
-                          <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
-                            <button
-                              onClick={() => navigate(`/report/${estimate.estimate_id}`)}
-                              style={{
-                                padding: '0.4rem 0.9rem', backgroundColor: '#16a34a', color: 'white',
-                                border: 'none', borderRadius: '0.5rem', fontWeight: 700,
-                                fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap',
-                              }}
-                            >📄 تقرير</button>
-                          </td>
-
-                          {/* Supplementary column — thumbnail */}
-                          <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
-                            {(() => {
-                              const sups = estimates.filter(s => s.parent_estimate_id === estimate.estimate_id)
-                              const hasInsurance = !!estimate.insurance_company_id
-                              const canAdd = hasInsurance
-                                ? estimate.status === 'approved_by_insurance'
-                                : estimate.status !== 'draft'
-                              if (sups.length === 0 && !canAdd) return <span style={{ color: '#d1d5db' }}>—</span>
-                              return (
-                                <button
-                                  onClick={() => navigate(`/estimate/${estimate.estimate_id}/supplements`)}
-                                  style={{
-                                    display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem',
-                                    padding: '0.45rem 0.85rem', background: sups.length > 0 ? '#f5f3ff' : '#faf5ff',
-                                    border: `1.5px solid ${sups.length > 0 ? '#a78bfa' : '#ddd6fe'}`,
-                                    borderRadius: '0.5rem', cursor: 'pointer', minWidth: '70px',
-                                  }}
-                                >
-                                  <span style={{ fontSize: '1rem' }}>📋</span>
-                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#7c3aed', whiteSpace: 'nowrap' }}>
-                                    {sups.length > 0 ? `${sups.length} ملحق` : '➕ إضافة'}
-                                  </span>
-                                </button>
-                              )
-                            })()}
-                          </td>
-
-                          {/* Audit trail */}
-                          <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
-                            <button
-                              onClick={() => navigate(`/estimate/${estimate.estimate_id}/audit`)}
-                              style={{ padding: '0.4rem 0.9rem', background: '#fffbeb', border: '1.5px solid #d97706', color: '#d97706', borderRadius: '0.5rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                            >📋 السجل</button>
-                          </td>
-                        </tr>
-
-                        {/* Rejection comment row */}
-                        {estimate.status === 'rejected_by_insurance' && estimate.insurance_comment && (
-                          <tr key={`rej-${estimate.estimate_id}`} style={{ backgroundColor: '#fef2f2', borderBottom: '1px solid #fecaca' }}>
-                            <td colSpan={workshop?.workshop_id === 'workshop-001' ? 10 : 8} style={{ padding: '0.5rem 1rem 0.65rem', fontSize: '0.8rem' }}>
-                              <span style={{ fontWeight: 700, color: '#dc2626' }}>سبب الرفض: </span>
-                              <span style={{ color: '#7f1d1d' }}>{estimate.insurance_comment}</span>
-                            </td>
-                          </tr>
+                return (
+                  <div key={estimate.estimate_id} style={{ border: `1.5px solid ${cfg.border}`, borderRadius: '0.65rem', backgroundColor: cfg.bg, overflow: 'hidden' }}>
+                    {/* Card header — vehicle + date */}
+                    <div style={{ padding: '0.65rem 0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', borderBottom: '1px solid #e5e7eb', backgroundColor: 'white' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>
+                          {estimate.vehicle_make} {estimate.vehicle_model}
+                          <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '0.85rem', marginRight: '0.4rem' }}>{estimate.vehicle_year}</span>
+                        </div>
+                        {estimate.vin_number && (
+                          <div style={{ fontSize: '0.75rem', color: '#9ca3af', fontFamily: 'monospace', marginTop: '0.15rem' }}>VIN: {estimate.vin_number}</div>
                         )}
-                      </>
-                    )
-                  })}
-                </tbody>
-              </table>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem', flexShrink: 0 }}>
+                        <span style={{ fontSize: '0.72rem', color: '#9ca3af', whiteSpace: 'nowrap' }}>{formatDate(estimate.created_at)}</span>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: cfg.color, backgroundColor: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: '999px', padding: '0.1rem 0.5rem', whiteSpace: 'nowrap' }}>{cfg.label}</span>
+                      </div>
+                    </div>
+
+                    {/* Insurance rejection reason */}
+                    {estimate.status === 'rejected_by_insurance' && estimate.insurance_comment && (
+                      <div style={{ padding: '0.4rem 0.75rem', backgroundColor: '#fef2f2', fontSize: '0.78rem' }}>
+                        <span style={{ fontWeight: 700, color: '#dc2626' }}>سبب الرفض: </span>
+                        <span style={{ color: '#7f1d1d' }}>{estimate.insurance_comment}</span>
+                      </div>
+                    )}
+
+                    {/* Action buttons row */}
+                    <div style={{ padding: '0.55rem 0.6rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+
+                      {/* Photos */}
+                      <button onClick={() => setPhotosModal(estimate)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.45rem 0.75rem', backgroundColor: '#7c3aed', color: 'white', border: 'none', borderRadius: '0.45rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
+                        {firstImg ? <img src={firstImg.cloudinary_url} alt="" style={{ width: '20px', height: '20px', objectFit: 'cover', borderRadius: '3px' }} /> : '📷'}
+                        {imgs.length > 0 && <span>{imgs.length}</span>}
+                      </button>
+
+                      {/* Report */}
+                      <button onClick={() => navigate(`/report/${estimate.estimate_id}`)}
+                        style={{ padding: '0.45rem 0.75rem', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '0.45rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        📄 تقرير
+                      </button>
+
+                      {/* Supplements */}
+                      {(sups.length > 0 || canAddSup) && (
+                        <button onClick={() => navigate(`/estimate/${estimate.estimate_id}/supplements`)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.45rem 0.75rem', background: sups.length > 0 ? '#f5f3ff' : '#faf5ff', border: `1.5px solid ${sups.length > 0 ? '#a78bfa' : '#ddd6fe'}`, borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', color: '#7c3aed', whiteSpace: 'nowrap' }}>
+                          📋 {sups.length > 0 ? `${sups.length} ملحق` : '➕ ملحق'}
+                        </button>
+                      )}
+
+                      {/* Audit */}
+                      <button onClick={() => navigate(`/estimate/${estimate.estimate_id}/audit`)}
+                        style={{ padding: '0.45rem 0.75rem', background: '#fffbeb', border: '1.5px solid #d97706', color: '#d97706', borderRadius: '0.45rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        📋 السجل
+                      </button>
+
+                      {/* Insurance — workshop-001 only */}
+                      {workshop?.workshop_id === 'workshop-001' && (
+                        <InsuranceBadge
+                          status={estimate.status}
+                          insuranceAction={estimate.insurance_action}
+                          insuranceCompanyId={estimate.insurance_company_id}
+                          estimateId={estimate.estimate_id}
+                          navigate={navigate}
+                        />
+                      )}
+
+                      {/* Workshop extra images — workshop-001 only */}
+                      {workshop?.workshop_id === 'workshop-001' && (
+                        <button
+                          onClick={() => setExtraImagesModal({ images: extraImgs, label: `${estimate.vehicle_make} ${estimate.vehicle_model} ${estimate.vehicle_year}` })}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.45rem 0.75rem', background: extraImgs.length > 0 ? '#f5f3ff' : '#f9fafb', border: `1.5px solid ${extraImgs.length > 0 ? '#7c3aed' : '#e5e7eb'}`, borderRadius: '0.45rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', color: extraImgs.length > 0 ? '#7c3aed' : '#9ca3af', whiteSpace: 'nowrap' }}>
+                          🖼{extraImgs.length > 0 ? ` ${extraImgs.length}` : ''}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
