@@ -2309,6 +2309,7 @@ No aliases, no free-text part names
 No inferred or assumed parts
 No duplicate parts across arrays
 - If confidence < 0.70 → part MUST appear ONLY in "needs_check_parts"
+- The "description" field for each damage item MUST be written in Arabic only (Egyptian Arabic). Example: "غاطة عميقة في الجانب الأيمن بطول حوالي 5 سم."
 
 ---------------------------------------
 VALIDATION RULES (MANDATORY):
