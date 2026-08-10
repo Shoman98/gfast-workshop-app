@@ -3046,6 +3046,11 @@ LEFT/RIGHT CRITICAL RULE:
 - Double-check every part name contains the correct _left or _right suffix before outputting
 - When uncertain about side → describe in the description field which physical side you see it on
 
+LANGUAGE RULE (MANDATORY):
+- The "description" field MUST be written in Arabic (Egyptian Arabic) only.
+- Example: "خبطة عميقة في الجانب الأيمن بطول حوالي 5 سم."
+- Do NOT write descriptions in English under any circumstance.
+
 Return this exact JSON:
 \`\`\`json
 {
@@ -3053,7 +3058,7 @@ Return this exact JSON:
     {
       "part_name": "exact part name from valid parts list",
       "damage_type": "Dent|Scratch|Crack|Broken|Missing|Deformation|Misalignment|Rust|Buckled|Puncture",
-      "description": "specific visual evidence observed",
+      "description": "وصف بالعربي للضرر المرئي",
       "confidence": 0.85
     }
   ],
@@ -3061,7 +3066,7 @@ Return this exact JSON:
     {
       "part_name": "exact part name",
       "damage_type": "string",
-      "description": "what you observed",
+      "description": "وصف بالعربي لما تم رصده",
       "reason_for_uncertainty": "why confidence is low",
       "confidence": 0.50
     }
