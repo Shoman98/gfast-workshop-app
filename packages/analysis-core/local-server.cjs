@@ -3121,6 +3121,7 @@ RULES:
 3. If no damage suggests structural concern, set "detected" to false with empty concerns array.
 4. Be conservative — when in doubt, say no structural concern.
 5. Focus on: frame alignment, structural integrity, crumple zones, pillar damage, subframe issues.
+6. The "indicator" field MUST be written in Arabic (Egyptian Arabic) only. Example: "تشوّه في الهيكل الأمامي نتيجة خبطة شديدة."
 
 Return this exact JSON:
 \`\`\`json
@@ -3131,7 +3132,7 @@ Return this exact JSON:
       {
         "location": "affected structural area (e.g. front-left, rear)",
         "component": "structural component name (e.g. Front Rail, A-Pillar, Subframe)",
-        "indicator": "what structural issue is suspected based on the damages",
+        "indicator": "وصف بالعربي للمشكلة الهيكلية المشتبه بها",
         "riskLevel": "minor|moderate|severe"
       }
     ]
@@ -3192,6 +3193,7 @@ RULES:
    - ✅ VALID: emit TWO separate items, one with "radiator" and one with "ac_condenser".
    - The same rule applies to "visible_damage_part".
 8. "suspected_hidden_part" MUST be an exact taxonomy part name (snake_case or the names from the PART TAXONOMY). No aliases, no free-text grouping nouns ("cooling stack", "front-end assembly", etc.).
+9. The "hidden_indicator" field MUST be written in Arabic (Egyptian Arabic) only. Example: "يُحتمل تضرر دعامة الرادياتير نتيجة الخبطة الأمامية الشديدة."
 
 ${engineSection}
 
@@ -3202,7 +3204,7 @@ Return this exact JSON:
     {
       "visible_damage_part": "which confirmed damage triggers this inference",
       "suspected_hidden_part": "hidden part name that may be damaged",
-      "hidden_indicator": "what hidden damage is suspected and why",
+      "hidden_indicator": "وصف بالعربي للضرر المخفي المشتبه به",
       "confidence": 0.45,
       "requires_inspection": true
     }
@@ -3669,7 +3671,7 @@ function combineStageResults(stage1, stage2, stage3, stage4) {
       return {
         partName: partKey || component,
         damageType: damageType,
-        description: `Structural: ${indicator}`,
+        description: `هيكلي: ${indicator}`,
         indicators: [indicator],
         severityLevel: riskLevel === 'severe' ? 'severe' : 'moderate',
         confidence: 90,
