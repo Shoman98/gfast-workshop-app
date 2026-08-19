@@ -3,27 +3,19 @@
  */
 
 import express from 'express';
-import rateLimit from 'express-rate-limit';
 import { supabase } from '../db/supabase.js';
 import { generateToken, verifyToken } from '../middleware/auth.js';
 import bcrypt from 'bcrypt';
 
 const router = express.Router();
 
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: { error: 'محاولات كثيرة. يرجى الانتظار 15 دقيقة والمحاولة مجددا' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 /**
  * POST /api/auth/login
  * Login with workshop_id + PIN
  * Returns JWT token for session management
  */
-router.post('/login', loginLimiter, async (req, res, next) => {
+router.post('/login', async (req, res, next) => {
   try {
     const { workshop_id, pin, workshop_name, location, phone } = req.body;
 
