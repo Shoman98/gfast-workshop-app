@@ -15,6 +15,7 @@ import imageRoutes from './routes/images.js';
 import pricingRoutes from './routes/pricing.js';
 import workshopPricingRoutes from './routes/workshopPricing.js';
 import adminRoutes from './routes/admin.js';
+import publicRoutes from './routes/public.js';
 import { notifyWorkshopAnalysisAsync } from './lib/telegram-notify.js';
 // Use SHARED module from wreck-vision - SINGLE SOURCE OF TRUTH
 import pkg from '@gfast/analysis-core';
@@ -172,6 +173,7 @@ app.use('/api/images', imageRoutes);
 app.use('/api/pricing', pricingRoutes);
 app.use('/api/workshop-pricing', workshopPricingRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/public', publicRoutes);
 
 // Analysis route - Real Gemini Vision Analysis (with fallback to mock if API unavailable)
 app.post('/api/analysis', async (req, res, next) => {

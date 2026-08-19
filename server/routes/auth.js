@@ -72,21 +72,105 @@ router.post('/login', loginLimiter, async (req, res, next) => {
       }
     }
 
-    // Generate JWT token (embed super-admin flag so it's available without a DB hit)
-    const token = generateToken(workshop_id, workshop.is_super_admin === true);
+    // Fetch branches for this workshop
+    const { data: branches, error: branchError } = await supabase
+      .from('workshop_branches')
+      .select('branch_id, branch_name, city, phone')
+      .eq('workshop_id', workshop_id)
+      .eq('is_active', true)
+      .order('branch_name');
 
-    console.log(`✅ Login successful: ${workshop_name || workshop.workshop_name} (${workshop_id})`);
+    if (branchError) {
+      console.warn('⚠️  Failed to fetch branches:', branchError.message);
+    }
+
+    const activeBranches = branches || [];
+
+    // If only one branch (or none), auto-select and return token immediately
+    if (activeBranches.length <= 1) {
+      const branch = activeBranches[0] || null;
+      const token = generateToken(workshop_id, workshop.is_super_admin === true, branch?.branch_id || null);
+
+      console.log(`✅ Login successful: ${workshop.workshop_name} (${workshop_id})${branch ? ` → ${branch.branch_name}` : ''}`);
+
+      return res.json({
+        success: true,
+        token,
+        workshop: {
+          workshop_id: workshop.workshop_id,
+          is_super_admin: workshop.is_super_admin === true,
+          workshop_name: workshop_name || workshop.workshop_name,
+          category: workshop.category,
+          city: location || workshop.city,
+          phone: phone || workshop.phone,
+          branch: branch || null,
+        },
+      });
+    }
+
+    // Multiple branches — return list for client to pick from (no token yet)
+    console.log(`✅ Login successful: ${workshop.workshop_name} (${workshop_id}) — branch selection required`);
 
     res.json({
       success: true,
-      token,
+      requires_branch_selection: true,
       workshop: {
         workshop_id: workshop.workshop_id,
         is_super_admin: workshop.is_super_admin === true,
         workshop_name: workshop_name || workshop.workshop_name,
         category: workshop.category,
-        city: location || workshop.city,
-        phone: phone || workshop.phone,
+      },
+      branches: activeBranches,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/auth/select-branch
+ * Called after multi-branch login — verifies branch belongs to workshop and issues token
+ */
+router.post('/select-branch', async (req, res, next) => {
+  try {
+    const { workshop_id, branch_id } = req.body;
+
+    if (!workshop_id || !branch_id) {
+      return res.status(400).json({ error: 'workshop_id and branch_id required' });
+    }
+
+    // Verify branch belongs to this workshop
+    const { data: branch, error } = await supabase
+      .from('workshop_branches')
+      .select('branch_id, branch_name, city, phone')
+      .eq('branch_id', branch_id)
+      .eq('workshop_id', workshop_id)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !branch) {
+      return res.status(403).json({ error: 'Invalid branch selection' });
+    }
+
+    const { data: workshop } = await supabase
+      .from('workshops')
+      .select('workshop_name, category, is_super_admin')
+      .eq('workshop_id', workshop_id)
+      .single();
+
+    const token = generateToken(workshop_id, workshop?.is_super_admin === true, branch_id);
+
+    console.log(`✅ Branch selected: ${branch.branch_name} for ${workshop_id}`);
+
+    res.json({
+      success: true,
+      token,
+      workshop: {
+        workshop_id,
+        is_super_admin: workshop?.is_super_admin === true,
+        workshop_name: workshop?.workshop_name,
+        category: workshop?.category,
+        branch,
       },
     });
   } catch (err) {

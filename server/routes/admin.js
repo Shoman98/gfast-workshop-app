@@ -71,6 +71,63 @@ router.post('/workshops/reorder', authenticate, requireSuperAdmin, async (req, r
   } catch (err) { next(err); }
 });
 
+// ── GET /api/admin/workshops/:id/branches ── list branches for a workshop
+router.get('/workshops/:id/branches', authenticate, requireSuperAdmin, async (req, res, next) => {
+  try {
+    const { data, error } = await supabase
+      .from('workshop_branches')
+      .select('*')
+      .eq('workshop_id', req.params.id)
+      .order('branch_name');
+    if (error) throw error;
+    res.json({ success: true, branches: data || [] });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/admin/workshops/:id/branches ── add a branch
+router.post('/workshops/:id/branches', authenticate, requireSuperAdmin, async (req, res, next) => {
+  try {
+    const { branch_name, city, phone } = req.body;
+    if (!branch_name) return res.status(400).json({ error: 'branch_name required' });
+    const branch_id = `${req.params.id}-${Date.now()}`;
+    const { data, error } = await supabase
+      .from('workshop_branches')
+      .insert({ branch_id, workshop_id: req.params.id, branch_name, city: city || null, phone: phone || null })
+      .select().single();
+    if (error) throw error;
+    res.json({ success: true, branch: data });
+  } catch (err) { next(err); }
+});
+
+// ── PATCH /api/admin/workshops/:id/branches/:branchId ── update a branch
+router.patch('/workshops/:id/branches/:branchId', authenticate, requireSuperAdmin, async (req, res, next) => {
+  try {
+    const allowed = ['branch_name', 'city', 'phone', 'is_active'];
+    const updates = Object.fromEntries(Object.entries(req.body).filter(([k]) => allowed.includes(k)));
+    const { data, error } = await supabase
+      .from('workshop_branches')
+      .update(updates)
+      .eq('branch_id', req.params.branchId)
+      .eq('workshop_id', req.params.id)
+      .select().single();
+    if (error) throw error;
+    res.json({ success: true, branch: data });
+  } catch (err) { next(err); }
+});
+
+// ── DELETE /api/admin/workshops/:id/branches/:branchId ── remove a branch
+router.delete('/workshops/:id/branches/:branchId', authenticate, requireSuperAdmin, async (req, res, next) => {
+  try {
+    const { error } = await supabase
+      .from('workshop_branches')
+      .delete()
+      .eq('branch_id', req.params.branchId)
+      .eq('workshop_id', req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/admin/bookings ── all consumer bookings with filters
 router.get('/bookings', authenticate, requireSuperAdmin, async (req, res, next) => {
   try {
@@ -79,6 +136,7 @@ router.get('/bookings', authenticate, requireSuperAdmin, async (req, res, next) 
     let q = supabase
       .from('consumer_bookings')
       .select('*')
+      .neq('status', 'superseded')
       .order('created_at', { ascending: false });
 
     if (workshop_id) q = q.eq('workshop_id', workshop_id);

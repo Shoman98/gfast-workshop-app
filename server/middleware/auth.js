@@ -9,9 +9,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 /**
  * Generate JWT token for workshop
  */
-export function generateToken(workshopId, isSuperAdmin = false) {
+export function generateToken(workshopId, isSuperAdmin = false, branchId = null) {
   return jwt.sign(
-    { workshop_id: workshopId, is_super_admin: isSuperAdmin },
+    { workshop_id: workshopId, is_super_admin: isSuperAdmin, branch_id: branchId },
     JWT_SECRET,
     { expiresIn: '8h' }
   );
@@ -59,6 +59,7 @@ export function authenticate(req, res, next) {
 
   // Attach workshop_id, scope, and super-admin flag to request
   req.workshop_id = decoded.workshop_id;
+  req.branch_id = decoded.branch_id || null;
   req.token_scope = decoded.scope || null;
   req.is_super_admin = decoded.is_super_admin === true;
   next();

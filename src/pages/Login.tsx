@@ -5,6 +5,8 @@ import { authenticateInsurance } from '@/mock/insurance'
 
 type Role = 'workshop' | 'insurance'
 
+type Branch = { branch_id: string; branch_name: string; city?: string; phone?: string }
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const [role, setRole] = useState<Role | null>(null)
@@ -12,6 +14,10 @@ export default function LoginPage() {
   // Workshop fields
   const [workshopId, setWorkshopId] = useState('')
   const [pin, setPin] = useState('')
+
+  // Branch selection step
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [pendingWorkshop, setPendingWorkshop] = useState<any>(null)
 
   // Insurance fields
   const [companyId, setCompanyId] = useState('')
@@ -23,6 +29,8 @@ export default function LoginPage() {
   const reset = (newRole: Role) => {
     setRole(newRole)
     setError('')
+    setBranches([])
+    setPendingWorkshop(null)
     setWorkshopId(''); setPin(''); setCompanyId(''); setPassword('')
   }
 
@@ -39,6 +47,35 @@ export default function LoginPage() {
       })
       const data = await response.json()
       if (!response.ok) { setError(data.error || 'فشل تسجيل الدخول'); setLoading(false); return }
+
+      if (data.requires_branch_selection) {
+        // Multiple branches — show picker
+        setBranches(data.branches)
+        setPendingWorkshop(data.workshop)
+        setLoading(false)
+        return
+      }
+
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('workshop', JSON.stringify(data.workshop))
+      navigate('/dashboard')
+    } catch (err) {
+      setError((err as Error).message)
+      setLoading(false)
+    }
+  }
+
+  const handleBranchSelect = async (branch: Branch) => {
+    setLoading(true)
+    setError('')
+    try {
+      const response = await fetch(apiUrl('/api/auth/select-branch'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workshop_id: pendingWorkshop.workshop_id, branch_id: branch.branch_id }),
+      })
+      const data = await response.json()
+      if (!response.ok) { setError(data.error || 'فشل اختيار الفرع'); setLoading(false); return }
       localStorage.setItem('token', data.token)
       localStorage.setItem('workshop', JSON.stringify(data.workshop))
       navigate('/dashboard')
@@ -135,8 +172,42 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Workshop form */}
-            {role === 'workshop' && (
+            {/* Branch picker (shown after credentials when workshop has multiple branches) */}
+            {role === 'workshop' && branches.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ textAlign: 'center', marginBottom: '0.25rem' }}>
+                  <p style={{ fontWeight: 700, fontSize: '1rem', color: '#111827', margin: 0 }}>{pendingWorkshop?.workshop_name}</p>
+                  <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0.25rem 0 0' }}>اختر الفرع للمتابعة</p>
+                </div>
+                {branches.map(branch => (
+                  <button
+                    key={branch.branch_id}
+                    onClick={() => handleBranchSelect(branch)}
+                    disabled={loading}
+                    style={{
+                      width: '100%', padding: '0.9rem 1rem', border: '2px solid #e5e7eb',
+                      borderRadius: '0.6rem', background: 'white', cursor: loading ? 'not-allowed' : 'pointer',
+                      textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '0.2rem',
+                      transition: 'border-color .15s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = '#2563eb')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = '#e5e7eb')}
+                  >
+                    <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#111827' }}>🏢 {branch.branch_name}</span>
+                    {branch.city && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>📍 {branch.city}</span>}
+                  </button>
+                ))}
+                <button
+                  onClick={() => { setBranches([]); setPendingWorkshop(null) }}
+                  style={{ padding: '0.5rem', background: 'none', border: 'none', color: '#6b7280', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  رجوع
+                </button>
+              </div>
+            )}
+
+            {/* Workshop credentials form */}
+            {role === 'workshop' && branches.length === 0 && (
               <form onSubmit={handleWorkshopLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>رقم الورشة</label>

@@ -286,6 +286,8 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState<any[]>([])
   const [bookingsLoading, setBookingsLoading] = useState(false)
   const [bookingPhotoModal, setBookingPhotoModal] = useState<string[] | null>(null)
+  const [bookingBranchFilter, setBookingBranchFilter] = useState<string>('all')
+  const [workshopBranches, setWorkshopBranches] = useState<{ branch_id: string; branch_name: string }[]>([])
 
   // Top-level confirmed estimates only (supplements are visible inside the Report chain)
   const topLevel = estimates.filter(e => !e.parent_estimate_id && e.status !== 'draft' && e.status !== 'exported' as any)
@@ -364,12 +366,22 @@ export default function DashboardPage() {
     }
   }
 
-  const loadBookings = async () => {
+  const loadBookings = async (branchId?: string) => {
     const token = localStorage.getItem('token')
     if (!token) return
     setBookingsLoading(true)
     try {
-      const res = await fetch(apiUrl('/api/estimates/consumer-bookings'), {
+      // Fetch branches once to know if filter should show
+      if (workshopBranches.length === 0) {
+        const brRes = await fetch(apiUrl('/api/estimates/my-branches'), {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const brData = await brRes.json()
+        if (brData.success) setWorkshopBranches(brData.branches || [])
+      }
+
+      const qs = branchId && branchId !== 'all' ? `?branch_id=${branchId}` : ''
+      const res = await fetch(apiUrl(`/api/estimates/consumer-bookings${qs}`), {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await res.json()
@@ -400,6 +412,15 @@ export default function DashboardPage() {
               🚪 خروج
             </button>
           </div>
+
+          {/* Branch name — center, only if workshop has a branch */}
+          {workshop?.branch && (
+            <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.1)', borderRadius: '0.5rem', padding: '0.3rem 0.85rem' }}>
+              <span style={{ fontSize: '0.9rem' }}>🏢</span>
+              <span style={{ color: 'white', fontWeight: 700, fontSize: '0.88rem', whiteSpace: 'nowrap' }}>{workshop.branch.branch_name}</span>
+            </div>
+          )}
+
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: 0 }}>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#60a5fa', margin: 0, lineHeight: 1.1 }}>G-Fast</h1>
             {workshop && (
@@ -429,9 +450,24 @@ export default function DashboardPage() {
         {/* ── BOOKINGS TAB ── */}
         {mainTab === 'bookings' && (
           <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', boxShadow: '0 4px 12px rgba(0,0,0,0.07)', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
               <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: 0, color: '#111827' }}>📥 حجوزات العملاء</h2>
-              <button onClick={loadBookings} style={{ padding: '0.4rem 0.9rem', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, color: '#374151' }}>🔄 تحديث</button>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* Branch filter — only shown if workshop has branches */}
+                {workshopBranches.length > 0 && (
+                  <select
+                    value={bookingBranchFilter}
+                    onChange={e => { setBookingBranchFilter(e.target.value); loadBookings(e.target.value) }}
+                    style={{ padding: '0.4rem 0.7rem', border: '1px solid #e5e7eb', borderRadius: '0.4rem', fontSize: '0.82rem', color: '#374151', background: 'white', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    <option value="all">كل الفروع</option>
+                    {workshopBranches.map(b => (
+                      <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
+                    ))}
+                  </select>
+                )}
+                <button onClick={() => loadBookings(bookingBranchFilter !== 'all' ? bookingBranchFilter : undefined)} style={{ padding: '0.4rem 0.9rem', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, color: '#374151' }}>🔄 تحديث</button>
+              </div>
             </div>
             {bookingsLoading ? (
               <div style={{ textAlign: 'center', padding: '2.5rem', color: '#6b7280' }}>⏳ جارٍ التحميل...</div>
@@ -451,6 +487,11 @@ export default function DashboardPage() {
                         {b.vehicle_make && (
                           <span style={{ color: '#6b7280', fontSize: '0.85rem' }}>
                             {[b.vehicle_make, b.vehicle_model, b.vehicle_year].filter(Boolean).join(' ')}
+                          </span>
+                        )}
+                        {b.workshop_branches?.branch_name && (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#1d4ed8', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '0.35rem', padding: '0.15rem 0.5rem' }}>
+                            🏢 {b.workshop_branches.branch_name}
                           </span>
                         )}
                       </div>

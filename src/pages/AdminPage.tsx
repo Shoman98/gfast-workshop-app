@@ -18,6 +18,15 @@ interface Workshop {
   sort_order: number
 }
 
+interface Branch {
+  branch_id: string
+  workshop_id: string
+  branch_name: string
+  city: string | null
+  phone: string | null
+  is_active: boolean
+}
+
 interface Booking {
   id: string
   workshop_id: string
@@ -57,6 +66,10 @@ export default function AdminPage() {
   const [wsLoading, setWsLoading] = useState(false)
   const [_saving, setSaving] = useState(false)
   const dragIdx = useRef<number | null>(null)
+
+  // ── Branches state ──
+  const [branchesMap, setBranchesMap] = useState<Record<string, Branch[]>>({})
+  const [expandedBranches, setExpandedBranches] = useState<Record<string, boolean>>({})
 
   // ── Bookings state ──
   const [bookings, setBookings] = useState<Booking[]>([])
@@ -112,6 +125,21 @@ export default function AdminPage() {
       } else showToast(d.error || 'Save failed')
     } catch { showToast('Network error') }
     finally { setSaving(false) }
+  }
+
+  // ── Branch management ──
+  const loadBranches = async (workshopId: string) => {
+    try {
+      const r = await fetch(apiUrl(`/api/admin/workshops/${workshopId}/branches`), { headers })
+      const d = await r.json()
+      if (r.ok) setBranchesMap(prev => ({ ...prev, [workshopId]: d.branches || [] }))
+    } catch { /* silent */ }
+  }
+
+  const toggleBranches = (workshopId: string) => {
+    const next = !expandedBranches[workshopId]
+    setExpandedBranches(prev => ({ ...prev, [workshopId]: next }))
+    if (next && !branchesMap[workshopId]) loadBranches(workshopId)
   }
 
   // ── Update booking status ──
@@ -279,6 +307,56 @@ export default function AdminPage() {
                           </span>
                         </div>
                       </div>
+                    </div>
+
+                    {/* ── Branch flag ── */}
+                    <div style={{ marginTop: '0.75rem', borderTop: '1px solid #f3f4f6', paddingTop: '0.75rem' }}>
+                      <button
+                        onClick={() => toggleBranches(ws.workshop_id)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.82rem', fontWeight: 700, color: '#374151' }}
+                      >
+                        🏢 Branches
+                        {branchesMap[ws.workshop_id] !== undefined && (
+                          <span style={{ padding: '1px 7px', borderRadius: 999, fontSize: '0.7rem', fontWeight: 800, background: branchesMap[ws.workshop_id].length > 0 ? '#eff6ff' : '#f9fafb', color: branchesMap[ws.workshop_id].length > 0 ? '#1d4ed8' : '#9ca3af' }}>
+                            {branchesMap[ws.workshop_id].filter(b => b.is_active).length}/{branchesMap[ws.workshop_id].length}
+                          </span>
+                        )}
+                        <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>{expandedBranches[ws.workshop_id] ? '▲' : '▼'}</span>
+                      </button>
+
+                      {expandedBranches[ws.workshop_id] && (
+                        <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                          {(branchesMap[ws.workshop_id] || []).length === 0 ? (
+                            <div style={{ fontSize: '0.78rem', color: '#9ca3af', padding: '0.4rem 0' }}>No branches assigned to this workshop.</div>
+                          ) : (branchesMap[ws.workshop_id] || []).map(b => (
+                            <div key={b.branch_id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: b.is_active ? '#f0fdf4' : '#f9fafb', borderRadius: 6, border: `1px solid ${b.is_active ? '#bbf7d0' : '#e5e7eb'}` }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', flex: 1 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={b.is_active}
+                                  onChange={async e => {
+                                    const next = e.target.checked
+                                    await fetch(apiUrl(`/api/admin/workshops/${ws.workshop_id}/branches/${b.branch_id}`), {
+                                      method: 'PATCH', headers, body: JSON.stringify({ is_active: next })
+                                    })
+                                    setBranchesMap(prev => ({
+                                      ...prev,
+                                      [ws.workshop_id]: prev[ws.workshop_id].map(x => x.branch_id === b.branch_id ? { ...x, is_active: next } : x)
+                                    }))
+                                    showToast(`✓ ${b.branch_name} ${next ? 'enabled' : 'disabled'}`)
+                                  }}
+                                  style={{ width: 15, height: 15, cursor: 'pointer', accentColor: '#16a34a' }}
+                                />
+                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827' }}>{b.branch_name}</span>
+                              </label>
+                              {b.phone && <span style={{ fontSize: '0.75rem', color: '#6b7280', direction: 'ltr' }}>📞 {b.phone}</span>}
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: b.is_active ? '#dcfce7' : '#f3f4f6', color: b.is_active ? '#16a34a' : '#9ca3af' }}>
+                                {b.is_active ? 'Bookable' : 'Hidden'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

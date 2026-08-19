@@ -13,14 +13,39 @@ const router = express.Router();
  * GET /api/estimates/consumer-bookings
  * Must be defined BEFORE /:estimateId routes to avoid wildcard capture
  */
-router.get('/consumer-bookings', authenticate, async (req, res, next) => {
+/**
+ * GET /api/estimates/my-branches
+ * Returns active branches for the authenticated workshop
+ */
+router.get('/my-branches', authenticate, async (req, res, next) => {
   try {
     const { data, error } = await supabase
-      .from('consumer_bookings')
-      .select('*')
+      .from('workshop_branches')
+      .select('branch_id, branch_name')
       .eq('workshop_id', req.workshop_id)
+      .eq('is_active', true)
+      .order('branch_name');
+    if (error) throw error;
+    res.json({ success: true, branches: data || [] });
+  } catch (err) { next(err); }
+});
+
+router.get('/consumer-bookings', authenticate, async (req, res, next) => {
+  try {
+    const { branch_id } = req.query;
+
+    let q = supabase
+      .from('consumer_bookings')
+      .select('*, workshop_branches(branch_name, city)')
+      .eq('workshop_id', req.workshop_id)
+      .neq('status', 'superseded')
       .order('created_at', { ascending: false });
 
+    // Only filter by branch if explicitly requested via query param (dashboard dropdown)
+    // Never auto-filter by JWT branch_id — all branches see all workshop bookings
+    if (branch_id) q = q.eq('branch_id', branch_id);
+
+    const { data, error } = await q;
     if (error) throw error;
     res.json({ success: true, bookings: data || [] });
   } catch (err) { next(err); }
@@ -33,7 +58,7 @@ router.get('/consumer-bookings', authenticate, async (req, res, next) => {
 router.get('/', authenticate, async (req, res, next) => {
   try {
     const workshopId = req.workshop_id;
-    const { status } = req.query; // Optional filter by status
+    const { status } = req.query;
 
     let query = supabase
       .from('estimates')
@@ -43,6 +68,11 @@ router.get('/', authenticate, async (req, res, next) => {
       `)
       .eq('workshop_id', workshopId)
       .order('created_at', { ascending: false });
+
+    // If logged in as a branch, only show that branch's estimates
+    if (req.branch_id) {
+      query = query.eq('branch_id', req.branch_id);
+    }
 
     if (status) {
       query = query.eq('status', status);
@@ -359,7 +389,7 @@ router.post('/', authenticate, async (req, res, next) => {
     if (parent_estimate_id) {
       const { data: parent, error: parentErr } = await supabase
         .from('estimates')
-        .select('vin_number, vehicle_year, vehicle_make, vehicle_model, workshop_id')
+        .select('vin_number, vehicle_year, vehicle_make, vehicle_model, workshop_id, branch_id')
         .eq('estimate_id', parent_estimate_id)
         .single();
       if (parentErr || !parent) {
@@ -383,6 +413,8 @@ router.post('/', authenticate, async (req, res, next) => {
     // Create estimate
     const estimateData = {
       workshop_id: workshopId,
+      // Supplements inherit branch from parent; root estimates use the logged-in branch
+      branch_id: parent_estimate_id ? (parent?.branch_id || null) : (req.branch_id || null),
       vehicle_year: vehYear,
       vehicle_make: vehMake,
       vehicle_model: vehModel,
