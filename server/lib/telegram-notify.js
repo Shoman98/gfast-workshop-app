@@ -94,3 +94,31 @@ export function notifyWorkshopAnalysisAsync(payload, env, log = console) {
     notifyWorkshopAnalysis(payload, env, log);
   });
 }
+
+function formatConsumerBookingMessage(payload) {
+  const vehicle = [payload.vehicle_year, payload.vehicle_make, payload.vehicle_model].filter(Boolean).join(' ') || '-';
+  const workshop = escapeTelegramMarkdown(payload.workshop_name || payload.workshop_id || '-');
+  const branch   = payload.branch_name ? escapeTelegramMarkdown(payload.branch_name) : null;
+  return [
+    '📥 *New Consumer Booking*',
+    `Workshop: ${workshop}${branch ? ` › ${branch}` : ''}`,
+    `Mobile: ${escapeTelegramMarkdown(payload.customer_mobile || '-')}`,
+    `Vehicle: ${escapeTelegramMarkdown(vehicle)}`,
+    `Images: ${escapeTelegramMarkdown(String(payload.images_count ?? 0))}`,
+    `Time: ${escapeTelegramMarkdown(formatEgyptDateTime(new Date()))}`,
+  ].join('\n');
+}
+
+async function notifyConsumerBooking(payload, env, log = console) {
+  try {
+    await sendTelegramMessage(formatConsumerBookingMessage(payload), env);
+  } catch (error) {
+    log.error('❌ Telegram booking notification error:', error.message);
+  }
+}
+
+export function notifyConsumerBookingAsync(payload, env, log = console) {
+  setImmediate(() => {
+    notifyConsumerBooking(payload, env, log);
+  });
+}

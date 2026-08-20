@@ -6,6 +6,7 @@
 import express from 'express';
 import multer from 'multer';
 import { supabase } from '../db/supabase.js';
+import { notifyConsumerBookingAsync } from '../lib/telegram-notify.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -95,6 +96,23 @@ router.post('/booking', async (req, res, next) => {
 
     if (error) throw error;
 
+    // Fetch workshop + branch names for the Telegram notification
+    const { data: ws } = await supabase.from('workshops').select('workshop_name').eq('workshop_id', workshop_id).single();
+    const { data: br } = branch_id
+      ? await supabase.from('workshop_branches').select('branch_name').eq('branch_id', branch_id).single()
+      : { data: null };
+
+    notifyConsumerBookingAsync({
+      workshop_id,
+      workshop_name: ws?.workshop_name,
+      branch_name: br?.branch_name || null,
+      customer_mobile,
+      vehicle_make,
+      vehicle_model,
+      vehicle_year,
+      images_count: (image_urls || []).length,
+    }, process.env);
+
     res.json({ success: true, booking: data });
   } catch (err) {
     next(err);
@@ -108,8 +126,9 @@ router.post('/booking', async (req, res, next) => {
  */
 router.post('/upload-images', upload.array('images', 12), async (req, res, next) => {
   try {
-    const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME || 'nohkn9qb';
-    const uploadPreset = 'workshop-images';
+    const cloudName = (process.env.VITE_CLOUDINARY_CLOUD_NAME || 'nohkn9qb').trim();
+    // Strip any trailing whitespace or stray characters from the env value
+    const uploadPreset = (process.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'workshop-images').replace(/\s*[\(\[].*/, '').trim();
     const files = req.files || [];
 
     const urls = await Promise.all(files.map(async (file) => {
