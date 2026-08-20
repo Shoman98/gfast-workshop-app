@@ -4,7 +4,10 @@
  */
 
 import express from 'express';
+import multer from 'multer';
 import { supabase } from '../db/supabase.js';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const router = express.Router();
 
@@ -93,6 +96,34 @@ router.post('/booking', async (req, res, next) => {
     if (error) throw error;
 
     res.json({ success: true, booking: data });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/public/upload-images
+ * Accepts multipart images, uploads to Cloudinary, returns URLs.
+ * Used by consumer-facing apps that can't upload directly.
+ */
+router.post('/upload-images', upload.array('images', 12), async (req, res, next) => {
+  try {
+    const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME || 'nohkn9qb';
+    const uploadPreset = 'workshop-images';
+    const files = req.files || [];
+
+    const urls = await Promise.all(files.map(async (file) => {
+      const fd = new FormData();
+      const blob = new Blob([file.buffer], { type: file.mimetype });
+      fd.append('file', blob, file.originalname);
+      fd.append('upload_preset', uploadPreset);
+      const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
+      if (!r.ok) throw new Error(`Cloudinary error ${r.status}`);
+      const d = await r.json();
+      return d.secure_url;
+    }));
+
+    res.json({ success: true, urls });
   } catch (err) {
     next(err);
   }
