@@ -59,6 +59,96 @@ router.get('/workshops', async (req, res, next) => {
 });
 
 /**
+ * POST /api/public/pre-booking
+ * Called on "Book Now" click — uploads images, saves vehicle + mobile to DB.
+ * Returns booking_id so the workshop can be linked later.
+ */
+router.post('/pre-booking', upload.array('images', 12), async (req, res, next) => {
+  try {
+    const { customer_mobile, vehicle_make, vehicle_model, vehicle_year } = req.body;
+    if (!customer_mobile) return res.status(400).json({ error: 'customer_mobile required' });
+
+    // Upload images to Cloudinary
+    const cloudName = (process.env.VITE_CLOUDINARY_CLOUD_NAME || 'nohkn9qb').trim();
+    const uploadPreset = (process.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'workshop-images').replace(/\s*[\(\[].*/, '').trim();
+    const files = req.files || [];
+    const image_urls = await Promise.all(files.map(async (file) => {
+      const fd = new FormData();
+      fd.append('file', new Blob([file.buffer], { type: file.mimetype }), file.originalname);
+      fd.append('upload_preset', uploadPreset);
+      const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
+      if (!r.ok) return null;
+      const d = await r.json();
+      return d.secure_url || null;
+    })).then(urls => urls.filter(Boolean));
+
+    // Supersede any previous pending bookings for this customer
+    await supabase
+      .from('consumer_bookings')
+      .update({ status: 'superseded' })
+      .eq('customer_mobile', customer_mobile)
+      .eq('status', 'pending');
+
+    // Save to DB without workshop yet
+    const { data, error } = await supabase
+      .from('consumer_bookings')
+      .insert({
+        workshop_id: null,
+        customer_mobile,
+        image_urls,
+        vehicle_make: vehicle_make || null,
+        vehicle_model: vehicle_model || null,
+        vehicle_year: vehicle_year || null,
+        status: 'pending',
+      })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+    res.json({ success: true, booking_id: data.id, image_urls });
+  } catch (err) { next(err); }
+});
+
+/**
+ * PATCH /api/public/booking/:id
+ * Called when customer confirms a workshop — links the pre-booking to the workshop.
+ */
+router.patch('/booking/:id', async (req, res, next) => {
+  try {
+    const { workshop_id, branch_id } = req.body;
+    if (!workshop_id) return res.status(400).json({ error: 'workshop_id required' });
+
+    const { data, error } = await supabase
+      .from('consumer_bookings')
+      .update({ workshop_id, branch_id: branch_id || null })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Telegram notification
+    const { data: ws } = await supabase.from('workshops').select('workshop_name').eq('workshop_id', workshop_id).single();
+    const { data: br } = branch_id
+      ? await supabase.from('workshop_branches').select('branch_name').eq('branch_id', branch_id).single()
+      : { data: null };
+
+    notifyConsumerBookingAsync({
+      workshop_id,
+      workshop_name: ws?.workshop_name,
+      branch_name: br?.branch_name || null,
+      customer_mobile: data.customer_mobile,
+      vehicle_make: data.vehicle_make,
+      vehicle_model: data.vehicle_model,
+      vehicle_year: data.vehicle_year,
+      images_count: (data.image_urls || []).length,
+    }, process.env);
+
+    res.json({ success: true, booking: data });
+  } catch (err) { next(err); }
+});
+
+/**
  * POST /api/public/booking
  * Customer submits a booking request for a specific workshop (+ optional branch).
  * Creates a consumer_bookings record that appears in the workshop's bookings tab.
