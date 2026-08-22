@@ -6,6 +6,9 @@
 import express from 'express';
 import multer from 'multer';
 import { supabase } from '../db/supabase.js';
+
+const META_PIXEL_ID = '1576434103838817';
+const META_CAPI_TOKEN = process.env.META_CAPI_TOKEN || 'EAAHP5ZAWffHYBSSbKd9U69GHlFjgzOCZC6UWsCGL5H50kGILJl3Na7PXBwfrxgTMq2JSlFRPfJEy9i4sZCMMw0UN0JFU1YDq9Bma5yo3MLRFhoyk7TBbv0ZBUgkc7QOP9ZBF9Eh5EEetbcoVunbZBWYEqaI95uBm636XZBipKo8jMyQBqgQyfSjZAmxYZAGYT1ZB28lwZDZD';
 import { notifyConsumerBookingAsync } from '../lib/telegram-notify.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -235,6 +238,43 @@ router.post('/upload-images', upload.array('images', 12), async (req, res, next)
     res.json({ success: true, urls });
   } catch (err) {
     next(err);
+  }
+});
+
+/**
+ * POST /api/public/meta-event
+ * Forwards browser pixel events to Meta Conversions API for deduplication.
+ * Keeps the CAPI token server-side.
+ */
+router.post('/meta-event', async (req, res) => {
+  try {
+    const { event_name, event_id, event_type, user_agent, source_url } = req.body;
+    if (!event_name || !event_id) return res.status(400).json({ error: 'event_name and event_id required' });
+
+    const payload = {
+      data: [{
+        event_name,
+        event_time: Math.floor(Date.now() / 1000),
+        event_id,
+        action_source: 'website',
+        event_source_url: source_url || '',
+        user_data: {
+          client_user_agent: user_agent || req.headers['user-agent'] || '',
+          client_ip_address: req.ip || '',
+        },
+      }],
+      access_token: META_CAPI_TOKEN,
+    };
+
+    await fetch(`https://graph.facebook.com/v18.0/${META_PIXEL_ID}/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false }); // silent — never block the user
   }
 });
 
