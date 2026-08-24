@@ -80,10 +80,13 @@ router.post('/workshops/:id/logo', authenticate, requireSuperAdmin, upload.singl
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     const cloudName = (process.env.VITE_CLOUDINARY_CLOUD_NAME || 'nohkn9qb').trim();
     const uploadPreset = (process.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'workshop-images').replace(/\s*[\(\[].*/, '').trim();
-    const fd = new FormData();
-    fd.append('file', new Blob([req.file.buffer], { type: req.file.mimetype }), req.file.originalname);
-    fd.append('upload_preset', uploadPreset);
-    const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
+    // Use base64 upload to avoid Node.js FormData/Blob multipart issues
+    const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file: base64, upload_preset: uploadPreset }),
+    });
     const d = await r.json();
     if (!r.ok) throw new Error(`Cloudinary upload failed: ${d?.error?.message || r.status}`);
     const logo_url = d.secure_url;
