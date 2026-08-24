@@ -81,7 +81,7 @@ export default function AdminPage() {
       const fd = new FormData()
       fd.append('file', file)
       fd.append('upload_preset', uploadPreset)
-      const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd })
+      const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, { method: 'POST', body: fd })
       const d = await r.json()
       if (!r.ok) { showToast(d?.error?.message || 'Cloudinary upload failed'); return; }
       const logo_url = d.secure_url
