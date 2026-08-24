@@ -248,7 +248,7 @@ router.post('/upload-images', upload.array('images', 12), async (req, res, next)
  */
 router.post('/meta-event', async (req, res) => {
   try {
-    const { event_name, event_id, user_agent, source_url, fbp, fbc } = req.body;
+    const { event_name, event_id, user_agent, source_url, fbp, fbc, external_id } = req.body;
     if (!event_name || !event_id) return res.status(400).json({ error: 'event_name and event_id required' });
 
     const user_data = {
@@ -257,6 +257,7 @@ router.post('/meta-event', async (req, res) => {
     };
     if (fbp) user_data.fbp = fbp;
     if (fbc) user_data.fbc = fbc;
+    if (external_id) user_data.external_id = external_id;
 
     const payload = {
       data: [{
