@@ -84,8 +84,8 @@ router.post('/workshops/:id/logo', authenticate, requireSuperAdmin, upload.singl
     fd.append('file', new Blob([req.file.buffer], { type: req.file.mimetype }), req.file.originalname);
     fd.append('upload_preset', uploadPreset);
     const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
-    if (!r.ok) throw new Error('Cloudinary upload failed');
     const d = await r.json();
+    if (!r.ok) throw new Error(`Cloudinary upload failed: ${d?.error?.message || r.status}`);
     const logo_url = d.secure_url;
     await supabase.from('workshops').update({ logo_url }).eq('workshop_id', req.params.id);
     res.json({ success: true, logo_url });
