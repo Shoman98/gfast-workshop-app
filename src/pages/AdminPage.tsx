@@ -70,19 +70,24 @@ export default function AdminPage() {
   const dragIdx = useRef<number | null>(null)
 
   // ── Logo upload state ──
-  const [logoUploading, setLogoUploading] = useState<string | null>(null) // workshop_id being uploaded
+  const [logoUploading, setLogoUploading] = useState<string | null>(null)
 
+  // Upload directly from browser to Cloudinary (unsigned), then save URL via PATCH
   const uploadLogo = async (workshopId: string, file: File) => {
     setLogoUploading(workshopId)
     try {
+      const cloudName = 'nohkn9qb'
+      const uploadPreset = 'workshop-images'
       const fd = new FormData()
-      fd.append('logo', file)
-      const r = await fetch(apiUrl(`/api/admin/workshops/${workshopId}/logo`), { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: fd })
+      fd.append('file', file)
+      fd.append('upload_preset', uploadPreset)
+      const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd })
       const d = await r.json()
-      if (r.ok) {
-        setWorkshops(prev => prev.map(w => w.workshop_id === workshopId ? { ...w, logo_url: d.logo_url } : w))
-        showToast('✓ Logo uploaded')
-      } else showToast(d.error || 'Upload failed')
+      if (!r.ok) { showToast(d?.error?.message || 'Cloudinary upload failed'); return; }
+      const logo_url = d.secure_url
+      await saveWorkshop(workshopId, { logo_url })
+      setWorkshops(prev => prev.map(w => w.workshop_id === workshopId ? { ...w, logo_url } : w))
+      showToast('✓ Logo uploaded')
     } catch { showToast('Network error') }
     finally { setLogoUploading(null) }
   }
