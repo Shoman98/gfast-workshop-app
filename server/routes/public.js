@@ -248,7 +248,7 @@ router.post('/upload-images', upload.array('images', 12), async (req, res, next)
  */
 router.post('/meta-event', async (req, res) => {
   try {
-    const { event_name, event_id, user_agent, source_url, fbp, fbc, external_id, phone } = req.body;
+    const { event_name, event_id, user_agent, source_url, fbp, fbc, external_id, phone, value, currency } = req.body;
     if (!event_name || !event_id) return res.status(400).json({ error: 'event_name and event_id required' });
 
     const user_data = {
@@ -264,15 +264,18 @@ router.post('/meta-event', async (req, res) => {
       user_data.ph = createHash('sha256').update(normalized).digest('hex');
     }
 
+    const event = {
+      event_name,
+      event_time: Math.floor(Date.now() / 1000),
+      event_id,
+      action_source: 'website',
+      event_source_url: source_url || '',
+      user_data,
+    };
+    if (value !== undefined && currency) event.custom_data = { value, currency };
+
     const payload = {
-      data: [{
-        event_name,
-        event_time: Math.floor(Date.now() / 1000),
-        event_id,
-        action_source: 'website',
-        event_source_url: source_url || '',
-        user_data,
-      }],
+      data: [event],
       access_token: META_CAPI_TOKEN,
     };
 
