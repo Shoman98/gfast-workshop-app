@@ -24,7 +24,7 @@ router.get('/workshops', async (req, res, next) => {
   try {
     const { data: workshops, error } = await supabase
       .from('workshops')
-      .select('workshop_id, workshop_name, display_name, city, phone, stars, review_text, badges')
+      .select('workshop_id, workshop_name, display_name, city, phone, stars, review_text, badges, logo_url, accepts_insurance')
       .eq('is_visible_to_consumers', true)
       .eq('is_active', true)
       .eq('is_super_admin', false)
@@ -248,8 +248,15 @@ router.post('/upload-images', upload.array('images', 12), async (req, res, next)
  */
 router.post('/meta-event', async (req, res) => {
   try {
-    const { event_name, event_id, event_type, user_agent, source_url } = req.body;
+    const { event_name, event_id, user_agent, source_url, fbp, fbc } = req.body;
     if (!event_name || !event_id) return res.status(400).json({ error: 'event_name and event_id required' });
+
+    const user_data = {
+      client_user_agent: user_agent || req.headers['user-agent'] || '',
+      client_ip_address: req.ip || '',
+    };
+    if (fbp) user_data.fbp = fbp;
+    if (fbc) user_data.fbc = fbc;
 
     const payload = {
       data: [{
@@ -258,10 +265,7 @@ router.post('/meta-event', async (req, res) => {
         event_id,
         action_source: 'website',
         event_source_url: source_url || '',
-        user_data: {
-          client_user_agent: user_agent || req.headers['user-agent'] || '',
-          client_ip_address: req.ip || '',
-        },
+        user_data,
       }],
       access_token: META_CAPI_TOKEN,
     };

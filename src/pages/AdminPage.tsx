@@ -16,6 +16,8 @@ interface Workshop {
   review_text: string | null
   badges: string[]
   sort_order: number
+  logo_url: string | null
+  accepts_insurance: boolean
 }
 
 interface Branch {
@@ -66,6 +68,24 @@ export default function AdminPage() {
   const [wsLoading, setWsLoading] = useState(false)
   const [_saving, setSaving] = useState(false)
   const dragIdx = useRef<number | null>(null)
+
+  // ── Logo upload state ──
+  const [logoUploading, setLogoUploading] = useState<string | null>(null) // workshop_id being uploaded
+
+  const uploadLogo = async (workshopId: string, file: File) => {
+    setLogoUploading(workshopId)
+    try {
+      const fd = new FormData()
+      fd.append('logo', file)
+      const r = await fetch(apiUrl(`/api/admin/workshops/${workshopId}/logo`), { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: fd })
+      const d = await r.json()
+      if (r.ok) {
+        setWorkshops(prev => prev.map(w => w.workshop_id === workshopId ? { ...w, logo_url: d.logo_url } : w))
+        showToast('✓ Logo uploaded')
+      } else showToast(d.error || 'Upload failed')
+    } catch { showToast('Network error') }
+    finally { setLogoUploading(null) }
+  }
 
   // ── Branches state ──
   const [branchesMap, setBranchesMap] = useState<Record<string, Branch[]>>({})
@@ -270,7 +290,7 @@ export default function AdminPage() {
                         />
                       </div>
 
-                      {/* Badges */}
+                      {/* Badges + Insurance */}
                       <div style={{ flex: '0 0 180px' }}>
                         <div style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: 4 }}>Badges</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -289,7 +309,36 @@ export default function AdminPage() {
                               {b === 'Best Quality' ? '⭐' : b === 'Best Value' ? '💰' : '⚡'} {b}
                             </label>
                           ))}
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.8rem', marginTop: 4, paddingTop: 4, borderTop: '1px solid #f3f4f6' }}>
+                            <input
+                              type="checkbox"
+                              checked={ws.accepts_insurance || false}
+                              onChange={e => {
+                                saveWorkshop(ws.workshop_id, { accepts_insurance: e.target.checked })
+                                setWorkshops(prev => prev.map(w => w.workshop_id === ws.workshop_id ? { ...w, accepts_insurance: e.target.checked } : w))
+                              }}
+                            />
+                            🛡️ Insurance ✓
+                          </label>
                         </div>
+                      </div>
+
+                      {/* Logo */}
+                      <div style={{ flex: '0 0 120px' }}>
+                        <div style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: 4 }}>Logo / Icon</div>
+                        {ws.logo_url && (
+                          <img src={ws.logo_url} alt="logo" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', border: '1px solid #e5e7eb', marginBottom: 6, display: 'block' }} />
+                        )}
+                        <label style={{ display: 'inline-block', cursor: 'pointer', fontSize: '0.75rem', color: '#2563eb', fontWeight: 600 }}>
+                          {logoUploading === ws.workshop_id ? '⏳ Uploading...' : ws.logo_url ? '🔄 Change' : '⬆ Upload'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            disabled={logoUploading === ws.workshop_id}
+                            onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(ws.workshop_id, f); e.target.value = '' }}
+                          />
+                        </label>
                       </div>
 
                       {/* City + Active */}

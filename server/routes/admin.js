@@ -4,8 +4,11 @@
  */
 
 import express from 'express';
+import multer from 'multer';
 import { supabase } from '../db/supabase.js';
 import { authenticate } from '../middleware/auth.js';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const router = express.Router();
 
@@ -22,7 +25,7 @@ router.get('/workshops', authenticate, requireSuperAdmin, async (req, res, next)
   try {
     const { data, error } = await supabase
       .from('workshops')
-      .select('workshop_id, workshop_name, display_name, city, phone, is_active, is_visible_to_consumers, is_super_admin, stars, review_text, badges, sort_order, created_at')
+      .select('workshop_id, workshop_name, display_name, city, phone, is_active, is_visible_to_consumers, is_super_admin, stars, review_text, badges, sort_order, created_at, logo_url, accepts_insurance')
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true });
 
@@ -35,7 +38,7 @@ router.get('/workshops', authenticate, requireSuperAdmin, async (req, res, next)
 router.patch('/workshops/:id', authenticate, requireSuperAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const allowed = ['display_name', 'is_visible_to_consumers', 'stars', 'review_text', 'badges', 'sort_order', 'is_active'];
+    const allowed = ['display_name', 'is_visible_to_consumers', 'stars', 'review_text', 'badges', 'sort_order', 'is_active', 'logo_url', 'accepts_insurance'];
     const updates = {};
     for (const key of allowed) {
       if (key in req.body) updates[key] = req.body[key];
@@ -49,7 +52,7 @@ router.patch('/workshops/:id', authenticate, requireSuperAdmin, async (req, res,
       .from('workshops')
       .update(updates)
       .eq('workshop_id', id)
-      .select('workshop_id, workshop_name, display_name, city, is_visible_to_consumers, stars, review_text, badges, sort_order, is_active')
+      .select('workshop_id, workshop_name, display_name, city, is_visible_to_consumers, stars, review_text, badges, sort_order, is_active, logo_url, accepts_insurance')
       .single();
 
     if (error) throw error;
@@ -68,6 +71,24 @@ router.post('/workshops/reorder', authenticate, requireSuperAdmin, async (req, r
     ));
 
     res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/admin/workshops/:id/logo ── upload logo to Cloudinary + save URL
+router.post('/workshops/:id/logo', authenticate, requireSuperAdmin, upload.single('logo'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const cloudName = (process.env.VITE_CLOUDINARY_CLOUD_NAME || 'nohkn9qb').trim();
+    const uploadPreset = (process.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'workshop-images').replace(/\s*[\(\[].*/, '').trim();
+    const fd = new FormData();
+    fd.append('file', new Blob([req.file.buffer], { type: req.file.mimetype }), req.file.originalname);
+    fd.append('upload_preset', uploadPreset);
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
+    if (!r.ok) throw new Error('Cloudinary upload failed');
+    const d = await r.json();
+    const logo_url = d.secure_url;
+    await supabase.from('workshops').update({ logo_url }).eq('workshop_id', req.params.id);
+    res.json({ success: true, logo_url });
   } catch (err) { next(err); }
 });
 
