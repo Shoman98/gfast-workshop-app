@@ -74,22 +74,18 @@ router.post('/workshops/reorder', authenticate, requireSuperAdmin, async (req, r
   } catch (err) { next(err); }
 });
 
-// ── POST /api/admin/workshops/:id/logo ── upload logo to Cloudinary + save URL
+// ── POST /api/admin/workshops/:id/logo ── upload logo to Supabase Storage + save URL
 router.post('/workshops/:id/logo', authenticate, requireSuperAdmin, upload.single('logo'), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    const cloudName = (process.env.VITE_CLOUDINARY_CLOUD_NAME || 'nohkn9qb').trim();
-    const uploadPreset = (process.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'workshop-images').replace(/\s*[\(\[].*/, '').trim();
-    // Use base64 upload to avoid Node.js FormData/Blob multipart issues
-    const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-    const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file: base64, upload_preset: uploadPreset }),
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(`Cloudinary upload failed: ${d?.error?.message || r.status}`);
-    const logo_url = d.secure_url;
+    const ext = req.file.originalname.split('.').pop() || 'jpg';
+    const path = `workshop-logos/${req.params.id}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from('workshop-assets')
+      .upload(path, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
+    if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
+    const { data } = supabase.storage.from('workshop-assets').getPublicUrl(path);
+    const logo_url = data.publicUrl;
     await supabase.from('workshops').update({ logo_url }).eq('workshop_id', req.params.id);
     res.json({ success: true, logo_url });
   } catch (err) { next(err); }

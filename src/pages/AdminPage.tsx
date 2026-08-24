@@ -69,14 +69,22 @@ export default function AdminPage() {
   const [_saving, setSaving] = useState(false)
   const dragIdx = useRef<number | null>(null)
 
-  // ── Logo URL state ──
-  const [logoInputMap, setLogoInputMap] = useState<Record<string, string>>({})
+  // ── Logo upload state ──
+  const [logoUploading, setLogoUploading] = useState<string | null>(null)
 
-  const saveLogo = async (workshopId: string, url: string) => {
-    const trimmed = url.trim()
-    if (!trimmed) return
-    await saveWorkshop(workshopId, { logo_url: trimmed })
-    setWorkshops(prev => prev.map(w => w.workshop_id === workshopId ? { ...w, logo_url: trimmed } : w))
+  const uploadLogo = async (workshopId: string, file: File) => {
+    setLogoUploading(workshopId)
+    try {
+      const fd = new FormData()
+      fd.append('logo', file)
+      const r = await fetch(apiUrl(`/api/admin/workshops/${workshopId}/logo`), { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: fd })
+      const d = await r.json()
+      if (r.ok) {
+        setWorkshops(prev => prev.map(w => w.workshop_id === workshopId ? { ...w, logo_url: d.logo_url } : w))
+        showToast('✓ Logo uploaded')
+      } else showToast(d.error || 'Upload failed')
+    } catch { showToast('Network error') }
+    finally { setLogoUploading(null) }
   }
 
   // ── Branches state ──
@@ -316,19 +324,21 @@ export default function AdminPage() {
                       </div>
 
                       {/* Logo */}
-                      <div style={{ flex: '0 0 150px' }}>
-                        <div style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: 4 }}>Logo URL</div>
+                      <div style={{ flex: '0 0 120px' }}>
+                        <div style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: 4 }}>Logo / Icon</div>
                         {ws.logo_url && (
                           <img src={ws.logo_url} alt="logo" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', border: '1px solid #e5e7eb', marginBottom: 6, display: 'block' }} />
                         )}
-                        <input
-                          type="text"
-                          placeholder="Paste image URL..."
-                          value={logoInputMap[ws.workshop_id] ?? (ws.logo_url || '')}
-                          onChange={e => setLogoInputMap(prev => ({ ...prev, [ws.workshop_id]: e.target.value }))}
-                          onBlur={e => saveLogo(ws.workshop_id, e.target.value)}
-                          style={{ width: '100%', padding: '0.3rem 0.4rem', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.72rem', boxSizing: 'border-box' }}
-                        />
+                        <label style={{ display: 'inline-block', cursor: 'pointer', fontSize: '0.75rem', color: '#2563eb', fontWeight: 600 }}>
+                          {logoUploading === ws.workshop_id ? '⏳ Uploading...' : ws.logo_url ? '🔄 Change' : '⬆ Upload'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            disabled={logoUploading === ws.workshop_id}
+                            onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(ws.workshop_id, f); e.target.value = '' }}
+                          />
+                        </label>
                       </div>
 
                       {/* City + Active */}
