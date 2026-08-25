@@ -249,22 +249,15 @@ router.post('/capture-lead', async (req, res) => {
   try {
     const { mobile, make, model, year } = req.body;
     if (!mobile) return res.status(400).json({ error: 'mobile required' });
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-    const r = await fetch(`${supabaseUrl}/rest/v1/captured_leads`, {
-      method: 'POST',
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates',
-      },
-      body: JSON.stringify({ mobile, vehicle_make: make || null, vehicle_model: model || null, vehicle_year: year || null, source: 'landing' }),
-    });
-    const ok = r.status === 200 || r.status === 201 || r.status === 204;
-    const body = await r.text();
-    if (!ok) console.error('capture-lead error:', r.status, body);
-    res.json({ success: ok, status: r.status, body: ok ? undefined : body });
+    // Upsert into consumer_bookings with status=lead_capture — no workshop yet
+    const { error } = await supabase
+      .from('consumer_bookings')
+      .upsert(
+        { customer_mobile: mobile, vehicle_make: make || null, vehicle_model: model || null, vehicle_year: year || null, status: 'lead_capture', workshop_id: null },
+        { onConflict: 'customer_mobile,status' }
+      );
+    if (error) console.error('capture-lead error:', error.message);
+    res.json({ success: !error });
   } catch (err) {
     console.error('capture-lead exception:', err.message);
     res.json({ success: false });
