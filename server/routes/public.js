@@ -248,7 +248,7 @@ router.post('/upload-images', upload.array('images', 12), async (req, res, next)
  */
 router.post('/meta-event', async (req, res) => {
   try {
-    const { event_name, event_id, user_agent, source_url, fbp, fbc, external_id, phone, value, currency } = req.body;
+    const { event_name, event_id, user_agent, source_url, fbp, fbc, external_id, phone, value, currency, workshop_name, city } = req.body;
     if (!event_name || !event_id) return res.status(400).json({ error: 'event_name and event_id required' });
 
     const user_data = {
@@ -272,7 +272,12 @@ router.post('/meta-event', async (req, res) => {
       event_source_url: source_url || '',
       user_data,
     };
-    if (value !== undefined && currency) event.custom_data = { value, currency };
+    const custom_data = {};
+    if (value !== undefined) custom_data.value = value;
+    if (currency) custom_data.currency = currency;
+    if (workshop_name) custom_data.content_name = workshop_name;
+    if (city) custom_data.content_category = city;
+    if (Object.keys(custom_data).length > 0) event.custom_data = custom_data;
 
     const payload = {
       data: [event],
