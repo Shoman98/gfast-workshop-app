@@ -249,15 +249,21 @@ router.post('/capture-lead', async (req, res) => {
   try {
     const { mobile, make, model, year } = req.body;
     if (!mobile) return res.status(400).json({ error: 'mobile required' });
-    const { error } = await supabase.rpc('capture_lead', {
-      p_mobile: mobile,
-      p_make: make || null,
-      p_model: model || null,
-      p_year: year || null,
-      p_source: 'landing',
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+    const r = await fetch(`${supabaseUrl}/rest/v1/captured_leads`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify({ mobile, vehicle_make: make || null, vehicle_model: model || null, vehicle_year: year || null, source: 'landing' }),
     });
-    if (error) console.error('capture-lead error:', error.message);
-    res.json({ success: !error, error: error?.message || null });
+    const ok = r.status === 200 || r.status === 201;
+    if (!ok) { const t = await r.text(); console.error('capture-lead error:', r.status, t); }
+    res.json({ success: ok });
   } catch (err) {
     console.error('capture-lead exception:', err.message);
     res.json({ success: false });
