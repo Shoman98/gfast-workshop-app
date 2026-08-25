@@ -242,6 +242,22 @@ router.post('/upload-images', upload.array('images', 12), async (req, res, next)
 });
 
 /**
+ * POST /api/public/capture-lead
+ * Saves mobile number + optional vehicle info as soon as user validates phone.
+ */
+router.post('/capture-lead', async (req, res) => {
+  try {
+    const { mobile, make, model, year } = req.body;
+    if (!mobile) return res.status(400).json({ error: 'mobile required' });
+    await supabase.from('captured_leads').upsert(
+      { mobile, vehicle_make: make || null, vehicle_model: model || null, vehicle_year: year || null, source: 'landing' },
+      { onConflict: 'mobile' }
+    );
+    res.json({ success: true });
+  } catch { res.json({ success: false }); }
+});
+
+/**
  * POST /api/public/meta-event
  * Forwards browser pixel events to Meta Conversions API for deduplication.
  * Keeps the CAPI token server-side.
