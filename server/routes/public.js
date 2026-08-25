@@ -254,7 +254,7 @@ router.post('/capture-lead', async (req, res) => {
       { onConflict: 'mobile' }
     );
     if (error) console.error('capture-lead error:', error.message);
-    res.json({ success: !error });
+    res.json({ success: !error, error: error?.message || null });
   } catch (err) {
     console.error('capture-lead exception:', err.message);
     res.json({ success: false });
