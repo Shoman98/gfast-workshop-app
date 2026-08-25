@@ -249,12 +249,16 @@ router.post('/capture-lead', async (req, res) => {
   try {
     const { mobile, make, model, year } = req.body;
     if (!mobile) return res.status(400).json({ error: 'mobile required' });
-    await supabase.from('captured_leads').upsert(
+    const { error } = await supabase.from('captured_leads').upsert(
       { mobile, vehicle_make: make || null, vehicle_model: model || null, vehicle_year: year || null, source: 'landing' },
       { onConflict: 'mobile' }
     );
-    res.json({ success: true });
-  } catch { res.json({ success: false }); }
+    if (error) console.error('capture-lead error:', error.message);
+    res.json({ success: !error });
+  } catch (err) {
+    console.error('capture-lead exception:', err.message);
+    res.json({ success: false });
+  }
 });
 
 /**
