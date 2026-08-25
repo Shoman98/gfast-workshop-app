@@ -252,10 +252,7 @@ router.post('/capture-lead', async (req, res) => {
     // Upsert into consumer_bookings with status=lead_capture — no workshop yet
     const { error } = await supabase
       .from('consumer_bookings')
-      .upsert(
-        { customer_mobile: mobile, vehicle_make: make || null, vehicle_model: model || null, vehicle_year: year || null, status: 'lead_capture', workshop_id: null },
-        { onConflict: 'customer_mobile,status' }
-      );
+      .insert({ customer_mobile: mobile, vehicle_make: make || null, vehicle_model: model || null, vehicle_year: year || null, status: 'lead_capture', workshop_id: null });
     if (error) console.error('capture-lead error:', error.message);
     res.json({ success: !error });
   } catch (err) {
