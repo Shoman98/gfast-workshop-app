@@ -261,9 +261,10 @@ router.post('/capture-lead', async (req, res) => {
       },
       body: JSON.stringify({ mobile, vehicle_make: make || null, vehicle_model: model || null, vehicle_year: year || null, source: 'landing' }),
     });
-    const ok = r.status === 200 || r.status === 201;
-    if (!ok) { const t = await r.text(); console.error('capture-lead error:', r.status, t); }
-    res.json({ success: ok });
+    const ok = r.status === 200 || r.status === 201 || r.status === 204;
+    const body = await r.text();
+    if (!ok) console.error('capture-lead error:', r.status, body);
+    res.json({ success: ok, status: r.status, body: ok ? undefined : body });
   } catch (err) {
     console.error('capture-lead exception:', err.message);
     res.json({ success: false });
