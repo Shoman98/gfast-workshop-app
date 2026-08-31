@@ -195,6 +195,17 @@ export default function AdminPage() {
     } catch { showToast('Reorder failed') }
   }
 
+  // ── Set explicit rank (sort_order) — reflects in both consumer flows ──
+  const setRank = async (id: string, rank: number) => {
+    await saveWorkshop(id, { sort_order: rank })
+    setWorkshops(prev =>
+      prev
+        .map(w => (w.workshop_id === id ? { ...w, sort_order: rank } : w))
+        .sort((a, b) => a.sort_order - b.sort_order)
+    )
+    showToast('✓ Rank saved')
+  }
+
   const formatDate = (iso: string) => new Date(iso).toLocaleString('en-EG', { dateStyle: 'short', timeStyle: 'short' })
 
   return (
@@ -245,9 +256,22 @@ export default function AdminPage() {
                     style={{ background: 'white', borderRadius: 12, padding: '1rem 1.25rem', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', border: '1.5px solid #e5e7eb', cursor: 'grab' }}
                   >
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                      {/* Drag handle + visibility */}
+                      {/* Drag handle + rank + visibility */}
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, paddingTop: 4, flexShrink: 0 }}>
                         <span style={{ color: '#9ca3af', fontSize: '1.1rem', cursor: 'grab' }}>⠿</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                          <input
+                            type="number"
+                            min="0"
+                            key={`rank-${ws.workshop_id}-${ws.sort_order}`}
+                            defaultValue={ws.sort_order}
+                            title="Lower number shows first"
+                            onBlur={e => { const v = parseInt(e.target.value, 10); if (!isNaN(v) && v !== ws.sort_order) setRank(ws.workshop_id, v) }}
+                            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                            style={{ width: 46, padding: '0.25rem', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.8rem', textAlign: 'center', boxSizing: 'border-box' }}
+                          />
+                          <span style={{ fontSize: '0.6rem', color: '#6b7280', fontWeight: 600 }}>Rank</span>
+                        </div>
                         <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, cursor: 'pointer' }}>
                           <input type="checkbox" checked={ws.is_visible_to_consumers} onChange={e => saveWorkshop(ws.workshop_id, { is_visible_to_consumers: e.target.checked })} style={{ width: 16, height: 16, cursor: 'pointer' }} />
                           <span style={{ fontSize: '0.65rem', color: '#6b7280', fontWeight: 600 }}>Visible</span>
