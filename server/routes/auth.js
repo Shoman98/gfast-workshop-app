@@ -4,10 +4,68 @@
 
 import express from 'express';
 import { supabase } from '../db/supabase.js';
-import { generateToken, verifyToken } from '../middleware/auth.js';
+import { generateToken, generateAccountToken, verifyToken } from '../middleware/auth.js';
 import bcrypt from 'bcrypt';
 
 const router = express.Router();
+
+/**
+ * Shared tail of a successful workshop authentication.
+ * Fetches the workshop's active branches and either issues a session token
+ * (0/1 branch → auto-select) or returns the branch list for the client to pick.
+ * `overrides` lets the caller substitute user-provided profile fields.
+ */
+async function finalizeWorkshopLogin(workshop, res, overrides = {}) {
+  const { data: branches, error: branchError } = await supabase
+    .from('workshop_branches')
+    .select('branch_id, branch_name, city, phone')
+    .eq('workshop_id', workshop.workshop_id)
+    .eq('is_active', true)
+    .order('branch_name');
+
+  if (branchError) {
+    console.warn('⚠️  Failed to fetch branches:', branchError.message);
+  }
+
+  const activeBranches = branches || [];
+
+  // Single branch (or none) → auto-select and issue token immediately.
+  if (activeBranches.length <= 1) {
+    const branch = activeBranches[0] || null;
+    const token = generateToken(workshop.workshop_id, workshop.is_super_admin === true, branch?.branch_id || null);
+
+    console.log(`✅ Login successful: ${workshop.workshop_name} (${workshop.workshop_id})${branch ? ` → ${branch.branch_name}` : ''}`);
+
+    return res.json({
+      success: true,
+      token,
+      workshop: {
+        workshop_id: workshop.workshop_id,
+        is_super_admin: workshop.is_super_admin === true,
+        workshop_name: overrides.workshop_name || workshop.workshop_name,
+        category: workshop.category,
+        city: overrides.city || workshop.city,
+        phone: overrides.phone || workshop.phone,
+        branch: branch || null,
+      },
+    });
+  }
+
+  // Multiple branches — return list for the client to pick from (no token yet).
+  console.log(`✅ Login successful: ${workshop.workshop_name} (${workshop.workshop_id}) — branch selection required`);
+
+  return res.json({
+    success: true,
+    requires_branch_selection: true,
+    workshop: {
+      workshop_id: workshop.workshop_id,
+      is_super_admin: workshop.is_super_admin === true,
+      workshop_name: overrides.workshop_name || workshop.workshop_name,
+      category: workshop.category,
+    },
+    branches: activeBranches,
+  });
+}
 
 
 /**
@@ -64,56 +122,146 @@ router.post('/login', async (req, res, next) => {
       }
     }
 
-    // Fetch branches for this workshop
-    const { data: branches, error: branchError } = await supabase
-      .from('workshop_branches')
-      .select('branch_id, branch_name, city, phone')
-      .eq('workshop_id', workshop_id)
-      .eq('is_active', true)
-      .order('branch_name');
+    return finalizeWorkshopLogin(workshop, res, {
+      workshop_name: workshop_name || undefined,
+      city: location || undefined,
+      phone: phone || undefined,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
-    if (branchError) {
-      console.warn('⚠️  Failed to fetch branches:', branchError.message);
+/**
+ * POST /api/auth/account-login
+ * Unified owner login with a shared account { identifier, pin }.
+ * - If `identifier` matches a workshop_accounts.username → authenticate the
+ *   account and either auto-select its single workshop or return the list of
+ *   workshops for the owner to pick from (requires_workshop_selection).
+ * - Otherwise falls back to legacy workshop_id + PIN login (backward compatible).
+ */
+router.post('/account-login', async (req, res, next) => {
+  try {
+    const { identifier, pin } = req.body;
+
+    if (!identifier || !pin) {
+      return res.status(400).json({ error: 'identifier and pin required' });
     }
 
-    const activeBranches = branches || [];
+    // ── Try account-level login first ──
+    const { data: account } = await supabase
+      .from('workshop_accounts')
+      .select('*')
+      .eq('username', identifier)
+      .maybeSingle();
 
-    // If only one branch (or none), auto-select and return token immediately
-    if (activeBranches.length <= 1) {
-      const branch = activeBranches[0] || null;
-      const token = generateToken(workshop_id, workshop.is_super_admin === true, branch?.branch_id || null);
+    if (account) {
+      if (!account.is_active) {
+        return res.status(403).json({ error: 'Account is inactive' });
+      }
 
-      console.log(`✅ Login successful: ${workshop.workshop_name} (${workshop_id})${branch ? ` → ${branch.branch_name}` : ''}`);
+      const isPinValid = await bcrypt.compare(pin, account.pin_hash);
+      if (!isPinValid) {
+        console.log(`❌ Account login failed: wrong PIN for ${identifier}`);
+        return res.status(401).json({ error: 'Invalid account or PIN' });
+      }
 
+      const { data: workshops, error: wsError } = await supabase
+        .from('workshops')
+        .select('*')
+        .eq('account_id', account.account_id)
+        .eq('is_active', true)
+        .order('workshop_name');
+
+      if (wsError) {
+        console.warn('⚠️  Failed to fetch account workshops:', wsError.message);
+      }
+
+      const accountWorkshops = workshops || [];
+
+      if (accountWorkshops.length === 0) {
+        return res.status(403).json({ error: 'No active workshops linked to this account' });
+      }
+
+      // Single workshop → skip the picker and log straight in.
+      if (accountWorkshops.length === 1) {
+        return finalizeWorkshopLogin(accountWorkshops[0], res);
+      }
+
+      // Multiple workshops — return list for the owner to choose from.
+      console.log(`✅ Account login: ${identifier} — workshop selection required (${accountWorkshops.length})`);
       return res.json({
         success: true,
-        token,
-        workshop: {
-          workshop_id: workshop.workshop_id,
-          is_super_admin: workshop.is_super_admin === true,
-          workshop_name: workshop_name || workshop.workshop_name,
-          category: workshop.category,
-          city: location || workshop.city,
-          phone: phone || workshop.phone,
-          branch: branch || null,
-        },
+        requires_workshop_selection: true,
+        account_token: generateAccountToken(account.account_id),
+        workshops: accountWorkshops.map(w => ({
+          workshop_id: w.workshop_id,
+          workshop_name: w.workshop_name,
+          city: w.city,
+        })),
       });
     }
 
-    // Multiple branches — return list for client to pick from (no token yet)
-    console.log(`✅ Login successful: ${workshop.workshop_name} (${workshop_id}) — branch selection required`);
+    // ── Fall back to legacy workshop_id + PIN login ──
+    const { data: workshop, error } = await supabase
+      .from('workshops')
+      .select('*')
+      .eq('workshop_id', identifier)
+      .single();
 
-    res.json({
-      success: true,
-      requires_branch_selection: true,
-      workshop: {
-        workshop_id: workshop.workshop_id,
-        is_super_admin: workshop.is_super_admin === true,
-        workshop_name: workshop_name || workshop.workshop_name,
-        category: workshop.category,
-      },
-      branches: activeBranches,
-    });
+    if (error || !workshop) {
+      console.log(`❌ Login failed: ${identifier} not found (account or workshop)`);
+      return res.status(401).json({ error: 'Invalid account or PIN' });
+    }
+
+    const isPinValid = await bcrypt.compare(pin, workshop.pin_hash);
+    if (!isPinValid) {
+      console.log(`❌ Login failed: Wrong PIN for workshop ${identifier}`);
+      return res.status(401).json({ error: 'Invalid account or PIN' });
+    }
+
+    if (!workshop.is_active) {
+      return res.status(403).json({ error: 'Workshop account is inactive' });
+    }
+
+    return finalizeWorkshopLogin(workshop, res);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/auth/select-workshop
+ * Called after multi-workshop account login — verifies the chosen workshop
+ * belongs to the authenticated account and continues to token/branch selection.
+ */
+router.post('/select-workshop', async (req, res, next) => {
+  try {
+    const { account_token, workshop_id } = req.body;
+
+    if (!account_token || !workshop_id) {
+      return res.status(400).json({ error: 'account_token and workshop_id required' });
+    }
+
+    const decoded = verifyToken(account_token);
+    if (!decoded || decoded.scope !== 'account' || !decoded.account_id) {
+      return res.status(401).json({ error: 'Invalid or expired account session' });
+    }
+
+    // Verify the workshop belongs to this account and is active (authorization).
+    const { data: workshop, error } = await supabase
+      .from('workshops')
+      .select('*')
+      .eq('workshop_id', workshop_id)
+      .eq('account_id', decoded.account_id)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !workshop) {
+      return res.status(403).json({ error: 'Invalid workshop selection' });
+    }
+
+    return finalizeWorkshopLogin(workshop, res);
   } catch (err) {
     next(err);
   }

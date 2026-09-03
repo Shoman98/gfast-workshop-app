@@ -18,6 +18,19 @@ export function generateToken(workshopId, isSuperAdmin = false, branchId = null)
 }
 
 /**
+ * Generate a short-lived account token, issued after an owner authenticates with
+ * their shared account credentials. Proves the account is authenticated so the
+ * follow-up /select-workshop call doesn't need to re-send the PIN.
+ */
+export function generateAccountToken(accountId) {
+  return jwt.sign(
+    { account_id: accountId, scope: 'account' },
+    JWT_SECRET,
+    { expiresIn: '15m' }
+  );
+}
+
+/**
  * Generate a short-lived, scoped token for the pricing section.
  * Issued only after a successful step-up (single-use access code).
  */

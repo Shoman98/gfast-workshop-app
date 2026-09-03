@@ -6,6 +6,7 @@ import { authenticateInsurance } from '@/mock/insurance'
 type Role = 'workshop' | 'insurance'
 
 type Branch = { branch_id: string; branch_name: string; city?: string; phone?: string }
+type WorkshopChoice = { workshop_id: string; workshop_name: string; city?: string }
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -14,6 +15,10 @@ export default function LoginPage() {
   // Workshop fields
   const [workshopId, setWorkshopId] = useState('')
   const [pin, setPin] = useState('')
+
+  // Workshop selection step (owner account owns multiple workshops)
+  const [workshops, setWorkshops] = useState<WorkshopChoice[]>([])
+  const [accountToken, setAccountToken] = useState('')
 
   // Branch selection step
   const [branches, setBranches] = useState<Branch[]>([])
@@ -29,36 +34,72 @@ export default function LoginPage() {
   const reset = (newRole: Role) => {
     setRole(newRole)
     setError('')
+    setWorkshops([])
+    setAccountToken('')
     setBranches([])
     setPendingWorkshop(null)
     setWorkshopId(''); setPin(''); setCompanyId(''); setPassword('')
   }
 
+  // Apply a successful auth response: either finish (token) or advance to the
+  // branch picker. Shared by account-login, workshop-select and branch-select.
+  const applyAuthResult = (data: any): boolean => {
+    if (data.requires_branch_selection) {
+      setBranches(data.branches)
+      setPendingWorkshop(data.workshop)
+      setLoading(false)
+      return true
+    }
+    if (data.token) {
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('workshop', JSON.stringify(data.workshop))
+      navigate('/dashboard')
+      return true
+    }
+    return false
+  }
+
   const handleWorkshopLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!workshopId || !pin) { setError('يرجى إدخال رقم الورشة والرمز السري'); return }
+    if (!workshopId || !pin) { setError('يرجى إدخال اسم الحساب والرمز السري'); return }
     setLoading(true)
     try {
-      const response = await fetch(apiUrl('/api/auth/login'), {
+      const response = await fetch(apiUrl('/api/auth/account-login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workshop_id: workshopId, pin }),
+        body: JSON.stringify({ identifier: workshopId.trim(), pin }),
       })
       const data = await response.json()
       if (!response.ok) { setError(data.error || 'فشل تسجيل الدخول'); setLoading(false); return }
 
-      if (data.requires_branch_selection) {
-        // Multiple branches — show picker
-        setBranches(data.branches)
-        setPendingWorkshop(data.workshop)
+      if (data.requires_workshop_selection) {
+        // Owner account owns several workshops — show workshop picker
+        setWorkshops(data.workshops)
+        setAccountToken(data.account_token)
         setLoading(false)
         return
       }
 
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('workshop', JSON.stringify(data.workshop))
-      navigate('/dashboard')
+      if (!applyAuthResult(data)) { setError('فشل تسجيل الدخول'); setLoading(false) }
+    } catch (err) {
+      setError((err as Error).message)
+      setLoading(false)
+    }
+  }
+
+  const handleWorkshopSelect = async (ws: WorkshopChoice) => {
+    setLoading(true)
+    setError('')
+    try {
+      const response = await fetch(apiUrl('/api/auth/select-workshop'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account_token: accountToken, workshop_id: ws.workshop_id }),
+      })
+      const data = await response.json()
+      if (!response.ok) { setError(data.error || 'فشل اختيار الورشة'); setLoading(false); return }
+      if (!applyAuthResult(data)) { setError('فشل اختيار الورشة'); setLoading(false) }
     } catch (err) {
       setError((err as Error).message)
       setLoading(false)
@@ -172,6 +213,40 @@ export default function LoginPage() {
               </div>
             )}
 
+            {/* Workshop picker (shown when an owner account owns multiple workshops) */}
+            {role === 'workshop' && workshops.length > 0 && branches.length === 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ textAlign: 'center', marginBottom: '0.25rem' }}>
+                  <p style={{ fontWeight: 700, fontSize: '1rem', color: '#111827', margin: 0 }}>اختر الورشة</p>
+                  <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0.25rem 0 0' }}>لديك أكثر من ورشة على هذا الحساب</p>
+                </div>
+                {workshops.map(ws => (
+                  <button
+                    key={ws.workshop_id}
+                    onClick={() => handleWorkshopSelect(ws)}
+                    disabled={loading}
+                    style={{
+                      width: '100%', padding: '0.9rem 1rem', border: '2px solid #e5e7eb',
+                      borderRadius: '0.6rem', background: 'white', cursor: loading ? 'not-allowed' : 'pointer',
+                      textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '0.2rem',
+                      transition: 'border-color .15s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = '#2563eb')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = '#e5e7eb')}
+                  >
+                    <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#111827' }}>🔧 {ws.workshop_name}</span>
+                    {ws.city && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>📍 {ws.city}</span>}
+                  </button>
+                ))}
+                <button
+                  onClick={() => { setWorkshops([]); setAccountToken('') }}
+                  style={{ padding: '0.5rem', background: 'none', border: 'none', color: '#6b7280', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  رجوع
+                </button>
+              </div>
+            )}
+
             {/* Branch picker (shown after credentials when workshop has multiple branches) */}
             {role === 'workshop' && branches.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -207,14 +282,14 @@ export default function LoginPage() {
             )}
 
             {/* Workshop credentials form */}
-            {role === 'workshop' && branches.length === 0 && (
+            {role === 'workshop' && workshops.length === 0 && branches.length === 0 && (
               <form onSubmit={handleWorkshopLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>رقم الورشة</label>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>اسم الحساب أو رقم الورشة</label>
                   <input
                     style={inputStyle}
                     type="text"
-                    placeholder="مثال: workshop-001"
+                    placeholder="مثال: elmohandes01"
                     value={workshopId}
                     onChange={e => setWorkshopId(e.target.value)}
                     disabled={loading}
