@@ -25,6 +25,11 @@ ALTER TABLE workshops
 
 CREATE INDEX IF NOT EXISTS idx_workshops_account_id ON workshops(account_id);
 
+-- 3. "New" flag — when TRUE, marketplace/booking cards show a "جديد / New" pill
+--    instead of stars + review quote (for service centers with no reviews yet).
+ALTER TABLE workshops
+  ADD COLUMN IF NOT EXISTS is_new BOOLEAN DEFAULT FALSE;
+
 -- ----------------------------------------------------------------------------
 -- Provisioning is handled by scripts/create-account.mjs (bcrypt-hashes the PIN,
 -- creates the account + the two workshops, and links them). No manual seed here.

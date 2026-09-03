@@ -14,6 +14,7 @@ interface Workshop {
   is_super_admin: boolean
   stars: number
   review_text: string | null
+  is_new: boolean
   badges: string[]
   sort_order: number
   logo_url: string | null
@@ -303,6 +304,17 @@ export default function AdminPage() {
                           style={{ width: '100%', padding: '0.35rem 0.5rem', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', boxSizing: 'border-box' }}
                         />
                         <div style={{ color: '#f59e0b', fontSize: '1rem', marginTop: 4 }}>{'★'.repeat(Math.floor(ws.stars))}{'☆'.repeat(5 - Math.floor(ws.stars))}</div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.78rem', marginTop: 6, paddingTop: 6, borderTop: '1px solid #f3f4f6' }}>
+                          <input
+                            type="checkbox"
+                            checked={ws.is_new || false}
+                            onChange={e => {
+                              saveWorkshop(ws.workshop_id, { is_new: e.target.checked })
+                              setWorkshops(prev => prev.map(w => w.workshop_id === ws.workshop_id ? { ...w, is_new: e.target.checked } : w))
+                            }}
+                          />
+                          🆕 جديد / New
+                        </label>
                       </div>
 
                       {/* Review quote */}

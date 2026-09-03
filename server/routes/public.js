@@ -24,7 +24,7 @@ router.get('/workshops', async (req, res, next) => {
   try {
     const { data: workshops, error } = await supabase
       .from('workshops')
-      .select('workshop_id, workshop_name, display_name, city, phone, stars, review_text, badges, logo_url, accepts_insurance')
+      .select('workshop_id, workshop_name, display_name, city, phone, stars, review_text, is_new, badges, logo_url, accepts_insurance')
       .eq('is_visible_to_consumers', true)
       .eq('is_active', true)
       .eq('is_super_admin', false)
