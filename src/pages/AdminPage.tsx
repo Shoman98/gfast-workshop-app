@@ -42,7 +42,9 @@ interface Booking {
   created_at: string
 }
 
-const BADGE_OPTIONS = ['Best Quality', 'Best Value', 'Fastest']
+const BADGE_OPTIONS = ['Best Quality', 'Best Value', 'Fastest', 'Certified Center']
+const BADGE_ICONS: Record<string, string> = { 'Best Quality': '⭐', 'Best Value': '💰', 'Fastest': '⚡', 'Certified Center': '🏅' }
+const BADGE_LABELS_AR: Record<string, string> = { 'Certified Center': 'مركز معتمد' }
 const STATUS_OPTIONS = ['pending', 'contacted', 'confirmed', 'completed', 'cancelled']
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
   pending:   { bg: '#fff7ed', color: '#c2410c' },
@@ -330,7 +332,7 @@ export default function AdminPage() {
                                   setWorkshops(prev => prev.map(w => w.workshop_id === ws.workshop_id ? { ...w, badges: next } : w))
                                 }}
                               />
-                              {b === 'Best Quality' ? '⭐' : b === 'Best Value' ? '💰' : '⚡'} {b}
+                              {BADGE_ICONS[b] || '🏅'} {BADGE_LABELS_AR[b] || b}
                             </label>
                           ))}
                           <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.8rem', marginTop: 4, paddingTop: 4, borderTop: '1px solid #f3f4f6' }}>
