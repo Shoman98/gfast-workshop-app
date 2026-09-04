@@ -189,22 +189,40 @@ export default function AnalysisPage() {
   const [error, setError] = useState('')
   const [parentEstimateId, setParentEstimateId] = useState<string | null>(null)
   const [isSupplementary, setIsSupplementary] = useState(false)
+  const [bookingId, setBookingId] = useState<string | null>(null)
 
   useEffect(() => {
     const raw = sessionStorage.getItem('supplementData')
-    if (!raw) return
-    sessionStorage.removeItem('supplementData')
-    const sup = JSON.parse(raw)
-    setParentEstimateId(sup.parentEstimateId)
-    setIsSupplementary(true)
-    if (sup.vehicle) {
-      setYear(String(sup.vehicle.year || ''))
-      setMake(sup.vehicle.make || '')
-      setModel(sup.vehicle.model || '')
-      setVinNumber(sup.vehicle.vin_number || '')
-      setCustomerName(sup.vehicle.customer_name || '')
-      setCustomerMobile(sup.vehicle.customer_mobile || '')
-      setInsuranceCompanyId(sup.vehicle.insurance_company_id || '')
+    if (raw) {
+      sessionStorage.removeItem('supplementData')
+      const sup = JSON.parse(raw)
+      setParentEstimateId(sup.parentEstimateId)
+      setIsSupplementary(true)
+      if (sup.booking_id) setBookingId(sup.booking_id)
+      if (sup.vehicle) {
+        setYear(String(sup.vehicle.year || ''))
+        setMake(sup.vehicle.make || '')
+        setModel(sup.vehicle.model || '')
+        setVinNumber(sup.vehicle.vin_number || '')
+        setCustomerName(sup.vehicle.customer_name || '')
+        setCustomerMobile(sup.vehicle.customer_mobile || '')
+        setInsuranceCompanyId(sup.vehicle.insurance_company_id || '')
+      }
+      return
+    }
+    // Fresh assessment started from a booking's +تقدير CTA (not supplementary):
+    // prefill the vehicle, carry booking_id so the estimate links back to it.
+    const bRaw = sessionStorage.getItem('bookingAssessment')
+    if (bRaw) {
+      sessionStorage.removeItem('bookingAssessment')
+      const ba = JSON.parse(bRaw)
+      if (ba.booking_id) setBookingId(ba.booking_id)
+      if (ba.vehicle) {
+        setYear(String(ba.vehicle.year || ''))
+        setMake(ba.vehicle.make || '')
+        setModel(ba.vehicle.model || '')
+        setCustomerMobile(ba.vehicle.customer_mobile || '')
+      }
     }
   }, [])
 
@@ -322,6 +340,7 @@ export default function AnalysisPage() {
           customer_mobile: customerMobile,
           insurance_company_id: insuranceCompanyId || null,
           parent_estimate_id: parentEstimateId || null,
+          booking_id: bookingId || null,
         }))
         sessionStorage.removeItem('supplementData')
         const isInsurance = window.location.pathname.startsWith('/insurance')

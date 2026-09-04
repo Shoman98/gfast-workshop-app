@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiUrl } from '@/lib/api'
+import { statusMeta, PROGRESS_STATUSES, SIDE_STATUSES, CANCELLATION_REASONS } from '@/lib/bookingStatuses'
 
 type EstimateStatus = 'draft' | 'confirmed' | 'approved_by_insurance' | 'rejected_by_insurance' | 'counter_offer' | 'workshop_revised' | 'workshop_accepted' | 'settled'
 
@@ -390,6 +391,37 @@ export default function DashboardPage() {
     finally { setBookingsLoading(false) }
   }
 
+  // Booking status change (workshop-scoped). Cancelling requires a reason.
+  const [cancelForId, setCancelForId] = useState<string | null>(null)
+  const changeBookingStatus = async (bookingId: string, status: string, cancellation_reason?: string) => {
+    if (status === 'cancelled' && !cancellation_reason) { setCancelForId(bookingId); return }
+    const token = localStorage.getItem('token')
+    if (!token) return
+    try {
+      const res = await fetch(apiUrl(`/api/estimates/consumer-bookings/${bookingId}/status`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status, cancellation_reason }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: data.booking.status, cancellation_reason: data.booking.cancellation_reason } : b))
+        setCancelForId(null)
+      }
+    } catch { /* silent */ }
+  }
+
+  // +تقدير — start an assessment (or supplement) prefilled from a booking.
+  const startAssessmentFromBooking = (b: any, supplementary = false) => {
+    const vehicle = { make: b.vehicle_make || '', model: b.vehicle_model || '', year: b.vehicle_year || '', customer_mobile: b.customer_mobile || '' }
+    if (supplementary && b.estimate_id) {
+      sessionStorage.setItem('supplementData', JSON.stringify({ parentEstimateId: b.estimate_id, booking_id: b.id, vehicle }))
+    } else {
+      sessionStorage.setItem('bookingAssessment', JSON.stringify({ booking_id: b.id, vehicle }))
+    }
+    navigate('/analysis')
+  }
+
   const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('ar-EG')
   const formatDateTime = (dateStr: string) => new Date(dateStr).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })
   const handleLogout = () => { localStorage.clear(); navigate('/login') }
@@ -497,6 +529,50 @@ export default function DashboardPage() {
                       </div>
                       <span style={{ fontSize: '0.78rem', color: '#9ca3af' }}>{formatDateTime(b.created_at)}</span>
                     </div>
+
+                    {/* Status control row */}
+                    {(() => { const m = statusMeta(b.status); return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                      <span style={{ padding: '0.2rem 0.7rem', borderRadius: 999, fontSize: '0.78rem', fontWeight: 700, background: m.bg, color: m.color }}>{m.ar}</span>
+                      <select
+                        value={m.key}
+                        onChange={e => changeBookingStatus(b.id, e.target.value)}
+                        style={{ padding: '0.35rem 0.6rem', border: '1px solid #d1d5db', borderRadius: '0.4rem', fontSize: '0.8rem', color: '#374151', background: 'white', cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        {PROGRESS_STATUSES.map(s => <option key={s.key} value={s.key}>{s.ar}</option>)}
+                        <option disabled>──────</option>
+                        {SIDE_STATUSES.map(s => <option key={s.key} value={s.key}>{s.ar}</option>)}
+                      </select>
+                      {b.scheduled_date && (
+                        <span style={{ fontSize: '0.78rem', color: '#6b7280' }}>📅 {formatDate(b.scheduled_date)}</span>
+                      )}
+                      {b.cancellation_reason && (
+                        <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>سبب: {b.cancellation_reason}</span>
+                      )}
+                    </div>
+                    ); })()}
+
+                    {/* Cancel reason picker */}
+                    {cancelForId === b.id && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.4rem', padding: '0.5rem 0.7rem' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#991b1b', fontWeight: 600 }}>سبب الإلغاء:</span>
+                        {CANCELLATION_REASONS.map(r => (
+                          <button key={r} onClick={() => changeBookingStatus(b.id, 'cancelled', r)}
+                            style={{ padding: '0.3rem 0.8rem', background: 'white', border: '1px solid #fca5a5', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.8rem', color: '#b91c1c', fontWeight: 600 }}>{r}</button>
+                        ))}
+                        <button onClick={() => setCancelForId(null)} style={{ padding: '0.3rem 0.6rem', background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '0.78rem' }}>إلغاء</button>
+                      </div>
+                    )}
+
+                    {/* +تقدير CTA when the car has been visited (or supplement when supplementary) */}
+                    {statusMeta(b.status).key === 'visited' && (
+                      <button onClick={() => startAssessmentFromBooking(b)}
+                        style={{ alignSelf: 'flex-start', padding: '0.45rem 1rem', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '0.45rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}>+ تقدير</button>
+                    )}
+                    {statusMeta(b.status).key === 'supplementary' && (
+                      <button onClick={() => startAssessmentFromBooking(b, true)}
+                        style={{ alignSelf: 'flex-start', padding: '0.45rem 1rem', background: '#0369a1', color: 'white', border: 'none', borderRadius: '0.45rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}>+ تقدير إضافي</button>
+                    )}
 
                     {/* Report link */}
                     {b.report_url && (

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiUrl } from '@/lib/api'
+import { statusMeta, PROGRESS_STATUSES, SIDE_STATUSES, CANCELLATION_REASONS } from '@/lib/bookingStatuses'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Workshop {
@@ -40,20 +41,15 @@ interface Booking {
   vehicle_model: string | null
   vehicle_year: string | null
   status: string
+  scheduled_date?: string | null
+  cancellation_reason?: string | null
+  estimate_id?: string | null
   created_at: string
 }
 
 const BADGE_OPTIONS = ['Best Quality', 'Best Value', 'Fastest', 'Certified Center']
 const BADGE_ICONS: Record<string, string> = { 'Best Quality': '⭐', 'Best Value': '💰', 'Fastest': '⚡', 'Certified Center': '🏅' }
 const BADGE_LABELS_AR: Record<string, string> = { 'Certified Center': 'مركز معتمد' }
-const STATUS_OPTIONS = ['pending', 'contacted', 'confirmed', 'completed', 'cancelled']
-const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  pending:   { bg: '#fff7ed', color: '#c2410c' },
-  contacted: { bg: '#eff6ff', color: '#1d4ed8' },
-  confirmed: { bg: '#f0fdf4', color: '#15803d' },
-  completed: { bg: '#f9fafb', color: '#374151' },
-  cancelled: { bg: '#fef2f2', color: '#dc2626' },
-}
 
 const th: React.CSSProperties = { padding: '0.65rem 0.75rem', textAlign: 'right', fontWeight: 700, color: '#374151', fontSize: '0.82rem', whiteSpace: 'nowrap', borderBottom: '2px solid #e5e7eb', background: '#f9fafb' }
 const td: React.CSSProperties = { padding: '0.65rem 0.75rem', fontSize: '0.82rem', color: '#111827', borderBottom: '1px solid #f3f4f6', verticalAlign: 'middle' }
@@ -165,14 +161,29 @@ export default function AdminPage() {
     if (next && !branchesMap[workshopId]) loadBranches(workshopId)
   }
 
-  // ── Update booking status ──
-  const updateBookingStatus = async (id: string, status: string) => {
+  // ── Update booking status ── (cancelling requires a reason)
+  const [cancelForId, setCancelForId] = useState<string | null>(null)
+  const updateBookingStatus = async (id: string, status: string, cancellation_reason?: string) => {
+    if (status === 'cancelled' && !cancellation_reason) { setCancelForId(id); return }
     try {
-      const r = await fetch(apiUrl(`/api/admin/bookings/${id}`), { method: 'PATCH', headers, body: JSON.stringify({ status }) })
+      const r = await fetch(apiUrl(`/api/admin/bookings/${id}`), { method: 'PATCH', headers, body: JSON.stringify({ status, cancellation_reason }) })
       const d = await r.json()
       if (r.ok) {
-        setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b))
+        setBookings(prev => prev.map(b => b.id === id ? { ...b, status: d.booking?.status ?? status, cancellation_reason: d.booking?.cancellation_reason } : b))
+        setCancelForId(null)
         showToast('✓ Status updated')
+      } else showToast(d.error || 'Update failed')
+    } catch { showToast('Network error') }
+  }
+
+  // ── Update booking appointment date ──
+  const updateBookingDate = async (id: string, scheduled_date: string) => {
+    try {
+      const r = await fetch(apiUrl(`/api/admin/bookings/${id}`), { method: 'PATCH', headers, body: JSON.stringify({ scheduled_date }) })
+      const d = await r.json()
+      if (r.ok) {
+        setBookings(prev => prev.map(b => b.id === id ? { ...b, scheduled_date } : b))
+        showToast('✓ Date updated')
       } else showToast(d.error || 'Update failed')
     } catch { showToast('Network error') }
   }
@@ -468,7 +479,7 @@ export default function AdminPage() {
                 <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: 3, fontWeight: 600 }}>Status</div>
                 <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ padding: '0.4rem 0.6rem', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem' }}>
                   <option value="">All statuses</option>
-                  {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  {[...PROGRESS_STATUSES, ...SIDE_STATUSES].map(s => <option key={s.key} value={s.key}>{s.ar}</option>)}
                 </select>
               </div>
               <div>
@@ -500,6 +511,7 @@ export default function AdminPage() {
                       <th style={th}>Vehicle</th>
                       <th style={th}>Report</th>
                       <th style={th}>Images</th>
+                      <th style={th}>Schedule</th>
                       <th style={th}>Status</th>
                     </tr>
                   </thead>
@@ -530,13 +542,31 @@ export default function AdminPage() {
                             ) : <span style={{ color: '#9ca3af' }}>—</span>}
                           </td>
                           <td style={td}>
-                            <select
-                              value={b.status}
-                              onChange={e => updateBookingStatus(b.id, e.target.value)}
-                              style={{ padding: '0.3rem 0.5rem', borderRadius: 6, border: `1.5px solid ${STATUS_COLORS[b.status]?.color || '#d1d5db'}`, background: STATUS_COLORS[b.status]?.bg || 'white', color: STATUS_COLORS[b.status]?.color || '#374151', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}
-                            >
-                              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
+                            <input type="date" value={b.scheduled_date || ''} onChange={e => updateBookingDate(b.id, e.target.value)}
+                              style={{ padding: '0.25rem 0.4rem', borderRadius: 6, border: '1px solid #d1d5db', fontSize: '0.76rem', color: '#374151' }} />
+                          </td>
+                          <td style={td}>
+                            {(() => { const m = statusMeta(b.status); return (
+                              <select
+                                value={m.key}
+                                onChange={e => updateBookingStatus(b.id, e.target.value)}
+                                style={{ padding: '0.3rem 0.5rem', borderRadius: 6, border: `1.5px solid ${m.color}`, background: m.bg, color: m.color, fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}
+                              >
+                                {PROGRESS_STATUSES.map(s => <option key={s.key} value={s.key}>{s.ar}</option>)}
+                                <option disabled>──────</option>
+                                {SIDE_STATUSES.map(s => <option key={s.key} value={s.key}>{s.ar}</option>)}
+                              </select>
+                            ); })()}
+                            {cancelForId === b.id && (
+                              <div style={{ marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                {CANCELLATION_REASONS.map(r => (
+                                  <button key={r} onClick={() => updateBookingStatus(b.id, 'cancelled', r)}
+                                    style={{ padding: '0.2rem 0.5rem', background: 'white', border: '1px solid #fca5a5', borderRadius: 4, cursor: 'pointer', fontSize: '0.72rem', color: '#b91c1c', fontWeight: 600 }}>{r}</button>
+                                ))}
+                                <button onClick={() => setCancelForId(null)} style={{ padding: '0.2rem 0.4rem', background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '0.72rem' }}>✕</button>
+                              </div>
+                            )}
+                            {b.cancellation_reason && <div style={{ marginTop: 3, fontSize: '0.7rem', color: '#dc2626' }}>{b.cancellation_reason}</div>}
                           </td>
                         </tr>
                       )

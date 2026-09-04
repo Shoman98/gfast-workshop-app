@@ -488,6 +488,7 @@ export default function EstimatePage() {
   }
 
   const [parentEstimateId, setParentEstimateId] = useState<string | null>(null)
+  const [bookingId, setBookingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (estimateId === 'new') {
@@ -497,6 +498,7 @@ export default function EstimatePage() {
         const sup = JSON.parse(supplementRaw)
         sessionStorage.removeItem('supplementData')
         setParentEstimateId(sup.parentEstimateId)
+        if (sup.booking_id) setBookingId(sup.booking_id)
         if (sup.vehicle) {
           setVehicleInfo({
             year: sup.vehicle.year || 0,
@@ -551,6 +553,7 @@ export default function EstimatePage() {
         const vehicle = JSON.parse(vehicleData)
         setVehicleInfo(vehicle)
         if (vehicle.parent_estimate_id) setParentEstimateId(vehicle.parent_estimate_id)
+        if (vehicle.booking_id) setBookingId(vehicle.booking_id)
         sessionStorage.removeItem('vehicleInfo')
       }
     } else if (estimateId) {
@@ -842,6 +845,7 @@ export default function EstimatePage() {
           status: 'confirmed',
           pricing_data: snapshot,
           parent_estimate_id: parentEstimateId || null,
+          booking_id: bookingId || null,
         }
 
         console.log('🚀 Sending confirmation payload:', {

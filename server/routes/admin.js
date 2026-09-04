@@ -7,6 +7,7 @@ import express from 'express';
 import multer from 'multer';
 import { supabase } from '../db/supabase.js';
 import { authenticate } from '../middleware/auth.js';
+import { recordBookingStatus, isValidStatus, STATUS_KEYS, CANCELLATION_REASONS } from '../lib/bookingStatuses.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
@@ -170,25 +171,50 @@ router.get('/bookings', authenticate, requireSuperAdmin, async (req, res, next) 
   } catch (err) { next(err); }
 });
 
-// ── PATCH /api/admin/bookings/:id ── update booking status
+// ── PATCH /api/admin/bookings/:id ── update booking status and/or scheduled date
 router.patch('/bookings/:id', authenticate, requireSuperAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
-    const validStatuses = ['pending', 'contacted', 'confirmed', 'completed', 'cancelled'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: `status must be one of: ${validStatuses.join(', ')}` });
+    const { status, cancellation_reason, scheduled_date } = req.body;
+
+    // Appointment-date edit (independent of a status change).
+    if (scheduled_date !== undefined) {
+      const { error: dErr } = await supabase
+        .from('consumer_bookings')
+        .update({ scheduled_date: scheduled_date || null })
+        .eq('id', id);
+      if (dErr) throw dErr;
     }
 
-    const { data, error } = await supabase
-      .from('consumer_bookings')
-      .update({ status })
-      .eq('id', id)
-      .select()
-      .single();
+    if (status !== undefined) {
+      if (!isValidStatus(status)) {
+        return res.status(400).json({ error: `status must be one of: ${STATUS_KEYS.join(', ')}` });
+      }
+      if (status === 'cancelled' && !CANCELLATION_REASONS.includes(cancellation_reason)) {
+        return res.status(400).json({ error: `cancellation_reason required: ${CANCELLATION_REASONS.join(' / ')}` });
+      }
+      await recordBookingStatus(id, status, {
+        changed_by: 'admin',
+        cancellation_reason: status === 'cancelled' ? cancellation_reason : null,
+      });
+    }
 
+    const { data, error } = await supabase.from('consumer_bookings').select('*').eq('id', id).single();
     if (error) throw error;
     res.json({ success: true, booking: data });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/admin/bookings/:id/history ── dated status timeline (admin)
+router.get('/bookings/:id/history', authenticate, requireSuperAdmin, async (req, res, next) => {
+  try {
+    const { data, error } = await supabase
+      .from('booking_status_history')
+      .select('*')
+      .eq('booking_id', req.params.id)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    res.json({ success: true, history: data || [] });
   } catch (err) { next(err); }
 });
 

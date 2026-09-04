@@ -6,6 +6,7 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../db/supabase.js';
 import { authenticate } from '../middleware/auth.js';
+import { recordBookingStatus, isValidStatus, STATUS_KEYS, CANCELLATION_REASONS } from '../lib/bookingStatuses.js';
 
 const router = express.Router();
 
@@ -48,6 +49,61 @@ router.get('/consumer-bookings', authenticate, async (req, res, next) => {
     const { data, error } = await q;
     if (error) throw error;
     res.json({ success: true, bookings: data || [] });
+  } catch (err) { next(err); }
+});
+
+/**
+ * PATCH /api/estimates/consumer-bookings/:id/status
+ * Workshop updates the lifecycle status of one of its bookings.
+ * Writes a dated history row. Requires a reason when cancelling.
+ */
+router.patch('/consumer-bookings/:id/status', authenticate, async (req, res, next) => {
+  try {
+    const { status, cancellation_reason } = req.body;
+    if (!isValidStatus(status)) {
+      return res.status(400).json({ error: `status must be one of: ${STATUS_KEYS.join(', ')}` });
+    }
+    if (status === 'cancelled' && !CANCELLATION_REASONS.includes(cancellation_reason)) {
+      return res.status(400).json({ error: `cancellation_reason required: ${CANCELLATION_REASONS.join(' / ')}` });
+    }
+
+    // Ensure the booking belongs to this workshop.
+    const { data: booking, error: bErr } = await supabase
+      .from('consumer_bookings')
+      .select('id, workshop_id')
+      .eq('id', req.params.id)
+      .eq('workshop_id', req.workshop_id)
+      .single();
+    if (bErr || !booking) return res.status(404).json({ error: 'Booking not found' });
+
+    await recordBookingStatus(req.params.id, status, {
+      changed_by: 'workshop',
+      changed_by_id: req.workshop_id,
+      cancellation_reason: status === 'cancelled' ? cancellation_reason : null,
+    });
+
+    const { data: updated } = await supabase.from('consumer_bookings').select('*').eq('id', req.params.id).single();
+    res.json({ success: true, booking: updated });
+  } catch (err) { next(err); }
+});
+
+/**
+ * GET /api/estimates/consumer-bookings/:id/history
+ * Dated status timeline for one booking (workshop-scoped).
+ */
+router.get('/consumer-bookings/:id/history', authenticate, async (req, res, next) => {
+  try {
+    const { data: booking } = await supabase
+      .from('consumer_bookings').select('id').eq('id', req.params.id).eq('workshop_id', req.workshop_id).single();
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+    const { data, error } = await supabase
+      .from('booking_status_history')
+      .select('*')
+      .eq('booking_id', req.params.id)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    res.json({ success: true, history: data || [] });
   } catch (err) { next(err); }
 });
 
@@ -359,7 +415,7 @@ router.patch('/:estimateId/status', authenticate, async (req, res, next) => {
 router.post('/', authenticate, async (req, res, next) => {
   try {
     const workshopId = req.workshop_id;
-    const { vehicleYear, vehicleMake, vehicleModel, vehicle_year, vehicle_make, vehicle_model, vin_number, customer_name, customer_mobile, parts, labors, status, pricing_data, parent_estimate_id } = req.body;
+    const { vehicleYear, vehicleMake, vehicleModel, vehicle_year, vehicle_make, vehicle_model, vin_number, customer_name, customer_mobile, parts, labors, status, pricing_data, parent_estimate_id, booking_id } = req.body;
     const year = vehicleYear || vehicle_year;
     const make = vehicleMake || vehicle_make;
     const model = vehicleModel || vehicle_model;
@@ -425,6 +481,7 @@ router.post('/', authenticate, async (req, res, next) => {
       labors: labors || [],
       pricing_data: pricing_data || null,
       parent_estimate_id: parent_estimate_id || null,
+      booking_id: booking_id || null,
     };
 
     if (status === 'confirmed') {
@@ -473,6 +530,28 @@ router.post('/', authenticate, async (req, res, next) => {
         throw partsError;
       }
       console.log('✅ Parts saved successfully');
+    }
+
+    // Attribution: a confirmed assessment created for a booking links back to it,
+    // advancing the booking to 'quoting' (or 'supplementary' for a supplement)
+    // and surfacing the public report link on the customer's progress bar.
+    if (status === 'confirmed' && booking_id) {
+      try {
+        const consumerBase = (process.env.CONSUMER_APP_URL || 'https://gfast.it.com').replace(/\/$/, '');
+        const reportUrl = `${consumerBase}/report/${estimate.estimate_id}`;
+        const nextStatus = parent_estimate_id ? 'supplementary' : 'quoting';
+        await supabase.from('consumer_bookings')
+          .update({ report_url: reportUrl })
+          .eq('id', booking_id)
+          .eq('workshop_id', workshopId);
+        await recordBookingStatus(booking_id, nextStatus, {
+          changed_by: 'workshop',
+          changed_by_id: workshopId,
+          estimate_id: estimate.estimate_id,
+        });
+      } catch (attrErr) {
+        console.warn('⚠️  Booking attribution failed:', attrErr.message);
+      }
     }
 
     res.json({

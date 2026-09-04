@@ -10,6 +10,7 @@ import { supabase } from '../db/supabase.js';
 const META_PIXEL_ID = '1576434103838817';
 const META_CAPI_TOKEN = process.env.META_CAPI_TOKEN || 'EAAHP5ZAWffHYBSSbKd9U69GHlFjgzOCZC6UWsCGL5H50kGILJl3Na7PXBwfrxgTMq2JSlFRPfJEy9i4sZCMMw0UN0JFU1YDq9Bma5yo3MLRFhoyk7TBbv0ZBUgkc7QOP9ZBF9Eh5EEetbcoVunbZBWYEqaI95uBm636XZBipKo8jMyQBqgQyfSjZAmxYZAGYT1ZB28lwZDZD';
 import { notifyConsumerBookingAsync } from '../lib/telegram-notify.js';
+import { recordBookingStatus } from '../lib/bookingStatuses.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -118,17 +119,21 @@ router.post('/pre-booking', upload.array('images', 12), async (req, res, next) =
  */
 router.patch('/booking/:id', async (req, res, next) => {
   try {
-    const { workshop_id, branch_id } = req.body;
+    const { workshop_id, branch_id, scheduled_date } = req.body;
     if (!workshop_id) return res.status(400).json({ error: 'workshop_id required' });
 
     const { data, error } = await supabase
       .from('consumer_bookings')
-      .update({ workshop_id, branch_id: branch_id || null })
+      .update({ workshop_id, branch_id: branch_id || null, status: 'booked', ...(scheduled_date !== undefined ? { scheduled_date: scheduled_date || null } : {}) })
       .eq('id', req.params.id)
       .select()
       .single();
 
     if (error) throw error;
+
+    // Seed the status timeline now that the pre-booking is a real workshop booking.
+    try { await recordBookingStatus(req.params.id, 'booked', { changed_by: 'customer' }); }
+    catch (histErr) { console.warn('⚠️  booking history seed failed:', histErr.message); }
 
     // Telegram notification
     const { data: ws } = await supabase.from('workshops').select('workshop_name').eq('workshop_id', workshop_id).single();
@@ -158,18 +163,24 @@ router.patch('/booking/:id', async (req, res, next) => {
  */
 router.post('/booking', async (req, res, next) => {
   try {
-    const { workshop_id, branch_id, customer_mobile, report_url, image_urls, vehicle_make, vehicle_model, vehicle_year } = req.body;
+    const { workshop_id, branch_id, customer_mobile, report_url, image_urls, vehicle_make, vehicle_model, vehicle_year, scheduled_date } = req.body;
 
     if (!workshop_id || !customer_mobile) {
       return res.status(400).json({ error: 'workshop_id and customer_mobile required' });
     }
 
-    // Supersede all previous bookings for this customer globally — one active booking at a time
-    await supabase
-      .from('consumer_bookings')
-      .update({ status: 'superseded' })
-      .eq('customer_mobile', customer_mobile)
-      .neq('status', 'superseded');
+    // One active booking per vehicle: supersede only this customer's not-yet-started
+    // bookings for the SAME vehicle. In-progress and past bookings stay as history.
+    if (vehicle_make && vehicle_model && vehicle_year) {
+      await supabase
+        .from('consumer_bookings')
+        .update({ status: 'superseded' })
+        .eq('customer_mobile', customer_mobile)
+        .eq('vehicle_make', vehicle_make)
+        .eq('vehicle_model', vehicle_model)
+        .eq('vehicle_year', vehicle_year)
+        .in('status', ['pending', 'booked']);
+    }
 
     const { data, error } = await supabase
       .from('consumer_bookings')
@@ -182,12 +193,17 @@ router.post('/booking', async (req, res, next) => {
         vehicle_make: vehicle_make || null,
         vehicle_model: vehicle_model || null,
         vehicle_year: vehicle_year || null,
-        status: 'pending',
+        scheduled_date: scheduled_date || null,
+        status: 'booked',
       })
       .select()
       .single();
 
     if (error) throw error;
+
+    // Seed the status timeline (powers the customer progress bar).
+    try { await recordBookingStatus(data.id, 'booked', { changed_by: 'customer' }); }
+    catch (histErr) { console.warn('⚠️  booking history seed failed:', histErr.message); }
 
     // Fetch workshop + branch names for the Telegram notification
     const { data: ws } = await supabase.from('workshops').select('workshop_name').eq('workshop_id', workshop_id).single();
