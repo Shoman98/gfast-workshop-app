@@ -412,11 +412,30 @@ export default function DashboardPage() {
   }
 
   // +تقدير — start an assessment (or supplement) prefilled from a booking.
-  const startAssessmentFromBooking = (b: any, supplementary = false) => {
-    const vehicle = { make: b.vehicle_make || '', model: b.vehicle_model || '', year: b.vehicle_year || '', customer_mobile: b.customer_mobile || '' }
+  const startAssessmentFromBooking = async (b: any, supplementary = false) => {
     if (supplementary && b.estimate_id) {
-      sessionStorage.setItem('supplementData', JSON.stringify({ parentEstimateId: b.estimate_id, booking_id: b.id, vehicle }))
+      // A supplement inherits the parent estimate's full data (VIN, customer name,
+      // insurance, vehicle) — the booking alone only has make/model/year + mobile.
+      let vehicle: any = { make: b.vehicle_make || '', model: b.vehicle_model || '', year: b.vehicle_year || '', customer_mobile: b.customer_mobile || '' }
+      let parentEstimateId = b.estimate_id
+      try {
+        const token = localStorage.getItem('token')
+        const res = await fetch(apiUrl(`/api/estimates/${b.estimate_id}`), { headers: { Authorization: `Bearer ${token}` } })
+        const data = await res.json()
+        const e = data.estimate
+        if (e) {
+          vehicle = {
+            make: e.vehicle_make, model: e.vehicle_model, year: e.vehicle_year,
+            vin_number: e.vin_number, customer_name: e.customer_name,
+            customer_mobile: e.customer_mobile, insurance_company_id: e.insurance_company_id,
+          }
+          // Chain supplements to the root estimate.
+          parentEstimateId = e.parent_estimate_id || e.estimate_id
+        }
+      } catch { /* fall back to booking data */ }
+      sessionStorage.setItem('supplementData', JSON.stringify({ parentEstimateId, booking_id: b.id, vehicle }))
     } else {
+      const vehicle = { make: b.vehicle_make || '', model: b.vehicle_model || '', year: b.vehicle_year || '', customer_mobile: b.customer_mobile || '' }
       sessionStorage.setItem('bookingAssessment', JSON.stringify({ booking_id: b.id, vehicle }))
     }
     navigate('/analysis')
