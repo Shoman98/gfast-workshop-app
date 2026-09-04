@@ -442,18 +442,20 @@ router.post('/', authenticate, async (req, res, next) => {
     // (root) estimate and is authoritative — client-sent values are ignored,
     // preventing a supplement from ever drifting to a different VIN.
     let vehYear = year, vehMake = make, vehModel = model, vehVin = vin_number || null;
+    let parent = null;
     if (parent_estimate_id) {
-      const { data: parent, error: parentErr } = await supabase
+      const { data: parentRow, error: parentErr } = await supabase
         .from('estimates')
         .select('vin_number, vehicle_year, vehicle_make, vehicle_model, workshop_id, branch_id')
         .eq('estimate_id', parent_estimate_id)
         .single();
-      if (parentErr || !parent) {
+      if (parentErr || !parentRow) {
         return res.status(400).json({ error: 'المقايسة الأصلية غير موجودة' });
       }
-      if (parent.workshop_id !== workshopId) {
+      if (parentRow.workshop_id !== workshopId) {
         return res.status(403).json({ error: 'غير مصرح بإضافة ملحق لهذه المقايسة' });
       }
+      parent   = parentRow;
       vehVin   = parent.vin_number ?? null;
       vehYear  = parent.vehicle_year;
       vehMake  = parent.vehicle_make;
