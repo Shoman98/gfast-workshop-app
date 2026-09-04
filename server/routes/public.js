@@ -414,24 +414,25 @@ router.get('/estimate-report/:id', async (req, res, next) => {
   try {
     const { data: est, error } = await supabase
       .from('estimates')
-      .select('estimate_id, workshop_id, vehicle_year, vehicle_make, vehicle_model, status, total_cost_min, total_cost_max, created_at, parent_estimate_id')
+      .select('*')
       .eq('estimate_id', req.params.id)
       .single();
     if (error || !est || est.status !== 'confirmed') {
       return res.status(404).json({ error: 'Report not found' });
     }
 
-    const { data: parts } = await supabase
-      .from('estimate_parts')
-      .select('part_name_ar, part_name_en, damage_type, severity_label, price')
-      .eq('estimate_id', req.params.id);
-
     const { data: ws } = await supabase
       .from('workshops').select('workshop_name, display_name, city, phone')
       .eq('workshop_id', est.workshop_id).single();
 
-    const partsList = parts || [];
-    const total = partsList.reduce((s, p) => s + (Number(p.price) || 0), 0);
+    // Supplement chain (confirmed only) — same shape the workshop report uses.
+    const rootId = est.parent_estimate_id || est.estimate_id;
+    const { data: chain } = await supabase
+      .from('estimates')
+      .select('estimate_id, status, confirmed_at, created_at, parent_estimate_id')
+      .eq('workshop_id', est.workshop_id)
+      .or(`estimate_id.eq.${rootId},parent_estimate_id.eq.${rootId}`)
+      .order('created_at', { ascending: true });
 
     res.json({
       success: true,
@@ -440,15 +441,20 @@ router.get('/estimate-report/:id', async (req, res, next) => {
         vehicle_year: est.vehicle_year,
         vehicle_make: est.vehicle_make,
         vehicle_model: est.vehicle_model,
-        is_supplementary: !!est.parent_estimate_id,
-        created_at: est.created_at,
-        workshop_name: ws?.display_name || ws?.workshop_name || null,
-        workshop_city: ws?.city || null,
-        parts: partsList,
-        total_cost_min: est.total_cost_min,
-        total_cost_max: est.total_cost_max,
-        total,
+        vin_number: est.vin_number,
+        customer_name: est.customer_name,
+        customer_mobile: est.customer_mobile,
+        insurance_company_id: est.insurance_company_id,
+        confirmed_at: est.confirmed_at || est.created_at,
+        parent_estimate_id: est.parent_estimate_id,
+        pricing_data: est.pricing_data || null,
+        workshop: {
+          workshop_name: ws?.display_name || ws?.workshop_name || 'ورشة',
+          city: ws?.city || '-',
+          phone: ws?.phone || '-',
+        },
       },
+      chain: (chain || []).filter(c => c.status === 'confirmed'),
     });
   } catch (err) { next(err); }
 });
