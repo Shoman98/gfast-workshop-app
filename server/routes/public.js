@@ -311,6 +311,12 @@ router.get('/profile', async (req, res, next) => {
       .select('make, model, year')
       .eq('mobile', mobile);
 
+    // Vehicles the customer entered on the landing page but hasn't booked yet.
+    const { data: leads } = await supabase
+      .from('captured_leads')
+      .select('vehicle_make, vehicle_model, vehicle_year')
+      .eq('mobile', mobile);
+
     const keyOf = (mk, md, yr) => [mk || '', md || '', yr || ''].join('|').toLowerCase();
     const vehicles = {};
     const ensure = (make, model, year) => {
@@ -328,6 +334,9 @@ router.get('/profile', async (req, res, next) => {
     }
     for (const v of registered || []) {
       if (v.make || v.model || v.year) ensure(v.make, v.model, v.year);
+    }
+    for (const l of leads || []) {
+      if (l.vehicle_make || l.vehicle_model || l.vehicle_year) ensure(l.vehicle_make, l.vehicle_model, l.vehicle_year);
     }
 
     res.json({ success: true, mobile, vehicles: Object.values(vehicles) });
