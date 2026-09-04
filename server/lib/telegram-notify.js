@@ -104,6 +104,7 @@ function formatConsumerBookingMessage(payload) {
     `Workshop: ${workshop}${branch ? ` › ${branch}` : ''}`,
     `Mobile: ${escapeTelegramMarkdown(payload.customer_mobile || '-')}`,
     `Vehicle: ${escapeTelegramMarkdown(vehicle)}`,
+    ...(payload.scheduled_date ? [`📅 Booking date: ${escapeTelegramMarkdown(payload.scheduled_date)}`] : []),
     `Images: ${escapeTelegramMarkdown(String(payload.images_count ?? 0))}`,
     `Time: ${escapeTelegramMarkdown(formatEgyptDateTime(new Date()))}`,
   ].join('\n');

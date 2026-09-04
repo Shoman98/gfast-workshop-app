@@ -149,6 +149,7 @@ router.patch('/booking/:id', async (req, res, next) => {
       vehicle_make: data.vehicle_make,
       vehicle_model: data.vehicle_model,
       vehicle_year: data.vehicle_year,
+      scheduled_date: data.scheduled_date,
       images_count: (data.image_urls || []).length,
     }, process.env);
 
@@ -219,6 +220,7 @@ router.post('/booking', async (req, res, next) => {
       vehicle_make,
       vehicle_model,
       vehicle_year,
+      scheduled_date: scheduled_date || null,
       images_count: (image_urls || []).length,
     }, process.env);
 
