@@ -26,7 +26,7 @@ router.get('/workshops', authenticate, requireSuperAdmin, async (req, res, next)
   try {
     const { data, error } = await supabase
       .from('workshops')
-      .select('workshop_id, workshop_name, display_name, city, phone, is_active, is_visible_to_consumers, is_super_admin, stars, review_text, is_new, badges, sort_order, created_at, logo_url, accepts_insurance')
+      .select('workshop_id, workshop_name, display_name, city, phone, is_active, is_visible_to_consumers, is_super_admin, stars, review_text, is_new, badges, sort_order, created_at, logo_url, accepts_insurance, working_days')
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true });
 
@@ -39,7 +39,7 @@ router.get('/workshops', authenticate, requireSuperAdmin, async (req, res, next)
 router.patch('/workshops/:id', authenticate, requireSuperAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const allowed = ['display_name', 'is_visible_to_consumers', 'stars', 'review_text', 'is_new', 'badges', 'sort_order', 'is_active', 'logo_url', 'accepts_insurance'];
+    const allowed = ['display_name', 'is_visible_to_consumers', 'stars', 'review_text', 'is_new', 'badges', 'sort_order', 'is_active', 'logo_url', 'accepts_insurance', 'working_days'];
     const updates = {};
     for (const key of allowed) {
       if (key in req.body) updates[key] = req.body[key];
@@ -53,7 +53,7 @@ router.patch('/workshops/:id', authenticate, requireSuperAdmin, async (req, res,
       .from('workshops')
       .update(updates)
       .eq('workshop_id', id)
-      .select('workshop_id, workshop_name, display_name, city, is_visible_to_consumers, stars, review_text, is_new, badges, sort_order, is_active, logo_url, accepts_insurance')
+      .select('workshop_id, workshop_name, display_name, city, is_visible_to_consumers, stars, review_text, is_new, badges, sort_order, is_active, logo_url, accepts_insurance, working_days')
       .single();
 
     if (error) throw error;

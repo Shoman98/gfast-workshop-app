@@ -20,7 +20,14 @@ interface Workshop {
   sort_order: number
   logo_url: string | null
   accepts_insurance: boolean
+  working_days: number[] | null
 }
+
+// 0 = Sunday … 6 = Saturday
+const WEEKDAYS = [
+  { i: 6, ar: 'السبت' }, { i: 0, ar: 'الأحد' }, { i: 1, ar: 'الإثنين' },
+  { i: 2, ar: 'الثلاثاء' }, { i: 3, ar: 'الأربعاء' }, { i: 4, ar: 'الخميس' }, { i: 5, ar: 'الجمعة' },
+]
 
 interface Branch {
   branch_id: string
@@ -404,6 +411,31 @@ export default function AdminPage() {
                             {ws.is_visible_to_consumers ? '👁 Visible' : 'Hidden'}
                           </span>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* ── Working days (constrains the consumer booking date picker) ── */}
+                    <div style={{ marginTop: '0.75rem', borderTop: '1px solid #f3f4f6', paddingTop: '0.75rem' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#6b7280', marginBottom: 6, fontWeight: 600 }}>📅 أيام العمل <span style={{ color: '#9ca3af', fontWeight: 400 }}>(بدون تحديد = كل الأيام)</span></div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {WEEKDAYS.map(({ i, ar }) => {
+                          const openDays = ws.working_days
+                          const isOpen = openDays == null ? true : openDays.includes(i)
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => {
+                                const base = openDays == null ? [0, 1, 2, 3, 4, 5, 6] : openDays
+                                const next = isOpen ? base.filter(d => d !== i) : [...base, i].sort((a, b) => a - b)
+                                saveWorkshop(ws.workshop_id, { working_days: next })
+                                setWorkshops(prev => prev.map(w => w.workshop_id === ws.workshop_id ? { ...w, working_days: next } : w))
+                              }}
+                              style={{ padding: '0.3rem 0.7rem', borderRadius: 999, fontSize: '0.76rem', fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${isOpen ? '#16a34a' : '#e5e7eb'}`, background: isOpen ? '#f0fdf4' : 'white', color: isOpen ? '#15803d' : '#9ca3af' }}
+                            >
+                              {ar}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
 
