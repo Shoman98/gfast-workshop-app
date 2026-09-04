@@ -574,15 +574,21 @@ export default function DashboardPage() {
                         style={{ alignSelf: 'flex-start', padding: '0.45rem 1rem', background: '#0369a1', color: 'white', border: 'none', borderRadius: '0.45rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700 }}>+ تقدير إضافي</button>
                     )}
 
-                    {/* Report link */}
-                    {b.report_url && (
+                    {/* Report link — workshop opens its own report; report_url is the public link to share */}
+                    {(b.estimate_id || b.report_url) && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '0.82rem', color: '#6b7280', fontWeight: 600 }}>رابط التقرير:</span>
-                        <a href={b.report_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem', color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}>📄 عرض التقرير</a>
-                        <button
-                          onClick={() => { navigator.clipboard.writeText(b.report_url); }}
-                          style={{ padding: '0.2rem 0.6rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '0.35rem', cursor: 'pointer', fontSize: '0.75rem', color: '#1d4ed8', fontWeight: 600 }}
-                        >نسخ الرابط</button>
+                        <span style={{ fontSize: '0.82rem', color: '#6b7280', fontWeight: 600 }}>التقرير:</span>
+                        {b.estimate_id ? (
+                          <button onClick={() => navigate(`/report/${b.estimate_id}`)} style={{ background: 'none', border: 'none', padding: 0, fontSize: '0.82rem', color: '#2563eb', textDecoration: 'none', fontWeight: 600, cursor: 'pointer' }}>📄 عرض التقرير</button>
+                        ) : (
+                          <a href={b.report_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem', color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}>📄 عرض التقرير</a>
+                        )}
+                        {b.report_url && (
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(b.report_url); }}
+                            style={{ padding: '0.2rem 0.6rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '0.35rem', cursor: 'pointer', fontSize: '0.75rem', color: '#1d4ed8', fontWeight: 600 }}
+                          >نسخ رابط العميل</button>
+                        )}
                       </div>
                     )}
 

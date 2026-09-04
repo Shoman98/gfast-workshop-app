@@ -540,7 +540,7 @@ router.post('/', authenticate, async (req, res, next) => {
     if (status === 'confirmed' && booking_id) {
       try {
         const consumerBase = (process.env.CONSUMER_APP_URL || 'https://gfast.it.com').replace(/\/$/, '');
-        const reportUrl = `${consumerBase}/report/${estimate.estimate_id}`;
+        const reportUrl = `${consumerBase}/assessment/${estimate.estimate_id}`;
         const nextStatus = parent_estimate_id ? 'supplementary' : 'quoting';
         await supabase.from('consumer_bookings')
           .update({ report_url: reportUrl })

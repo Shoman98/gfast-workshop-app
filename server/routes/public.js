@@ -405,6 +405,55 @@ router.get('/booking/:id/timeline', async (req, res, next) => {
 });
 
 /**
+ * GET /api/public/estimate-report/:id
+ * Public view of a workshop's confirmed assessment (estimate) — powers the
+ * "quoting"/"supplementary" report link on the customer profile. No auth;
+ * only confirmed estimates are exposed.
+ */
+router.get('/estimate-report/:id', async (req, res, next) => {
+  try {
+    const { data: est, error } = await supabase
+      .from('estimates')
+      .select('estimate_id, workshop_id, vehicle_year, vehicle_make, vehicle_model, status, total_cost_min, total_cost_max, created_at, parent_estimate_id')
+      .eq('estimate_id', req.params.id)
+      .single();
+    if (error || !est || est.status !== 'confirmed') {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    const { data: parts } = await supabase
+      .from('estimate_parts')
+      .select('part_name_ar, part_name_en, damage_type, severity_label, price')
+      .eq('estimate_id', req.params.id);
+
+    const { data: ws } = await supabase
+      .from('workshops').select('workshop_name, display_name, city, phone')
+      .eq('workshop_id', est.workshop_id).single();
+
+    const partsList = parts || [];
+    const total = partsList.reduce((s, p) => s + (Number(p.price) || 0), 0);
+
+    res.json({
+      success: true,
+      report: {
+        estimate_id: est.estimate_id,
+        vehicle_year: est.vehicle_year,
+        vehicle_make: est.vehicle_make,
+        vehicle_model: est.vehicle_model,
+        is_supplementary: !!est.parent_estimate_id,
+        created_at: est.created_at,
+        workshop_name: ws?.display_name || ws?.workshop_name || null,
+        workshop_city: ws?.city || null,
+        parts: partsList,
+        total_cost_min: est.total_cost_min,
+        total_cost_max: est.total_cost_max,
+        total,
+      },
+    });
+  } catch (err) { next(err); }
+});
+
+/**
  * POST /api/public/meta-event
  * Forwards browser pixel events to Meta Conversions API for deduplication.
  * Keeps the CAPI token server-side.
