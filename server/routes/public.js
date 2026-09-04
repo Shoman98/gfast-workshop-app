@@ -281,6 +281,121 @@ router.post('/capture-lead', async (req, res) => {
 });
 
 /**
+ * GET /api/public/profile?mobile=
+ * Customer profile: vehicles (grouped by make/model/year) with their bookings.
+ * Vehicles come from real bookings + the customer_vehicles registry (added,
+ * not-yet-booked vehicles).
+ */
+router.get('/profile', async (req, res, next) => {
+  try {
+    const mobile = String(req.query.mobile || '').trim();
+    if (!mobile) return res.status(400).json({ error: 'mobile required' });
+
+    const { data: bookings } = await supabase
+      .from('consumer_bookings')
+      .select('id, workshop_id, vehicle_make, vehicle_model, vehicle_year, status, scheduled_date, report_url, estimate_id, cancellation_reason, created_at')
+      .eq('customer_mobile', mobile)
+      .neq('status', 'superseded')
+      .order('created_at', { ascending: false });
+
+    // Resolve workshop display names (no FK for a PostgREST embed, so map manually).
+    const wsIds = [...new Set((bookings || []).map(b => b.workshop_id).filter(Boolean))];
+    const wsNames = {};
+    if (wsIds.length) {
+      const { data: ws } = await supabase.from('workshops').select('workshop_id, workshop_name, display_name').in('workshop_id', wsIds);
+      for (const w of ws || []) wsNames[w.workshop_id] = w.display_name || w.workshop_name;
+    }
+
+    const { data: registered } = await supabase
+      .from('customer_vehicles')
+      .select('make, model, year')
+      .eq('mobile', mobile);
+
+    const keyOf = (mk, md, yr) => [mk || '', md || '', yr || ''].join('|').toLowerCase();
+    const vehicles = {};
+    const ensure = (make, model, year) => {
+      const k = keyOf(make, model, year);
+      if (!vehicles[k]) vehicles[k] = { make, model, year, bookings: [] };
+      return vehicles[k];
+    };
+
+    for (const b of bookings || []) {
+      ensure(b.vehicle_make, b.vehicle_model, b.vehicle_year).bookings.push({
+        id: b.id, status: b.status, scheduled_date: b.scheduled_date, report_url: b.report_url,
+        estimate_id: b.estimate_id, cancellation_reason: b.cancellation_reason, created_at: b.created_at,
+        workshop_name: wsNames[b.workshop_id] || null,
+      });
+    }
+    for (const v of registered || []) {
+      if (v.make || v.model || v.year) ensure(v.make, v.model, v.year);
+    }
+
+    res.json({ success: true, mobile, vehicles: Object.values(vehicles) });
+  } catch (err) { next(err); }
+});
+
+/**
+ * PATCH /api/public/profile/mobile { old_mobile, new_mobile }
+ * Change the customer's mobile across all their records.
+ */
+router.patch('/profile/mobile', async (req, res, next) => {
+  try {
+    const old_mobile = String(req.body.old_mobile || '').trim();
+    const new_mobile = String(req.body.new_mobile || '').trim();
+    if (!old_mobile || !new_mobile) return res.status(400).json({ error: 'old_mobile and new_mobile required' });
+    if (old_mobile === new_mobile) return res.json({ success: true });
+
+    await supabase.from('consumer_bookings').update({ customer_mobile: new_mobile }).eq('customer_mobile', old_mobile);
+    await supabase.from('estimates').update({ customer_mobile: new_mobile }).eq('customer_mobile', old_mobile);
+    await supabase.from('customer_vehicles').update({ mobile: new_mobile }).eq('mobile', old_mobile);
+    // captured_leads.mobile is unique — ignore conflict if the new number already exists there.
+    const { error: leadErr } = await supabase.from('captured_leads').update({ mobile: new_mobile }).eq('mobile', old_mobile);
+    if (leadErr) console.warn('captured_leads mobile update skipped:', leadErr.message);
+
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+/**
+ * POST /api/public/profile/vehicle { mobile, make, model, year }
+ * Register another vehicle for the customer (no booking yet).
+ */
+router.post('/profile/vehicle', async (req, res, next) => {
+  try {
+    const { mobile, make, model, year } = req.body;
+    if (!mobile || !make || !model) return res.status(400).json({ error: 'mobile, make and model required' });
+    const { error } = await supabase
+      .from('customer_vehicles')
+      .upsert({ mobile, make, model, year: year || null }, { onConflict: 'mobile,make,model,year' });
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+/**
+ * GET /api/public/booking/:id/timeline
+ * Dated status history for one booking — powers the progress bar.
+ */
+router.get('/booking/:id/timeline', async (req, res, next) => {
+  try {
+    const { data: booking } = await supabase
+      .from('consumer_bookings')
+      .select('id, status, scheduled_date, report_url, estimate_id, cancellation_reason')
+      .eq('id', req.params.id)
+      .single();
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+    const { data: history } = await supabase
+      .from('booking_status_history')
+      .select('status, cancellation_reason, estimate_id, created_at')
+      .eq('booking_id', req.params.id)
+      .order('created_at', { ascending: true });
+
+    res.json({ success: true, booking, history: history || [] });
+  } catch (err) { next(err); }
+});
+
+/**
  * POST /api/public/meta-event
  * Forwards browser pixel events to Meta Conversions API for deduplication.
  * Keeps the CAPI token server-side.
