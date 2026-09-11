@@ -92,25 +92,45 @@ router.get('/workshops/:id/reviews', async (req, res, next) => {
     const key = process.env.GOOGLE_PLACES_API_KEY;
     if (!key) return res.status(500).json({ error: 'GOOGLE_PLACES_API_KEY not configured' });
 
-    // newest 5 reviews, kept in the reviewer's original language (no auto-translation)
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=rating,user_ratings_total,reviews&reviews_sort=newest&reviews_no_translations=true&key=${key}`;
-    const gRes = await fetch(url);
-    const gJson = await gRes.json();
-    if (gJson.status !== 'OK') {
-      return res.status(502).json({ error: 'Google Places error', status: gJson.status });
-    }
+    // Google's API caps at 5 reviews per sort and can't filter by rating, so we
+    // widen the pool by fetching BOTH sorts, dedupe, then keep only 3★+ and take
+    // the 5 most recent. Count varies per workshop. Original language preserved.
+    const base = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=rating,user_ratings_total,reviews&reviews_no_translations=true&key=${key}`;
+    const fetchSort = async (sort) => {
+      const r = await fetch(`${base}&reviews_sort=${sort}`);
+      const j = await r.json();
+      if (j.status !== 'OK') throw new Error(`Google Places error: ${j.status}`);
+      return j.result || {};
+    };
 
-    const data = {
-      rating: gJson.result?.rating ?? null,
-      total: gJson.result?.user_ratings_total ?? 0,
-      reviews: (gJson.result?.reviews || []).slice(0, 5).map(r => ({
+    const [newest, relevant] = await Promise.all([fetchSort('newest'), fetchSort('most_relevant')]);
+
+    // Merge + dedupe by author + timestamp
+    const seen = new Set();
+    const pool = [...(newest.reviews || []), ...(relevant.reviews || [])].filter(r => {
+      const k = `${r.author_name}|${r.time}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+
+    const reviews = pool
+      .filter(r => (r.rating ?? 0) >= 3)          // 3★ and above only
+      .sort((a, b) => (b.time || 0) - (a.time || 0)) // newest first
+      .slice(0, 5)
+      .map(r => ({
         author_name: r.author_name,
         profile_photo_url: r.profile_photo_url || null,
         rating: r.rating,
         relative_time: r.relative_time_description,
         text: r.text || '',
         author_url: r.author_url || null,
-      })),
+      }));
+
+    const data = {
+      rating: newest.rating ?? relevant.rating ?? null,
+      total: newest.user_ratings_total ?? relevant.user_ratings_total ?? 0,
+      reviews,
     };
 
     REVIEWS_CACHE.set(id, { data, expires: Date.now() + REVIEWS_TTL_MS });
