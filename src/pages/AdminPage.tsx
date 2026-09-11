@@ -54,9 +54,9 @@ interface Booking {
   created_at: string
 }
 
-const BADGE_OPTIONS = ['Best Quality', 'Best Value', 'Fastest', 'Certified Center']
-const BADGE_ICONS: Record<string, string> = { 'Best Quality': '⭐', 'Best Value': '💰', 'Fastest': '⚡', 'Certified Center': '🏅' }
-const BADGE_LABELS_AR: Record<string, string> = { 'Certified Center': 'مركز معتمد' }
+const BADGE_OPTIONS = ['Best Quality', 'Best Value', 'Fastest', 'Certified Center', 'PDR', 'Installments', 'EV']
+const BADGE_ICONS: Record<string, string> = { 'Best Quality': '⭐', 'Best Value': '💰', 'Fastest': '⚡', 'Certified Center': '🏅', 'PDR': '🛠️', 'Installments': '💳', 'EV': '🔋' }
+const BADGE_LABELS_AR: Record<string, string> = { 'Certified Center': 'مركز معتمد', 'PDR': 'اصلاح عالبارد PDR', 'Installments': 'دفع تقسيط', 'EV': 'سيارات كهربا' }
 
 const th: React.CSSProperties = { padding: '0.65rem 0.75rem', textAlign: 'right', fontWeight: 700, color: '#374151', fontSize: '0.82rem', whiteSpace: 'nowrap', borderBottom: '2px solid #e5e7eb', background: '#f9fafb' }
 const td: React.CSSProperties = { padding: '0.65rem 0.75rem', fontSize: '0.82rem', color: '#111827', borderBottom: '1px solid #f3f4f6', verticalAlign: 'middle' }
