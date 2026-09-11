@@ -25,7 +25,7 @@ router.get('/workshops', async (req, res, next) => {
   try {
     const { data: workshops, error } = await supabase
       .from('workshops')
-      .select('workshop_id, workshop_name, display_name, city, phone, stars, review_text, is_new, badges, logo_url, accepts_insurance, working_days')
+      .select('workshop_id, workshop_name, display_name, city, phone, stars, review_text, is_new, badges, logo_url, accepts_insurance, working_days, google_place_id')
       .eq('is_visible_to_consumers', true)
       .eq('is_active', true)
       .eq('is_super_admin', false)
@@ -57,6 +57,63 @@ router.get('/workshops', async (req, res, next) => {
     }));
 
     res.json({ success: true, workshops: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/public/workshops/:id/reviews
+ * Returns up to 5 Google reviews for a workshop (by its stored google_place_id),
+ * fetched via the Google Places Details API and cached in-memory to limit cost.
+ */
+const REVIEWS_CACHE = new Map(); // workshop_id -> { data, expires }
+const REVIEWS_TTL_MS = 12 * 60 * 60 * 1000; // 12h
+
+router.get('/workshops/:id/reviews', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const cached = REVIEWS_CACHE.get(id);
+    if (cached && cached.expires > Date.now()) {
+      return res.json({ success: true, cached: true, ...cached.data });
+    }
+
+    const { data: ws, error } = await supabase
+      .from('workshops')
+      .select('google_place_id')
+      .eq('workshop_id', id)
+      .single();
+    if (error) throw error;
+
+    const placeId = ws?.google_place_id;
+    if (!placeId) return res.json({ success: true, reviews: [], rating: null, total: 0 });
+
+    const key = process.env.GOOGLE_PLACES_API_KEY;
+    if (!key) return res.status(500).json({ error: 'GOOGLE_PLACES_API_KEY not configured' });
+
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=rating,user_ratings_total,reviews&reviews_sort=most_relevant&key=${key}`;
+    const gRes = await fetch(url);
+    const gJson = await gRes.json();
+    if (gJson.status !== 'OK') {
+      return res.status(502).json({ error: 'Google Places error', status: gJson.status });
+    }
+
+    const data = {
+      rating: gJson.result?.rating ?? null,
+      total: gJson.result?.user_ratings_total ?? 0,
+      reviews: (gJson.result?.reviews || []).slice(0, 5).map(r => ({
+        author_name: r.author_name,
+        profile_photo_url: r.profile_photo_url || null,
+        rating: r.rating,
+        relative_time: r.relative_time_description,
+        text: r.text || '',
+        author_url: r.author_url || null,
+      })),
+    };
+
+    REVIEWS_CACHE.set(id, { data, expires: Date.now() + REVIEWS_TTL_MS });
+    res.json({ success: true, cached: false, ...data });
   } catch (err) {
     next(err);
   }

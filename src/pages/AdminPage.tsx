@@ -21,6 +21,7 @@ interface Workshop {
   logo_url: string | null
   accepts_insurance: boolean
   working_days: number[] | null
+  google_place_id: string | null
 }
 
 // 0 = Sunday … 6 = Saturday
@@ -342,6 +343,13 @@ export default function AdminPage() {
                           defaultValue={ws.review_text || ''}
                           placeholder="Short customer review..."
                           onBlur={e => { if (e.target.value !== (ws.review_text || '')) saveWorkshop(ws.workshop_id, { review_text: e.target.value || null }) }}
+                          style={{ width: '100%', padding: '0.35rem 0.5rem', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', boxSizing: 'border-box' }}
+                        />
+                        <div style={{ fontSize: '0.72rem', color: '#6b7280', margin: '8px 0 2px' }}>Google Place ID</div>
+                        <input
+                          defaultValue={ws.google_place_id || ''}
+                          placeholder="ChIJ... (from Google Place ID Finder)"
+                          onBlur={e => { if (e.target.value !== (ws.google_place_id || '')) saveWorkshop(ws.workshop_id, { google_place_id: e.target.value.trim() || null }) }}
                           style={{ width: '100%', padding: '0.35rem 0.5rem', border: '1px solid #d1d5db', borderRadius: 6, fontSize: '0.82rem', boxSizing: 'border-box' }}
                         />
                       </div>
