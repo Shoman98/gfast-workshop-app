@@ -92,7 +92,8 @@ router.get('/workshops/:id/reviews', async (req, res, next) => {
     const key = process.env.GOOGLE_PLACES_API_KEY;
     if (!key) return res.status(500).json({ error: 'GOOGLE_PLACES_API_KEY not configured' });
 
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=rating,user_ratings_total,reviews&reviews_sort=most_relevant&key=${key}`;
+    // newest 5 reviews, kept in the reviewer's original language (no auto-translation)
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=rating,user_ratings_total,reviews&reviews_sort=newest&reviews_no_translations=true&key=${key}`;
     const gRes = await fetch(url);
     const gJson = await gRes.json();
     if (gJson.status !== 'OK') {
