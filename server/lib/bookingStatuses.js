@@ -19,8 +19,12 @@ export const PROGRESS_STATUSES = [
 
 // Side states outside the linear bar
 export const SIDE_STATUSES = [
-  { key: 'supplementary', ar: 'تقدير إضافي', en: 'Supplementary', hasReport: true },
-  { key: 'cancelled',     ar: 'ملغي',        en: 'Cancelled',     needsReason: true },
+  { key: 'supplementary',            ar: 'تقدير إضافي',                      en: 'Supplementary',                    hasReport: true },
+  { key: 'cancelled',                ar: 'ملغي',                             en: 'Cancelled',                        needsReason: true },
+  { key: 'contacted_no_answer',      ar: 'تم التواصل و لم يتم الرد',         en: 'Contacted – no answer' },
+  { key: 'contacted_not_interested_price', ar: 'تم التواصل و غير مهتم بسبب الاسعار', en: 'Contacted – not interested (price)' },
+  { key: 'contacted_not_interested_service', ar: 'تم التواصل و غير مهتم بالخدمه', en: 'Contacted – not interested (service)' },
+  { key: 'contacted_later_appointment', ar: 'تم التواصل و الاتفاق علي معاد اخر', en: 'Contacted – later appointment' },
 ];
 
 export const ALL_STATUSES = [...PROGRESS_STATUSES, ...SIDE_STATUSES];

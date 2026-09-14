@@ -19,8 +19,12 @@ export const PROGRESS_STATUSES: BookingStatusMeta[] = [
 
 // Side states outside the linear bar
 export const SIDE_STATUSES: BookingStatusMeta[] = [
-  { key: 'supplementary', ar: 'تقدير إضافي', en: 'Supplementary', hasReport: true, color: '#0369a1', bg: '#f0f9ff' },
-  { key: 'cancelled',     ar: 'ملغي',        en: 'Cancelled',     needsReason: true, color: '#dc2626', bg: '#fef2f2' },
+  { key: 'supplementary',                    ar: 'تقدير إضافي',                           en: 'Supplementary',                     hasReport: true,  color: '#0369a1', bg: '#f0f9ff' },
+  { key: 'cancelled',                        ar: 'ملغي',                                  en: 'Cancelled',                         needsReason: true, color: '#dc2626', bg: '#fef2f2' },
+  { key: 'contacted_no_answer',              ar: 'تم التواصل و لم يتم الرد',              en: 'Contacted – no answer',              color: '#92400e', bg: '#fffbeb' },
+  { key: 'contacted_not_interested_price',   ar: 'تم التواصل و غير مهتم بسبب الاسعار',   en: 'Contacted – not interested (price)', color: '#b91c1c', bg: '#fef2f2' },
+  { key: 'contacted_not_interested_service', ar: 'تم التواصل و غير مهتم بالخدمه',        en: 'Contacted – not interested (service)', color: '#7e22ce', bg: '#faf5ff' },
+  { key: 'contacted_later_appointment',      ar: 'تم التواصل و الاتفاق علي معاد اخر',    en: 'Contacted – later appointment',      color: '#0369a1', bg: '#f0f9ff' },
 ]
 
 export const ALL_STATUSES = [...PROGRESS_STATUSES, ...SIDE_STATUSES]
