@@ -550,7 +550,15 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Status control row */}
-                    {(() => { const m = statusMeta(b.status); return (
+                    {(() => {
+                      const m = statusMeta(b.status);
+                      // Phase 1: booking just arrived (status = booked / legacy aliases).
+                      // Only تم الحجز + the 4 contact-outcome statuses are enabled;
+                      // everything else in the progress bar is dimmed.
+                      // Phase 2: workshop already progressed past booked → full dropdown.
+                      const CONTACT_KEYS = ['contacted_no_answer','contacted_not_interested_price','contacted_not_interested_service','contacted_later_appointment'];
+                      const isPhase1 = m.key === 'booked' || CONTACT_KEYS.includes(m.key);
+                      return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                       <span style={{ padding: '0.2rem 0.7rem', borderRadius: 999, fontSize: '0.78rem', fontWeight: 700, background: m.bg, color: m.color }}>{m.ar}</span>
                       <select
@@ -558,9 +566,24 @@ export default function DashboardPage() {
                         onChange={e => changeBookingStatus(b.id, e.target.value)}
                         style={{ padding: '0.35rem 0.6rem', border: '1px solid #d1d5db', borderRadius: '0.4rem', fontSize: '0.8rem', color: '#374151', background: 'white', cursor: 'pointer', fontWeight: 600 }}
                       >
-                        {PROGRESS_STATUSES.map(s => <option key={s.key} value={s.key}>{s.ar}</option>)}
+                        {PROGRESS_STATUSES.map(s => {
+                          const dimmed = isPhase1 && s.key !== 'booked';
+                          return (
+                            <option key={s.key} value={s.key} disabled={dimmed} style={{ color: dimmed ? '#d1d5db' : undefined }}>
+                              {dimmed ? `— ${s.ar}` : s.ar}
+                            </option>
+                          );
+                        })}
                         <option disabled>──────</option>
-                        {SIDE_STATUSES.map(s => <option key={s.key} value={s.key}>{s.ar}</option>)}
+                        {SIDE_STATUSES.map(s => {
+                          const isContact = CONTACT_KEYS.includes(s.key);
+                          const dimmed = isPhase1 && !isContact;
+                          return (
+                            <option key={s.key} value={s.key} disabled={dimmed} style={{ color: dimmed ? '#d1d5db' : undefined }}>
+                              {dimmed ? `— ${s.ar}` : s.ar}
+                            </option>
+                          );
+                        })}
                       </select>
                       {b.scheduled_date && (
                         <span style={{ fontSize: '0.78rem', color: '#6b7280' }}>📅 {formatDate(b.scheduled_date)}</span>
@@ -569,7 +592,8 @@ export default function DashboardPage() {
                         <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>سبب: {b.cancellation_reason}</span>
                       )}
                     </div>
-                    ); })()}
+                    );
+                    })()}
 
                     {/* Cancel reason picker */}
                     {cancelForId === b.id && (
