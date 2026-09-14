@@ -286,6 +286,7 @@ export default function DashboardPage() {
   const [mainTab, setMainTab] = useState<'estimates' | 'bookings'>('estimates')
   const [bookings, setBookings] = useState<any[]>([])
   const [bookingsLoading, setBookingsLoading] = useState(false)
+  const [bookingsError, setBookingsError] = useState<string | null>(null)
   const [bookingPhotoModal, setBookingPhotoModal] = useState<string[] | null>(null)
   const [bookingBranchFilter, setBookingBranchFilter] = useState<string>('all')
   const [workshopBranches, setWorkshopBranches] = useState<{ branch_id: string; branch_name: string }[]>([])
@@ -372,23 +373,31 @@ export default function DashboardPage() {
     if (!token) return
     setBookingsLoading(true)
     try {
-      // Fetch branches once to know if filter should show
       if (workshopBranches.length === 0) {
-        const brRes = await fetch(apiUrl('/api/estimates/my-branches'), {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        const brData = await brRes.json()
-        if (brData.success) setWorkshopBranches(brData.branches || [])
+        try {
+          const brRes = await fetch(apiUrl('/api/estimates/my-branches'), {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          const brData = await brRes.json()
+          if (brData.success) setWorkshopBranches(brData.branches || [])
+        } catch { /* branches optional */ }
       }
 
       const qs = branchId && branchId !== 'all' ? `?branch_id=${branchId}` : ''
       const res = await fetch(apiUrl(`/api/estimates/consumer-bookings${qs}`), {
         headers: { Authorization: `Bearer ${token}` },
       })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        setBookingsError(err.error || `خطأ ${res.status}`)
+        return
+      }
       const data = await res.json()
-      if (data.success) setBookings(data.bookings || [])
-    } catch { /* silent */ }
-    finally { setBookingsLoading(false) }
+      if (data.success) { setBookings(data.bookings || []); setBookingsError(null) }
+      else setBookingsError(data.error || 'فشل تحميل الحجوزات')
+    } catch (e: any) {
+      setBookingsError(e?.message || 'فشل الاتصال بالخادم')
+    } finally { setBookingsLoading(false) }
   }
 
   // Booking status change (workshop-scoped). Cancelling requires a reason.
@@ -405,7 +414,7 @@ export default function DashboardPage() {
       })
       const data = await res.json()
       if (data.success) {
-        const newEntry = { status, changed_at: new Date().toISOString(), changed_by: 'workshop' };
+        const newEntry = { status, created_at: new Date().toISOString(), changed_by: 'workshop' };
         setBookings(prev => prev.map(b => b.id === bookingId ? {
           ...b,
           status: data.booking.status,
@@ -528,6 +537,12 @@ export default function DashboardPage() {
             </div>
             {bookingsLoading ? (
               <div style={{ textAlign: 'center', padding: '2.5rem', color: '#6b7280' }}>⏳ جارٍ التحميل...</div>
+            ) : bookingsError ? (
+              <div style={{ textAlign: 'center', padding: '2.5rem', color: '#dc2626' }}>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>⚠️</div>
+                <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>فشل تحميل الحجوزات</div>
+                <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>{bookingsError}</div>
+              </div>
             ) : bookings.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '2.5rem', color: '#6b7280' }}>
                 <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📭</div>
@@ -624,7 +639,7 @@ export default function DashboardPage() {
                               <span style={{ width: 6, height: 6, borderRadius: '50%', background: hm.color, flexShrink: 0 }} />
                               <span style={{ fontWeight: 700, color: hm.color }}>{hm.ar}</span>
                               <span style={{ color: '#9ca3af' }}>—</span>
-                              <span>{new Date(h.changed_at).toLocaleString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                              <span>{new Date(h.created_at).toLocaleString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                           );
                         })}

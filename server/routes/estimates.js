@@ -37,22 +37,53 @@ router.get('/consumer-bookings', authenticate, async (req, res, next) => {
 
     let q = supabase
       .from('consumer_bookings')
-      .select('*, workshop_branches(branch_name, city), booking_status_history(status, changed_at, changed_by)')
+      .select('*')
       .eq('workshop_id', req.workshop_id)
       .neq('status', 'superseded')
       .order('created_at', { ascending: false });
 
-    // Only filter by branch if explicitly requested via query param (dashboard dropdown)
-    // Never auto-filter by JWT branch_id — all branches see all workshop bookings
     if (branch_id) q = q.eq('branch_id', branch_id);
 
     const { data, error } = await q;
     if (error) throw error;
-    // Sort each booking's history oldest→newest for display
-    const bookings = (data || []).map(b => ({
-      ...b,
-      booking_status_history: (b.booking_status_history || []).sort((a, b) => new Date(a.changed_at) - new Date(b.changed_at)),
-    }));
+
+    const bookings = data || [];
+
+    // Enrich with status history (best-effort — table may not exist yet)
+    if (bookings.length > 0) {
+      const ids = bookings.map(b => b.id);
+      const { data: histRows } = await supabase
+        .from('booking_status_history')
+        .select('booking_id, status, created_at, changed_by')
+        .in('booking_id', ids)
+        .order('created_at', { ascending: true });
+
+      if (histRows) {
+        const byId = {};
+        for (const h of histRows) {
+          if (!byId[h.booking_id]) byId[h.booking_id] = [];
+          byId[h.booking_id].push(h);
+        }
+        for (const b of bookings) b.booking_status_history = byId[b.id] || [];
+      }
+
+      // Enrich with branch names (best-effort)
+      const branchIds = [...new Set(bookings.filter(b => b.branch_id).map(b => b.branch_id))];
+      if (branchIds.length > 0) {
+        const { data: brRows } = await supabase
+          .from('workshop_branches')
+          .select('branch_id, branch_name, city')
+          .in('branch_id', branchIds);
+
+        if (brRows) {
+          const brMap = Object.fromEntries(brRows.map(br => [br.branch_id, br]));
+          for (const b of bookings) {
+            if (b.branch_id) b.workshop_branches = brMap[b.branch_id] || null;
+          }
+        }
+      }
+    }
+
     res.json({ success: true, bookings });
   } catch (err) { next(err); }
 });
