@@ -37,7 +37,7 @@ router.get('/consumer-bookings', authenticate, async (req, res, next) => {
 
     let q = supabase
       .from('consumer_bookings')
-      .select('*, workshop_branches(branch_name, city)')
+      .select('*, workshop_branches(branch_name, city), booking_status_history(status, changed_at, changed_by)')
       .eq('workshop_id', req.workshop_id)
       .neq('status', 'superseded')
       .order('created_at', { ascending: false });
@@ -48,7 +48,12 @@ router.get('/consumer-bookings', authenticate, async (req, res, next) => {
 
     const { data, error } = await q;
     if (error) throw error;
-    res.json({ success: true, bookings: data || [] });
+    // Sort each booking's history oldest→newest for display
+    const bookings = (data || []).map(b => ({
+      ...b,
+      booking_status_history: (b.booking_status_history || []).sort((a, b) => new Date(a.changed_at) - new Date(b.changed_at)),
+    }));
+    res.json({ success: true, bookings });
   } catch (err) { next(err); }
 });
 
