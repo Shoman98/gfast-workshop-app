@@ -6,6 +6,18 @@ import { statusMeta, PROGRESS_STATUSES, SIDE_STATUSES, CANCELLATION_REASONS } fr
 const CONTACT_KEYS = ['contacted_no_answer', 'contacted_not_interested_price', 'contacted_not_interested_service', 'contacted_later_appointment']
 const PHASE3_ENABLED = ['quoting', 'dent', 'paint', 'finish', 'ready_to_deliver', 'visited_no_deal']
 
+// Normalise a stored mobile into a wa.me-ready number (Egyptian default).
+// Handles: +20…, 0020…, 010…/011…/012…/015…, and already-prefixed 20… values.
+function toWaNumber(raw?: string | null): string | null {
+  if (!raw) return null
+  let d = String(raw).replace(/\D/g, '')
+  if (!d) return null
+  if (d.startsWith('00')) d = d.slice(2)        // 0020… → 20…
+  if (d.startsWith('20')) return d              // already country-coded
+  if (d.startsWith('0')) return '20' + d.slice(1) // national trunk 0 → 20…
+  return '20' + d                               // bare 1XXXXXXXXX
+}
+
 function StatusDropdown({ bookingId, status, onSelect }: { bookingId: string; status: string; onSelect: (id: string, key: string) => void }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -749,11 +761,16 @@ export default function DashboardPage() {
                       </div>
                     )}
 
-                    {/* Mobile CTA */}
-                    <div>
+                    {/* Mobile CTAs */}
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <a href={`tel:${b.customer_mobile}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.9rem', background: '#16a34a', color: 'white', borderRadius: '0.4rem', textDecoration: 'none', fontSize: '0.82rem', fontWeight: 700 }}>
                         📞 اتصل بالعميل
                       </a>
+                      {toWaNumber(b.customer_mobile) && (
+                        <a href={`https://wa.me/${toWaNumber(b.customer_mobile)}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.9rem', background: '#25D366', color: 'white', borderRadius: '0.4rem', textDecoration: 'none', fontSize: '0.82rem', fontWeight: 700 }}>
+                          💬 ابعت رساله للعميل
+                        </a>
+                      )}
                     </div>
                   </div>
                 ))}
