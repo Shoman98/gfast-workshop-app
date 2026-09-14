@@ -767,7 +767,7 @@ export default function DashboardPage() {
                         📞 اتصل بالعميل
                       </a>
                       {toWaNumber(b.customer_mobile) && (
-                        <a href={`https://wa.me/${toWaNumber(b.customer_mobile)}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.9rem', background: '#25D366', color: 'white', borderRadius: '0.4rem', textDecoration: 'none', fontSize: '0.82rem', fontWeight: 700 }}>
+                        <a href={`https://wa.me/${toWaNumber(b.customer_mobile)}?text=${encodeURIComponent(`اهلا معاك مركز "${workshop?.branch?.branch_name || workshop?.display_name || workshop?.workshop_name || ''}" .. حضرتك حجزت من خلال موقع جي فاست .. تحب اساعدك ازاي`)}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.9rem', background: '#25D366', color: 'white', borderRadius: '0.4rem', textDecoration: 'none', fontSize: '0.82rem', fontWeight: 700 }}>
                           💬 ابعت رساله للعميل
                         </a>
                       )}
