@@ -202,7 +202,7 @@ router.patch('/booking/:id', async (req, res, next) => {
 
     const { data, error } = await supabase
       .from('consumer_bookings')
-      .update({ workshop_id, branch_id: branch_id || null, status: 'booked', ...(scheduled_date !== undefined ? { scheduled_date: scheduled_date || null } : {}) })
+      .update({ workshop_id, branch_id: branch_id || null, status: 'new_booking', ...(scheduled_date !== undefined ? { scheduled_date: scheduled_date || null } : {}) })
       .eq('id', req.params.id)
       .select()
       .single();
@@ -210,7 +210,7 @@ router.patch('/booking/:id', async (req, res, next) => {
     if (error) throw error;
 
     // Seed the status timeline now that the pre-booking is a real workshop booking.
-    try { await recordBookingStatus(req.params.id, 'booked', { changed_by: 'customer' }); }
+    try { await recordBookingStatus(req.params.id, 'new_booking', { changed_by: 'customer' }); }
     catch (histErr) { console.warn('⚠️  booking history seed failed:', histErr.message); }
 
     // Telegram notification
@@ -273,7 +273,7 @@ router.post('/booking', async (req, res, next) => {
         vehicle_model: vehicle_model || null,
         vehicle_year: vehicle_year || null,
         scheduled_date: scheduled_date || null,
-        status: 'booked',
+        status: 'new_booking',
       })
       .select()
       .single();
@@ -281,7 +281,7 @@ router.post('/booking', async (req, res, next) => {
     if (error) throw error;
 
     // Seed the status timeline (powers the customer progress bar).
-    try { await recordBookingStatus(data.id, 'booked', { changed_by: 'customer' }); }
+    try { await recordBookingStatus(data.id, 'new_booking', { changed_by: 'customer' }); }
     catch (histErr) { console.warn('⚠️  booking history seed failed:', histErr.message); }
 
     // Fetch workshop + branch names for the Telegram notification

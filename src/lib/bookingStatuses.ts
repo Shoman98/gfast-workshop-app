@@ -19,6 +19,7 @@ export const PROGRESS_STATUSES: BookingStatusMeta[] = [
 
 // Side states outside the linear bar
 export const SIDE_STATUSES: BookingStatusMeta[] = [
+  { key: 'new_booking',                      ar: 'حجز جديد',                              en: 'New Booking',                        color: '#059669', bg: '#ecfdf5' },
   { key: 'supplementary',                    ar: 'تقدير إضافي',                           en: 'Supplementary',                     hasReport: true,  color: '#0369a1', bg: '#f0f9ff' },
   { key: 'contacted_no_answer',              ar: 'تم التواصل و لم يتم الرد',              en: 'Contacted – no answer',              color: '#92400e', bg: '#fffbeb' },
   { key: 'contacted_not_interested_price',   ar: 'تم التواصل و غير مهتم بسبب الاسعار',   en: 'Contacted – not interested (price)', color: '#b91c1c', bg: '#fef2f2' },
@@ -30,7 +31,8 @@ export const ALL_STATUSES = [...PROGRESS_STATUSES, ...SIDE_STATUSES]
 
 // Map legacy rows onto the new lifecycle for display.
 export const LEGACY_ALIAS: Record<string, string> = {
-  pending: 'booked', contacted: 'booked', confirmed: 'booked', completed: 'ready_to_deliver',
+  pending: 'new_booking', contacted: 'new_booking', confirmed: 'booked', completed: 'ready_to_deliver',
+  booked: 'booked', // keep old booked rows as booked (not new_booking)
 }
 
 export function statusMeta(status: string): BookingStatusMeta {

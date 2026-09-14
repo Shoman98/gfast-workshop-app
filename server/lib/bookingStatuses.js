@@ -19,6 +19,7 @@ export const PROGRESS_STATUSES = [
 
 // Side states outside the linear bar
 export const SIDE_STATUSES = [
+  { key: 'new_booking',              ar: 'حجز جديد',                         en: 'New Booking' },
   { key: 'supplementary',            ar: 'تقدير إضافي',                      en: 'Supplementary',                    hasReport: true },
   { key: 'contacted_no_answer',      ar: 'تم التواصل و لم يتم الرد',         en: 'Contacted – no answer' },
   { key: 'contacted_not_interested_price', ar: 'تم التواصل و غير مهتم بسبب الاسعار', en: 'Contacted – not interested (price)' },

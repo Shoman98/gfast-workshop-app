@@ -557,7 +557,7 @@ export default function DashboardPage() {
                       // everything else in the progress bar is dimmed.
                       // Phase 2: workshop already progressed past booked → full dropdown.
                       const CONTACT_KEYS = ['contacted_no_answer','contacted_not_interested_price','contacted_not_interested_service','contacted_later_appointment'];
-                      const isPhase1 = m.key === 'booked' || CONTACT_KEYS.includes(m.key);
+                      const isPhase1 = m.key === 'new_booking' || CONTACT_KEYS.includes(m.key);
                       return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                       <span style={{ padding: '0.2rem 0.7rem', borderRadius: 999, fontSize: '0.78rem', fontWeight: 700, background: m.bg, color: m.color }}>{m.ar}</span>
