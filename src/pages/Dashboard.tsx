@@ -563,7 +563,12 @@ export default function DashboardPage() {
                       // everything else in the progress bar is dimmed.
                       // Phase 2: workshop already progressed past booked → full dropdown.
                       const CONTACT_KEYS = ['contacted_no_answer','contacted_not_interested_price','contacted_not_interested_service','contacted_later_appointment'];
+                      // Phase 1: new_booking / contact outcomes → تم الحجز + 4 contact statuses enabled
+                      // Phase 2: booked → full dropdown unlocked
+                      // Phase 3: visited / visited_no_deal → التقدير→تسليم + visited_no_deal enabled
+                      const PHASE3_ENABLED = ['quoting','dent','paint','finish','ready_to_deliver','visited_no_deal'];
                       const isPhase1 = m.key === 'new_booking' || CONTACT_KEYS.includes(m.key);
+                      const isPhase3 = m.key === 'visited' || m.key === 'visited_no_deal';
                       return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       {/* Status badge + date/reason row */}
@@ -579,7 +584,11 @@ export default function DashboardPage() {
                         style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1.5px solid #d1d5db', borderRadius: '0.5rem', fontSize: '0.88rem', color: '#111827', background: 'white', cursor: 'pointer', fontWeight: 600, appearance: 'none', WebkitAppearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%236b7280' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'left 0.6rem center', paddingLeft: '1.8rem' }}
                       >
                         {PROGRESS_STATUSES.map(s => {
-                          const dimmed = isPhase1 && s.key !== 'booked';
+                          const dimmed = isPhase1
+                            ? s.key !== 'booked'
+                            : isPhase3
+                              ? !PHASE3_ENABLED.includes(s.key)
+                              : false;
                           return (
                             <option key={s.key} value={s.key} disabled={dimmed} style={{ color: dimmed ? '#9ca3af' : '#111827' }}>
                               {dimmed ? `— ${s.ar}` : s.ar}
@@ -589,7 +598,11 @@ export default function DashboardPage() {
                         <option disabled>──────────────</option>
                         {SIDE_STATUSES.map(s => {
                           const isContact = CONTACT_KEYS.includes(s.key);
-                          const dimmed = isPhase1 && !isContact;
+                          const dimmed = isPhase1
+                            ? !isContact
+                            : isPhase3
+                              ? !PHASE3_ENABLED.includes(s.key)
+                              : false;
                           return (
                             <option key={s.key} value={s.key} disabled={dimmed} style={{ color: dimmed ? '#9ca3af' : '#111827' }}>
                               {dimmed ? `— ${s.ar}` : s.ar}

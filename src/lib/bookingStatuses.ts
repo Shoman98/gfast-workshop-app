@@ -25,6 +25,7 @@ export const SIDE_STATUSES: BookingStatusMeta[] = [
   { key: 'contacted_not_interested_price',   ar: 'تم التواصل و غير مهتم بسبب الاسعار',   en: 'Contacted – not interested (price)', color: '#b91c1c', bg: '#fef2f2' },
   { key: 'contacted_not_interested_service', ar: 'تم التواصل و غير مهتم بالخدمه',        en: 'Contacted – not interested (service)', color: '#7e22ce', bg: '#faf5ff' },
   { key: 'contacted_later_appointment',      ar: 'تم التواصل و الاتفاق علي معاد اخر',    en: 'Contacted – later appointment',      color: '#0369a1', bg: '#f0f9ff' },
+  { key: 'visited_no_deal',                 ar: 'تم الزيارة وعدم الاتفاق علي السعر',    en: 'Visited – no deal (price)',          color: '#b91c1c', bg: '#fef2f2' },
 ]
 
 export const ALL_STATUSES = [...PROGRESS_STATUSES, ...SIDE_STATUSES]

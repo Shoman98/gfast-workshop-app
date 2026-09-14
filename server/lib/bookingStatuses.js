@@ -25,6 +25,7 @@ export const SIDE_STATUSES = [
   { key: 'contacted_not_interested_price', ar: 'تم التواصل و غير مهتم بسبب الاسعار', en: 'Contacted – not interested (price)' },
   { key: 'contacted_not_interested_service', ar: 'تم التواصل و غير مهتم بالخدمه', en: 'Contacted – not interested (service)' },
   { key: 'contacted_later_appointment', ar: 'تم التواصل و الاتفاق علي معاد اخر', en: 'Contacted – later appointment' },
+  { key: 'visited_no_deal',             ar: 'تم الزيارة وعدم الاتفاق علي السعر', en: 'Visited – no deal (price)' },
 ];
 
 export const ALL_STATUSES = [...PROGRESS_STATUSES, ...SIDE_STATUSES];
