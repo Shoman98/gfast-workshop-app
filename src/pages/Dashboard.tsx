@@ -1,7 +1,97 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiUrl } from '@/lib/api'
 import { statusMeta, PROGRESS_STATUSES, SIDE_STATUSES, CANCELLATION_REASONS } from '@/lib/bookingStatuses'
+
+const CONTACT_KEYS = ['contacted_no_answer', 'contacted_not_interested_price', 'contacted_not_interested_service', 'contacted_later_appointment']
+const PHASE3_ENABLED = ['quoting', 'dent', 'paint', 'finish', 'ready_to_deliver', 'visited_no_deal']
+
+function StatusDropdown({ bookingId, status, onSelect }: { bookingId: string; status: string; onSelect: (id: string, key: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const m = statusMeta(status)
+  const isPhase1 = m.key === 'new_booking' || CONTACT_KEYS.includes(m.key)
+  const isPhase3 = m.key === 'visited' || m.key === 'visited_no_deal'
+
+  const isEnabled = (key: string) => {
+    if (isPhase1) return key === 'booked' || CONTACT_KEYS.includes(key)
+    if (isPhase3) return PHASE3_ENABLED.includes(key)
+    return true
+  }
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
+  }, [open])
+
+  const choose = (key: string) => { setOpen(false); if (key !== m.key) onSelect(bookingId, key) }
+
+  const renderItem = (s: typeof PROGRESS_STATUSES[0]) => {
+    const sm = statusMeta(s.key)
+    const enabled = isEnabled(s.key)
+    const current = s.key === m.key
+    return (
+      <button
+        key={s.key}
+        onClick={() => enabled && choose(s.key)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem',
+          padding: '0.75rem 0.9rem', border: 'none', borderBottom: '1px solid #f3f4f6',
+          background: current ? sm.bg : 'white', cursor: enabled ? 'pointer' : 'default',
+          opacity: enabled ? 1 : 0.35, direction: 'rtl', textAlign: 'right',
+        }}
+        onMouseEnter={e => { if (enabled && !current) (e.currentTarget as HTMLButtonElement).style.background = '#f9fafb' }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = current ? sm.bg : 'white' }}
+      >
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: sm.color, flexShrink: 0, display: 'inline-block' }} />
+        <span style={{ flex: 1, fontSize: '0.9rem', fontWeight: current ? 700 : 500, color: '#111827' }}>{s.ar}</span>
+        {current && <span style={{ color: sm.color, fontSize: '0.85rem', fontWeight: 800 }}>✓</span>}
+      </button>
+    )
+  }
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0.65rem 0.9rem', background: m.bg, border: `1.5px solid ${m.color}55`,
+          borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem',
+          color: m.color, direction: 'rtl',
+        }}
+      >
+        <span>{m.ar}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"
+          style={{ opacity: 0.65, flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+          <path d="M7 10l5 5 5-5z" />
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', right: 0, left: 0, zIndex: 100,
+          background: 'white', border: '1px solid #e5e7eb', borderRadius: '0.6rem',
+          boxShadow: '0 10px 32px rgba(0,0,0,0.13), 0 2px 8px rgba(0,0,0,0.06)',
+          overflow: 'hidden', maxHeight: '60vh', overflowY: 'auto', direction: 'rtl',
+        }}>
+          <div style={{ padding: '0.35rem 0.9rem', fontSize: '0.68rem', color: '#9ca3af', fontWeight: 700, letterSpacing: '0.04em', background: '#fafafa', borderBottom: '1px solid #f0f0f0' }}>
+            مراحل التقدير
+          </div>
+          {PROGRESS_STATUSES.map(renderItem)}
+          <div style={{ padding: '0.35rem 0.9rem', fontSize: '0.68rem', color: '#9ca3af', fontWeight: 700, letterSpacing: '0.04em', background: '#fafafa', borderBottom: '1px solid #f0f0f0', borderTop: '1px solid #e5e7eb' }}>
+            حالات أخرى
+          </div>
+          {SIDE_STATUSES.map(renderItem)}
+        </div>
+      )}
+    </div>
+  )
+}
 
 type EstimateStatus = 'draft' | 'confirmed' | 'approved_by_insurance' | 'rejected_by_insurance' | 'counter_offer' | 'workshop_revised' | 'workshop_accepted' | 'settled'
 
@@ -571,63 +661,15 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Status control row */}
-                    {(() => {
-                      const m = statusMeta(b.status);
-                      // Phase 1: booking just arrived (status = booked / legacy aliases).
-                      // Only تم الحجز + the 4 contact-outcome statuses are enabled;
-                      // everything else in the progress bar is dimmed.
-                      // Phase 2: workshop already progressed past booked → full dropdown.
-                      const CONTACT_KEYS = ['contacted_no_answer','contacted_not_interested_price','contacted_not_interested_service','contacted_later_appointment'];
-                      // Phase 1: new_booking / contact outcomes → تم الحجز + 4 contact statuses enabled
-                      // Phase 2: booked → full dropdown unlocked
-                      // Phase 3: visited / visited_no_deal → التقدير→تسليم + visited_no_deal enabled
-                      const PHASE3_ENABLED = ['quoting','dent','paint','finish','ready_to_deliver','visited_no_deal'];
-                      const isPhase1 = m.key === 'new_booking' || CONTACT_KEYS.includes(m.key);
-                      const isPhase3 = m.key === 'visited' || m.key === 'visited_no_deal';
-                      return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {/* Status badge + date/reason row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <span style={{ padding: '0.25rem 0.75rem', borderRadius: 999, fontSize: '0.78rem', fontWeight: 700, background: m.bg, color: m.color }}>{m.ar}</span>
-                        {b.scheduled_date && <span style={{ fontSize: '0.78rem', color: '#6b7280' }}>📅 {formatDate(b.scheduled_date)}</span>}
-                        {b.cancellation_reason && <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>سبب: {b.cancellation_reason}</span>}
-                      </div>
-                      {/* Full-width mobile-friendly select */}
-                      <select
-                        value={m.key}
-                        onChange={e => changeBookingStatus(b.id, e.target.value)}
-                        style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1.5px solid #d1d5db', borderRadius: '0.5rem', fontSize: '0.88rem', color: '#111827', background: 'white', cursor: 'pointer', fontWeight: 600, appearance: 'none', WebkitAppearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%236b7280' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'left 0.6rem center', paddingLeft: '1.8rem' }}
-                      >
-                        {PROGRESS_STATUSES.map(s => {
-                          const dimmed = isPhase1
-                            ? s.key !== 'booked'
-                            : isPhase3
-                              ? !PHASE3_ENABLED.includes(s.key)
-                              : false;
-                          return (
-                            <option key={s.key} value={s.key} disabled={dimmed} style={{ color: dimmed ? '#9ca3af' : '#111827' }}>
-                              {dimmed ? `— ${s.ar}` : s.ar}
-                            </option>
-                          );
-                        })}
-                        <option disabled>──────────────</option>
-                        {SIDE_STATUSES.map(s => {
-                          const isContact = CONTACT_KEYS.includes(s.key);
-                          const dimmed = isPhase1
-                            ? !isContact
-                            : isPhase3
-                              ? !PHASE3_ENABLED.includes(s.key)
-                              : false;
-                          return (
-                            <option key={s.key} value={s.key} disabled={dimmed} style={{ color: dimmed ? '#9ca3af' : '#111827' }}>
-                              {dimmed ? `— ${s.ar}` : s.ar}
-                            </option>
-                          );
-                        })}
-                      </select>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      {(b.scheduled_date || b.cancellation_reason) && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          {b.scheduled_date && <span style={{ fontSize: '0.78rem', color: '#6b7280' }}>📅 {formatDate(b.scheduled_date)}</span>}
+                          {b.cancellation_reason && <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>سبب: {b.cancellation_reason}</span>}
+                        </div>
+                      )}
+                      <StatusDropdown bookingId={b.id} status={b.status} onSelect={changeBookingStatus} />
                     </div>
-                    );
-                    })()}
 
                     {/* Status history timeline */}
                     {(b.booking_status_history || []).length > 0 && (
