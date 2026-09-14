@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS booking_status_history (
   changed_by_id TEXT,              -- workshop_id / admin identifier when known
   cancellation_reason TEXT,        -- set when status = 'cancelled'
   estimate_id UUID,                -- attribution for 'quoting' / 'supplementary'
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  changed_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_bsh_booking ON booking_status_history(booking_id);
 

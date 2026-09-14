@@ -476,9 +476,9 @@ router.get('/booking/:id/timeline', async (req, res, next) => {
 
     const { data: history } = await supabase
       .from('booking_status_history')
-      .select('status, cancellation_reason, estimate_id, created_at')
+      .select('status, cancellation_reason, estimate_id, changed_at')
       .eq('booking_id', req.params.id)
-      .order('created_at', { ascending: true });
+      .order('changed_at', { ascending: true });
 
     res.json({ success: true, booking, history: history || [] });
   } catch (err) { next(err); }

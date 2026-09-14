@@ -414,7 +414,7 @@ export default function DashboardPage() {
       })
       const data = await res.json()
       if (data.success) {
-        const newEntry = { status, created_at: new Date().toISOString(), changed_by: 'workshop' };
+        const newEntry = { status, changed_at: new Date().toISOString(), changed_by: 'workshop' };
         setBookings(prev => prev.map(b => b.id === bookingId ? {
           ...b,
           status: data.booking.status,
@@ -639,7 +639,7 @@ export default function DashboardPage() {
                               <span style={{ width: 6, height: 6, borderRadius: '50%', background: hm.color, flexShrink: 0 }} />
                               <span style={{ fontWeight: 700, color: hm.color }}>{hm.ar}</span>
                               <span style={{ color: '#9ca3af' }}>—</span>
-                              <span>{new Date(h.created_at).toLocaleString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                              <span>{new Date(h.changed_at).toLocaleString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                           );
                         })}

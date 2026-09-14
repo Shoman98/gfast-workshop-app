@@ -54,9 +54,9 @@ router.get('/consumer-bookings', authenticate, async (req, res, next) => {
       const ids = bookings.map(b => b.id);
       const { data: histRows } = await supabase
         .from('booking_status_history')
-        .select('booking_id, status, created_at, changed_by')
+        .select('booking_id, status, changed_at, changed_by')
         .in('booking_id', ids)
-        .order('created_at', { ascending: true });
+        .order('changed_at', { ascending: true });
 
       if (histRows) {
         const byId = {};
@@ -137,7 +137,7 @@ router.get('/consumer-bookings/:id/history', authenticate, async (req, res, next
       .from('booking_status_history')
       .select('*')
       .eq('booking_id', req.params.id)
-      .order('created_at', { ascending: true });
+      .order('changed_at', { ascending: true });
     if (error) throw error;
     res.json({ success: true, history: data || [] });
   } catch (err) { next(err); }

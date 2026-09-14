@@ -212,7 +212,7 @@ router.get('/bookings/:id/history', authenticate, requireSuperAdmin, async (req,
       .from('booking_status_history')
       .select('*')
       .eq('booking_id', req.params.id)
-      .order('created_at', { ascending: true });
+      .order('changed_at', { ascending: true });
     if (error) throw error;
     res.json({ success: true, history: data || [] });
   } catch (err) { next(err); }
