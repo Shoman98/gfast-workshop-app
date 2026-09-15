@@ -44,6 +44,23 @@ function customerWaLink(mobile, message) {
   return `https://wa.me/${num}?text=${encodeURIComponent(message)}`;
 }
 
+// Workshop WhatsApp numbers for the "new booking" alert (keyed by workshop_id).
+// These override the DB phone; any other workshop falls back to payload.workshop_phone.
+const WORKSHOP_WA_NUMBERS = {
+  'alamia-001':    '01022233970', // مركز العالمية
+  'workshop-004':  '01013396004', // FixLane
+  'noor-auto-001': '01227657672', // نور أوتو
+  'elaksa01':      '01000275057', // الأقصى / ACA
+};
+
+// Link that opens the WORKSHOP's WhatsApp, prefilled with the new-booking notice.
+function workshopWaLink(payload) {
+  const num = toWaNumber(WORKSHOP_WA_NUMBERS[payload.workshop_id] || payload.workshop_phone);
+  if (!num) return null;
+  const msg = `تم حجز عميل جديد للمركز برقم ${payload.customer_mobile || ''}`.trim();
+  return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+}
+
 function formatEgyptDateTime(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value);
   return new Intl.DateTimeFormat('en-GB', {
@@ -126,6 +143,7 @@ function formatConsumerBookingMessage(payload) {
   const workshop = escapeTelegramMarkdown(payload.workshop_name || payload.workshop_id || '-');
   const branch   = payload.branch_name ? escapeTelegramMarkdown(payload.branch_name) : null;
   const waLink   = customerWaLink(payload.customer_mobile, BOOKING_WA_MESSAGE);
+  const wsLink   = workshopWaLink(payload);
   return [
     '📥 *New Consumer Booking*',
     `Workshop: ${workshop}${branch ? ` › ${branch}` : ''}`,
@@ -135,6 +153,7 @@ function formatConsumerBookingMessage(payload) {
     `Images: ${escapeTelegramMarkdown(String(payload.images_count ?? 0))}`,
     `Time: ${escapeTelegramMarkdown(formatEgyptDateTime(new Date()))}`,
     ...(waLink ? [`[💬 راسل العميل على واتساب](${waLink})`] : []),
+    ...(wsLink ? [`[🏢 ابعت للمركز على واتساب](${wsLink})`] : []),
   ].join('\n');
 }
 

@@ -214,7 +214,7 @@ router.patch('/booking/:id', async (req, res, next) => {
     catch (histErr) { console.warn('⚠️  booking history seed failed:', histErr.message); }
 
     // Telegram notification
-    const { data: ws } = await supabase.from('workshops').select('workshop_name').eq('workshop_id', workshop_id).single();
+    const { data: ws } = await supabase.from('workshops').select('workshop_name, phone').eq('workshop_id', workshop_id).single();
     const { data: br } = branch_id
       ? await supabase.from('workshop_branches').select('branch_name').eq('branch_id', branch_id).single()
       : { data: null };
@@ -222,6 +222,7 @@ router.patch('/booking/:id', async (req, res, next) => {
     notifyConsumerBookingAsync({
       workshop_id,
       workshop_name: ws?.workshop_name,
+      workshop_phone: ws?.phone || null,
       branch_name: br?.branch_name || null,
       customer_mobile: data.customer_mobile,
       vehicle_make: data.vehicle_make,
@@ -285,7 +286,7 @@ router.post('/booking', async (req, res, next) => {
     catch (histErr) { console.warn('⚠️  booking history seed failed:', histErr.message); }
 
     // Fetch workshop + branch names for the Telegram notification
-    const { data: ws } = await supabase.from('workshops').select('workshop_name').eq('workshop_id', workshop_id).single();
+    const { data: ws } = await supabase.from('workshops').select('workshop_name, phone').eq('workshop_id', workshop_id).single();
     const { data: br } = branch_id
       ? await supabase.from('workshop_branches').select('branch_name').eq('branch_id', branch_id).single()
       : { data: null };
@@ -293,6 +294,7 @@ router.post('/booking', async (req, res, next) => {
     notifyConsumerBookingAsync({
       workshop_id,
       workshop_name: ws?.workshop_name,
+      workshop_phone: ws?.phone || null,
       branch_name: br?.branch_name || null,
       customer_mobile,
       vehicle_make,
