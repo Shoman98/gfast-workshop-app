@@ -20,9 +20,11 @@ function escapeTelegramMarkdown(value) {
   return String(value).replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
-// Pre-filled message the workshop sends the customer on WhatsApp.
-const CUSTOMER_WA_MESSAGE =
+// Pre-filled messages the workshop sends the customer on WhatsApp.
+const ANALYSIS_WA_MESSAGE =
   'اهلا بيك معاك حسين من G-Fast بتواصل معاك بخصوص تفاصيل التلفيات هل في اي مشكله؟ و لو حابب تحجز مركز للاصلاح انا معاك';
+const BOOKING_WA_MESSAGE =
+  'اهلا بيك معاك حسين من G-Fast باكد مع حضرتك حجز المركز و لو محتاج اي مساعده اخري';
 
 // Normalise a stored mobile into a wa.me-ready number (Egyptian default).
 function toWaNumber(raw) {
@@ -36,10 +38,10 @@ function toWaNumber(raw) {
 }
 
 // Build a click-to-chat wa.me link (message percent-encoded → safe in MarkdownV2).
-function customerWaLink(mobile) {
+function customerWaLink(mobile, message) {
   const num = toWaNumber(mobile);
   if (!num) return null;
-  return `https://wa.me/${num}?text=${encodeURIComponent(CUSTOMER_WA_MESSAGE)}`;
+  return `https://wa.me/${num}?text=${encodeURIComponent(message)}`;
 }
 
 function formatEgyptDateTime(value = new Date()) {
@@ -91,7 +93,7 @@ async function sendTelegramMessage(text, env) {
 function formatWorkshopAnalysisMessage(payload) {
   const vehicle =
     [payload.year, payload.make, payload.model].filter(Boolean).join(' ') || '-';
-  const waLink = customerWaLink(payload.customer_mobile);
+  const waLink = customerWaLink(payload.customer_mobile, ANALYSIS_WA_MESSAGE);
   return [
     '🔍 *New Vehicle Analysis Started*',
     `Workshop: ${escapeTelegramMarkdown(payload.workshop_name || payload.workshop_id || '-')}`,
@@ -123,6 +125,7 @@ function formatConsumerBookingMessage(payload) {
   const vehicle = [payload.vehicle_year, payload.vehicle_make, payload.vehicle_model].filter(Boolean).join(' ') || '-';
   const workshop = escapeTelegramMarkdown(payload.workshop_name || payload.workshop_id || '-');
   const branch   = payload.branch_name ? escapeTelegramMarkdown(payload.branch_name) : null;
+  const waLink   = customerWaLink(payload.customer_mobile, BOOKING_WA_MESSAGE);
   return [
     '📥 *New Consumer Booking*',
     `Workshop: ${workshop}${branch ? ` › ${branch}` : ''}`,
@@ -131,6 +134,7 @@ function formatConsumerBookingMessage(payload) {
     ...(payload.scheduled_date ? [`📅 Booking date: ${escapeTelegramMarkdown(payload.scheduled_date)}`] : []),
     `Images: ${escapeTelegramMarkdown(String(payload.images_count ?? 0))}`,
     `Time: ${escapeTelegramMarkdown(formatEgyptDateTime(new Date()))}`,
+    ...(waLink ? [`[💬 راسل العميل على واتساب](${waLink})`] : []),
   ].join('\n');
 }
 
