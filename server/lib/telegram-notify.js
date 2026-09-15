@@ -20,6 +20,28 @@ function escapeTelegramMarkdown(value) {
   return String(value).replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
+// Pre-filled message the workshop sends the customer on WhatsApp.
+const CUSTOMER_WA_MESSAGE =
+  'اهلا بيك معاك حسين من G-Fast بتواصل معاك بخصوص تفاصيل التلفيات هل في اي مشكله؟ و لو حابب تحجز مركز للاصلاح انا معاك';
+
+// Normalise a stored mobile into a wa.me-ready number (Egyptian default).
+function toWaNumber(raw) {
+  if (!raw) return null;
+  let d = String(raw).replace(/\D/g, '');
+  if (!d) return null;
+  if (d.startsWith('00')) d = d.slice(2);          // 0020… → 20…
+  if (d.startsWith('20')) return d;                // already country-coded
+  if (d.startsWith('0')) return '20' + d.slice(1); // national trunk 0 → 20…
+  return '20' + d;                                 // bare 1XXXXXXXXX
+}
+
+// Build a click-to-chat wa.me link (message percent-encoded → safe in MarkdownV2).
+function customerWaLink(mobile) {
+  const num = toWaNumber(mobile);
+  if (!num) return null;
+  return `https://wa.me/${num}?text=${encodeURIComponent(CUSTOMER_WA_MESSAGE)}`;
+}
+
 function formatEgyptDateTime(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value);
   return new Intl.DateTimeFormat('en-GB', {
@@ -69,6 +91,7 @@ async function sendTelegramMessage(text, env) {
 function formatWorkshopAnalysisMessage(payload) {
   const vehicle =
     [payload.year, payload.make, payload.model].filter(Boolean).join(' ') || '-';
+  const waLink = customerWaLink(payload.customer_mobile);
   return [
     '🔍 *New Vehicle Analysis Started*',
     `Workshop: ${escapeTelegramMarkdown(payload.workshop_name || payload.workshop_id || '-')}`,
@@ -78,6 +101,7 @@ function formatWorkshopAnalysisMessage(payload) {
     `VIN: ${escapeTelegramMarkdown(payload.vin_number || '-')}`,
     `Images: ${escapeTelegramMarkdown(String(payload.images_count ?? 0))}`,
     `Time: ${escapeTelegramMarkdown(formatEgyptDateTime(new Date()))}`,
+    ...(waLink ? [`[💬 راسل العميل على واتساب](${waLink})`] : []),
   ].join('\n');
 }
 
