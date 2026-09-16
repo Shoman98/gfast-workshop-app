@@ -413,7 +413,7 @@ export default function EstimatePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          parts: allParts.map(p => ({ partId: p.partId, part_name_ar: p.part_name_ar, severity_label: p.severity_label })),
+          parts: allParts.map(p => ({ partId: p.partId, part_name_ar: p.part_name_ar, severity_label: p.severity_label, repair_subtype: (p as any).repair_subtype ?? null })),
           make, model, year: String(year),
         }),
       })
@@ -454,6 +454,19 @@ export default function EstimatePage() {
         }
         setPricingData(data)
         console.log('✅ fetchPricing: setPricingData called')
+        // Pre-populate labor group price inputs from API totals.
+        // Preserve any value the user has already manually entered (prev[key] defined).
+        setLaborGroupPrices(prev => {
+          const incoming: Record<string, number> = {}
+          ;[...(data.repair?.groups || []), ...(data.replace?.groups || [])].forEach((g: LaborGroup) => {
+            incoming[g.labor_key] = (incoming[g.labor_key] || 0) + g.total
+          })
+          const merged: Record<string, number> = { ...prev }
+          Object.entries(incoming).forEach(([k, v]) => {
+            if (prev[k] === undefined) merged[k] = v
+          })
+          return merged
+        })
         // Pre-populate labors (for saving to DB)
         const laborMap: Record<string, number> = {}
         ;[...(data.repair?.groups || []), ...(data.replace?.groups || [])].forEach((g: LaborGroup) => {
@@ -1101,6 +1114,7 @@ export default function EstimatePage() {
                         )}
                       </div>
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <select
                       value={pendingLaborPick?.index === idx ? pendingLaborPick.newSeverity : part.severity_label}
                       onChange={(e) => updatePart(idx, 'severity_label', e.target.value as any)}
@@ -1116,6 +1130,28 @@ export default function EstimatePage() {
                       <option value="Repair">إصلاح</option>
                       <option value="Replace">استبدال</option>
                     </select>
+                    {/* Repair sub-type badge */}
+                    {part.severity_label === 'Repair' && (part as any).repair_subtype && (() => {
+                      const subtype = (part as any).repair_subtype as string
+                      const colors: Record<string, { bg: string; text: string }> = {
+                        PDR:           { bg: '#f0fdf4', text: '#16a34a' },
+                        SmallDent:     { bg: '#eff6ff', text: '#2563eb' },
+                        MedDent:       { bg: '#fff7ed', text: '#ea580c' },
+                        HeavyDent:     { bg: '#fef2f2', text: '#dc2626' },
+                        ChassisDamage: { bg: '#faf5ff', text: '#7c3aed' },
+                      }
+                      const c = colors[subtype] || { bg: '#f3f4f6', text: '#374151' }
+                      return (
+                        <span style={{
+                          fontSize: '0.7rem', fontWeight: '700', padding: '0.2rem 0.5rem',
+                          borderRadius: '999px', backgroundColor: c.bg, color: c.text,
+                          border: `1px solid ${c.text}33`, whiteSpace: 'nowrap',
+                        }}>
+                          {subtype}
+                        </span>
+                      )
+                    })()}
+                    </div>
 
                     {/* Inline labor picker for unknown parts with pending severity change */}
                     {pendingLaborPick?.index === idx && (

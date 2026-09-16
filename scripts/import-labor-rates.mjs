@@ -1,98 +1,175 @@
 /**
- * Import labor rates from Excel into Supabase
- * Run: node scripts/import-labor-rates.mjs
+ * Import global labor rates (repair + replace) into Supabase.
+ *
+ * Reads pre-generated CSVs produced by scripts/gen-labor-rates-csv.py
+ * (Python reconstructs Excel cross-sheet formulas — xlsx can't evaluate them).
+ *
+ * Usage:
+ *   node --env-file=.env.local scripts/import-labor-rates.mjs [--dry-run] [--table repair|replace]
+ *
+ * Flags:
+ *   --dry-run              Parse and log counts but do NOT touch the database
+ *   --table repair         Import only labor_rates_repair
+ *   --table replace        Import only labor_rates_replace
+ *   (omit --table to import both)
+ *
+ * Each table is TRUNCATED before inserting — safe to re-run.
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { readFileSync } from 'fs'
-import { fileURLToPath } from 'url'
+import { createReadStream } from 'fs'
+import { createInterface } from 'readline'
 import path from 'path'
+import { fileURLToPath } from 'url'
 import dotenv from 'dotenv'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 dotenv.config({ path: path.join(__dirname, '../.env.local') })
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-)
+const DRY_RUN    = process.argv.includes('--dry-run')
+const tableArg   = process.argv.includes('--table') ? process.argv[process.argv.indexOf('--table') + 1] : null
+const BATCH      = 500
 
-const BATCH_SIZE = 500
-
-const LABOR_FILES = [
+const CONFIGS = [
   {
-    file: '/Users/User/Documents/DB/labor-rates-replace_by_Vehicle.xlsx',
-    table: 'labor_rates_replace',
-    totalCol: 'total_replace_hrs',
+    key:    'repair',
+    csv:    path.resolve(__dirname, '../../Downloads/labor_rates_repair_import.csv'),
+    table:  'labor_rates_repair',
+    mapRow: (r) => ({
+      part_id:             str(r.part_id),
+      part_name_ar:        str(r.part_name_ar),
+      part_name_en:        str(r.part_name_en),
+      category:            str(r.category),
+      refitting_labor_hrs: num(r.refitting_labor_hrs),
+      dent_hrs:            num(r.dent_hrs),
+      paint_hrs:           num(r.paint_hrs),
+      elec_hrs:            num(r.elec_hrs),
+      intr_hrs:            num(r.intr_hrs),
+      cooling_hrs:         num(r.cooling_hrs),
+      susp_hrs:            num(r.susp_hrs),
+      mechanical_hrs:      num(r.mechanical_hrs),
+      glass_hrs:           num(r.glass_hrs),
+      total_repair_hrs:    num(r.total_repair_hrs),
+      hr_price_egp:        num(r.hr_price_egp),
+      vehicle_make:        str(r.vehicle_make),
+      vehicle_model:       str(r.vehicle_model),
+      vehicle_year:        str(r.vehicle_year),
+      last_updated:        str(r.last_updated),
+    }),
+  },
+  {
+    key:    'replace',
+    csv:    path.resolve(__dirname, '../../Downloads/labor_rates_replace_import.csv'),
+    table:  'labor_rates_replace',
+    mapRow: (r) => ({
+      part_id:             str(r.part_id),
+      part_name_ar:        str(r.part_name_ar),
+      part_name_en:        str(r.part_name_en),
+      category:            str(r.category),
+      refitting_labor_hrs: num(r.refitting_labor_hrs),
+      dent_hrs:            num(r.dent_hrs),
+      paint_hrs:           num(r.paint_hrs),
+      elec_hrs:            num(r.elec_hrs),
+      intr_hrs:            num(r.intr_hrs),
+      cooling_hrs:         num(r.cooling_hrs),
+      susp_hrs:            num(r.susp_hrs),
+      mechanical_hrs:      num(r.mechanical_hrs),
+      glass_hrs:           num(r.glass_hrs),
+      total_replace_hrs:   num(r.total_replace_hrs),
+      hr_price_egp:        num(r.hr_price_egp),
+      part_price:          num(r.part_price),
+      vehicle_make:        str(r.vehicle_make),
+      vehicle_model:       str(r.vehicle_model),
+      vehicle_year:        str(r.vehicle_year),
+      last_updated:        str(r.last_updated),
+    }),
   },
 ]
 
-async function readExcel(filePath) {
-  const { default: xlsx } = await import('xlsx')
-  const wb = xlsx.readFile(filePath)
-  const ws = wb.Sheets[wb.SheetNames[0]]
-  return xlsx.utils.sheet_to_json(ws, { defval: null })
+const num = (v) => (v === '' || v == null ? null : Number(v))
+const str = (v) => (v === '' || v == null ? null : String(v))
+
+function parseCSVLine(line) {
+  return line.split(',')
 }
 
-const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v))
+async function readCSV(filePath) {
+  return new Promise((resolve, reject) => {
+    const rows = []
+    let headers = null
+    const rl = createInterface({ input: createReadStream(filePath), crlfDelay: Infinity })
+    rl.on('line', (line) => {
+      if (!line.trim()) return
+      if (!headers) { headers = parseCSVLine(line); return }
+      const vals = parseCSVLine(line)
+      const obj = {}
+      headers.forEach((h, i) => { obj[h] = vals[i] ?? '' })
+      rows.push(obj)
+    })
+    rl.on('close', () => resolve(rows))
+    rl.on('error', reject)
+  })
+}
 
-function mapRow(row, totalCol) {
-  return {
-    part_id: row['partId'] ?? null,
-    part_name_ar: row['part_name_ar'] ?? null,
-    part_name_en: row['part_name_en'] ?? null,
-    category: row['category'] ?? null,
-    refitting_labor_hrs: num(row['refitting_labor_hrs']),
-    dent_hrs: num(row['dent_hrs']),
-    paint_hrs: num(row['paint_hrs']),
-    elec_hrs: num(row['elec_hrs']),
-    intr_hrs: num(row['intr_hrs']),
-    cooling_hrs: num(row['cooling_hrs']),
-    susp_hrs: num(row['susp_hrs']),
-    mechanical_hrs: num(row['mechanical_hrs']),
-    glass_hrs: num(row['glass_hrs']),
-    [totalCol]: num(row['total__repair_hrs'] ?? row['total__rep_hrs']),
-    hr_price_egp: num(row['1hr_labor_price_egp']),
-    part_price: num(row['part_price']),
-    vehicle_make: row['vehicle_make'] ?? null,
-    vehicle_model: row['vehicle_model'] ?? null,
-    vehicle_year: row['vehicle_year'] ? String(row['vehicle_year']) : null,
-    last_updated: row['last_updated'] ? String(row['last_updated']) : null,
+async function importTable({ key, csv, table, mapRow }, supabase) {
+  console.log(`\n📂 [${key}] Reading ${csv}...`)
+  const raw = await readCSV(csv)
+  console.log(`   ${raw.length.toLocaleString()} rows parsed`)
+  console.log('   Sample:', JSON.stringify(mapRow(raw[0])))
+
+  if (DRY_RUN) {
+    console.log('   ⚠️  --dry-run: skipping DB writes')
+    return
   }
-}
 
-async function importTable({ file, table, totalCol }) {
-  console.log(`\n📂 Reading ${file}...`)
-  const rows = await readExcel(file)
-  console.log(`   ${rows.length} rows found`)
+  // Truncate existing data
+  console.log(`   🗑️  Clearing ${table}...`)
+  const { error: delErr } = await supabase
+    .from(table)
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000')
+  if (delErr) { console.error('❌ Clear failed:', delErr.message); process.exit(1) }
+  console.log('   ✅ Table cleared')
 
+  // Batch insert
+  const mapped = raw.map(mapRow)
   const batches = []
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    batches.push(rows.slice(i, i + BATCH_SIZE).map(r => mapRow(r, totalCol)))
-  }
+  for (let i = 0; i < mapped.length; i += BATCH) batches.push(mapped.slice(i, i + BATCH))
 
-  console.log(`🚀 Inserting into ${table} (${batches.length} batches of ${BATCH_SIZE})...`)
+  console.log(`   🚀 Inserting ${mapped.length.toLocaleString()} rows in ${batches.length} batches...`)
   let inserted = 0
 
   for (let i = 0; i < batches.length; i++) {
     const { error } = await supabase.from(table).insert(batches[i])
-    if (error) {
-      console.error(`❌ Batch ${i + 1} failed:`, error.message)
-      process.exit(1)
-    }
+    if (error) { console.error(`❌ Batch ${i + 1} failed:`, error.message); process.exit(1) }
     inserted += batches[i].length
-    if ((i + 1) % 50 === 0 || i === batches.length - 1) {
-      console.log(`   ✅ ${inserted.toLocaleString()} / ${rows.length.toLocaleString()} rows inserted`)
+    if ((i + 1) % 100 === 0 || i === batches.length - 1) {
+      const pct = ((inserted / mapped.length) * 100).toFixed(1)
+      console.log(`   ${pct}%  ${inserted.toLocaleString()} / ${mapped.length.toLocaleString()}`)
     }
   }
-  console.log(`✅ ${table} done — ${inserted.toLocaleString()} rows`)
+
+  console.log(`   ✅ ${table} done — ${inserted.toLocaleString()} rows`)
 }
 
 async function main() {
-  console.log('🏁 Starting labor rates import...')
-  for (const config of LABOR_FILES) {
-    await importTable(config)
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
+
+  const toRun = tableArg
+    ? CONFIGS.filter(c => c.key === tableArg)
+    : CONFIGS
+
+  if (toRun.length === 0) {
+    console.error(`❌ Unknown --table value: "${tableArg}". Use "repair" or "replace".`)
+    process.exit(1)
   }
+
+  console.log(`🏁 Importing: ${toRun.map(c => c.table).join(', ')}${DRY_RUN ? ' (DRY RUN)' : ''}`)
+
+  for (const config of toRun) {
+    await importTable(config, supabase)
+  }
+
   console.log('\n🎉 All done!')
 }
 

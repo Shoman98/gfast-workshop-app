@@ -2,6 +2,7 @@ import express from 'express'
 import { supabase } from '../db/supabase.js'
 import { authenticate } from '../middleware/auth.js'
 import { resolvePricing } from '../lib/pricingResolver.js'
+import { getDentMultiplier } from '../lib/repairSubtype.js'
 
 const router = express.Router()
 
@@ -24,7 +25,7 @@ const LABOR_TYPES = [
   { key: 'glass_hrs',           nameAr: 'اعمال زجاج' },
 ]
 
-function buildGroups(rates, parts, includePartPrice) {
+function buildGroups(rates, parts, includePartPrice, dentMultipliers = {}) {
   // Map part_name_ar → DB row. We match by NAME, not part_id: the AI-detected
   // parts carry a reliable part_name_ar, but their part_id doesn't align with
   // the catalog's PT_xxxx ids, so id-matching silently misses every part.
@@ -40,8 +41,13 @@ function buildGroups(rates, parts, includePartPrice) {
     for (const part of parts) {
       const rate = rateMap[part.part_name_ar]
       if (!rate) continue
-      const hrs = rate[key]
+      let hrs = rate[key]
       if (!hrs || hrs <= 0) continue
+      // Apply dent-hrs multiplier for repair sub-types (PDR×1, SmallDent×1, MedDent×2, HeavyDent×3, ChassisDamage×4)
+      if (key === 'dent_hrs') {
+        const mult = dentMultipliers[part.part_name_ar] ?? 1
+        if (mult !== 1) hrs = parseFloat((hrs * mult).toFixed(2))
+      }
       const hrPrice = rate.hr_price_egp || 0
       const cost = parseFloat((hrs * hrPrice).toFixed(2))
       entries.push({ part_name_ar: part.part_name_ar, hrs, hr_price: hrPrice, cost })
@@ -123,15 +129,20 @@ router.post('/', authenticate, async (req, res, next) => {
         : [],
     ])
 
-    // Strip prices from global rows only — workshops set their own prices via their catalog.
-    // Hours (dent_hrs, paint_hrs, etc.) are kept so labor types still appear correctly.
-    // Workshop catalog rows (wsRepair/wsReplace) retain their prices and override global rows.
-    const stripPrices = rows => (rows || []).map(r => ({ ...r, hr_price_egp: 0, part_price: 0 }))
-    const repairRates  = [ ...stripPrices(repairRes.data),  ...dedupeByPart(wsRepair) ]
-    const replaceRates = [ ...stripPrices(replaceRes.data), ...dedupeByPart(wsReplace) ]
+    // Global tables provide baseline prices. Workshop catalog rows (wsRepair/wsReplace)
+    // override per part when the workshop has set their own rates. buildGroups keeps
+    // the last entry per part_name_ar, so workshop rows placed last always win.
+    const repairRates  = [ ...(repairRes.data  || []), ...dedupeByPart(wsRepair)  ]
+    const replaceRates = [ ...(replaceRes.data || []), ...dedupeByPart(wsReplace) ]
 
-    const repair  = buildGroups(repairRates,  repairParts,  false)
-    const replace = buildGroups(replaceRates, replaceParts, true)
+    // Build dent-hrs multiplier maps (keyed by part_name_ar)
+    const repairMult  = {}
+    const replaceMult = {}
+    repairParts.forEach(p  => { if (p.repair_subtype) repairMult[p.part_name_ar]  = getDentMultiplier(p.repair_subtype) })
+    replaceParts.forEach(p => { if (p.repair_subtype) replaceMult[p.part_name_ar] = getDentMultiplier(p.repair_subtype) })
+
+    const repair  = buildGroups(repairRates,  repairParts,  false, repairMult)
+    const replace = buildGroups(replaceRates, replaceParts, true,  replaceMult)
 
     res.json({ success: true, repair, replace })
   } catch (err) {
