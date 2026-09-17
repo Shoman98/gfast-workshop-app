@@ -135,6 +135,11 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Privacy policy (required for Meta app Live mode)
+app.get('/privacy', (req, res) => {
+  res.send(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>سياسة الخصوصية - G-Fast</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.8}h1{color:#1a1a1a}h2{color:#333;margin-top:30px}</style></head><body><h1>سياسة الخصوصية</h1><p>آخر تحديث: ${new Date().getFullYear()}</p><h2>جمع البيانات</h2><p>تقوم G-Fast بجمع صور المركبات وبيانات المركبة (الماركة، الموديل، السنة) لأغراض تحليل الأضرار فقط.</p><h2>استخدام البيانات</h2><p>يتم استخدام البيانات المجمعة حصرياً لتقديم تقارير تحليل أضرار المركبات. لا يتم مشاركة البيانات مع أطراف ثالثة.</p><h2>تخزين البيانات</h2><p>يتم تخزين البيانات بشكل آمن ولا يتم الاحتفاظ بها لفترة أطول من اللازم.</p><h2>التواصل</h2><p>للاستفسارات المتعلقة بالخصوصية: hussein98mohamed@gmail.com</p></body></html>`)
+});
+
 // ============================================================================
 // ERROR HANDLING
 // ============================================================================
