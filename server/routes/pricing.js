@@ -25,6 +25,13 @@ const LABOR_TYPES = [
   { key: 'glass_hrs',           nameAr: 'اعمال زجاج' },
 ]
 
+// Derive paint hourly rate from general labor rate using the fixed tier mapping.
+// Rate_Card: Economy 200→1500, Mid 350→2000, Premium 700→2500, Luxury 1800→3000
+const PAINT_RATE_BY_LABOR = { 200: 1500, 350: 2000, 700: 2500, 1800: 3000 }
+function paintRate(hr_price_egp) {
+  return PAINT_RATE_BY_LABOR[hr_price_egp] ?? hr_price_egp
+}
+
 function buildGroups(rates, parts, includePartPrice, dentMultipliers = {}) {
   // Map part_name_ar → DB row. We match by NAME, not part_id: the AI-detected
   // parts carry a reliable part_name_ar, but their part_id doesn't align with
@@ -48,8 +55,15 @@ function buildGroups(rates, parts, includePartPrice, dentMultipliers = {}) {
         const mult = dentMultipliers[part.part_name_ar] ?? 1
         if (mult !== 1) hrs = parseFloat((hrs * mult).toFixed(2))
       }
-      const hrPrice = rate.hr_price_egp || 0
-      const cost = parseFloat((hrs * hrPrice).toFixed(2))
+      // Paint labor = flat rate per part (ignore paint_hrs value — hrs only used as presence flag above)
+      let cost, hrPrice
+      if (key === 'paint_hrs') {
+        hrPrice = paintRate(rate.hr_price_egp || 0)
+        cost    = hrPrice
+      } else {
+        hrPrice = rate.hr_price_egp || 0
+        cost    = parseFloat((hrs * hrPrice).toFixed(2))
+      }
       entries.push({ part_name_ar: part.part_name_ar, hrs, hr_price: hrPrice, cost })
     }
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { apiUrl } from '@/lib/api'
 import { loadAnalysisImages, clearAnalysisImages } from '@/lib/imageStore'
+import { getRepairSubtype } from '@/lib/repairSubtype'
 import partsDb from '@/data/parts.json'
 
 const PARTS_LIST: { partId: string; key: string; nameAr: string; nameEn: string }[] = partsDb
@@ -743,6 +744,14 @@ export default function EstimatePage() {
         setParts(parts.map((p, i) => i === index ? { ...p } : p))
         return
       }
+      // Recompute repair_subtype badge when severity changes.
+      // Replace → Repair: derive subtype from damage_type + category (already on part from analysis).
+      // Repair → Replace: clear the subtype (only Repair parts carry badges).
+      const newSubtype = value === 'Repair'
+        ? getRepairSubtype((part as any).damage_type, (part as any).category, 'Repair')
+        : null
+      updated[index] = { ...updated[index], repair_subtype: newSubtype } as any
+      setParts(updated)
       refreshPricing(updated)
     }
   }

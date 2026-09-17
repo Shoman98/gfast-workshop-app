@@ -16,7 +16,9 @@ import pricingRoutes from './routes/pricing.js';
 import workshopPricingRoutes from './routes/workshopPricing.js';
 import adminRoutes from './routes/admin.js';
 import publicRoutes from './routes/public.js';
+import whatsappRoutes from './routes/whatsapp.js';
 import { notifyWorkshopAnalysisAsync } from './lib/telegram-notify.js';
+import { enrichAnalysisWithParts } from './lib/analysisPipeline.js';
 // Use SHARED module from wreck-vision - SINGLE SOURCE OF TRUTH
 import pkg from '@gfast/analysis-core';
 const { runAnalysisPipeline, enrichDamageData, PARTS_DATABASE, DAMAGE_TYPE_INDEX, PART_NAME_ALIASES } = pkg;
@@ -44,126 +46,6 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-// Transform and enrich analysis with PARTS_DATABASE lookup, severity mapping, LEFT/RIGHT rules
-// Handles both Gemini format (part_name_en, damage_type) and shared module format (partName, damageType)
-function enrichAnalysisWithParts(analysisData, vehicleInfo) {
-  const DAMAGE_TYPE_MAP = DAMAGE_TYPE_INDEX;
-
-  function enrichPart(part) {
-    // Handle both formats: Gemini (part_name_en) and shared module (partName)
-    const partNameEn = part.part_name_en || part.partName || '';
-    const partNameAr = part.part_name_ar || part.partNameAr || '';
-    const damageType = part.damage_type || part.damageType || 'unknown';
-
-    // Normalize part name for PARTS_DATABASE lookup
-    const partKey = partNameEn
-      .toLowerCase()
-      .trim()
-      .replace(/[()\/\\,;:]/g, ' ')
-      .replace(/[-]/g, '_')
-      .replace(/\s+/g, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_+|_+$/g, '');
-
-    // Use shared alias map from @gfast/analysis-core — same as wreck-vision
-    const resolvedKey = PART_NAME_ALIASES[partKey] || partKey;
-    const partInfo = PARTS_DATABASE[resolvedKey] || {};
-    const damageTypeLower = damageType.toLowerCase();
-    const damageIndex = DAMAGE_TYPE_MAP[damageTypeLower] !== undefined ? DAMAGE_TYPE_MAP[damageTypeLower] : 5;
-    const partCategory = (partInfo.category || '').toLowerCase();
-
-    // Base rule: index < 4 → Repair, >= 4 → Replace
-    let severityLabel = damageIndex < 4 ? 'Repair' : 'Replace';
-
-    // Category overrides — same as wreck-vision enrichDamageData
-    const alwaysReplace = ['airbags_safety', 'interior', 'mechanical', 'suspension'];
-    const alwaysRepair  = ['structural', 'chassis', 'chassis_structure'];
-    if (alwaysReplace.includes(partCategory)) {
-      severityLabel = 'Replace';
-    } else if (alwaysRepair.includes(partCategory)) {
-      severityLabel = 'Repair';
-    } else if (damageTypeLower.includes('buckl')) {
-      severityLabel = 'Repair';
-    }
-
-    return {
-      part_name_en: partInfo.nameEn || partNameEn || 'Unknown Part',
-      part_name_ar: partInfo.nameAr || partNameAr || null,
-      damage_type: damageType || 'unknown',
-      description: part.description || part.visualEvidence || '',
-      confidence: (part.confidence > 1 ? part.confidence / 100 : part.confidence) || 0.5,
-      severity_label: severityLabel,
-      price: 0,
-      partId: partInfo.partId || null,
-      category: partInfo.category || 'exterior',
-      is_ai_detected: part.is_ai_detected !== false,
-      isUnmapped: !PARTS_DATABASE[resolvedKey],
-      reason_for_uncertainty: part.reason_for_uncertainty,
-      // Additional fields from shared module (if present)
-      location: part.location,
-      safetyFlags: part.safetyFlags
-    };
-  }
-
-  // The shared module merges needs_check into damages with recommendedDecision: 'inspect'
-  // Split them back into two separate arrays
-  const allParts = analysisData.damages || [];
-  const confirmedDamages = allParts.filter(p => p.recommendedDecision !== 'inspect');
-  const needsCheckFromShared = allParts.filter(p => p.recommendedDecision === 'inspect');
-
-  // Convert hiddenDamageAssessment (Stage 4 — AC condenser, radiator, etc.) into needs_check parts
-  const hiddenDamageParts = (analysisData.hiddenDamageAssessment || []).map(item => ({
-    partName: item.suspected_hidden_part || '',
-    damageType: 'Hidden Damage',
-    description: item.hidden_indicator?.replace('[HIDDEN] ', '') || '',
-    confidence: (item.confidence || 50) > 1 ? (item.confidence || 50) / 100 : (item.confidence || 0.5),
-    recommendedDecision: 'inspect',
-    reason_for_uncertainty: `خلف: ${(item.visible_damage_part || '').replace(/_/g, ' ')}`,
-  }));
-
-  // Also include any explicit needs_check_parts if present
-  const explicitNeedsCheck = analysisData.needs_check_parts || [];
-  const allNeedsCheck = [...needsCheckFromShared, ...explicitNeedsCheck, ...hiddenDamageParts];
-
-  console.log(`🔍 Split: ${confirmedDamages.length} confirmed, ${needsCheckFromShared.length} inspect, ${hiddenDamageParts.length} hidden → ${allNeedsCheck.length} needs_check total`);
-
-  // Deduplicate by part_name_en — keep highest confidence when same part appears multiple times
-  function deduplicateByName(parts) {
-    const seen = new Map();
-    for (const part of parts) {
-      const key = (part.part_name_en || part.partName || '').toLowerCase().trim();
-      if (!seen.has(key) || part.confidence > seen.get(key).confidence) {
-        seen.set(key, part);
-      }
-    }
-    return Array.from(seen.values());
-  }
-
-  const isMapped = (part) => !part.isUnmapped && part.part_name_ar && part.part_name_ar !== 'قطعة غير معروفة';
-
-  const enrichedDamages = deduplicateByName(confirmedDamages)
-    .map(enrichPart)
-    .filter(isMapped);
-
-  const enrichedNeedsCheck = deduplicateByName(allNeedsCheck)
-    .map(enrichPart)
-    .filter(isMapped);
-
-  console.log(`✅ After dedup: ${enrichedDamages.length} damages, ${enrichedNeedsCheck.length} needs_check`);
-
-  return {
-    damages: enrichedDamages,
-    needs_check_parts: enrichedNeedsCheck,
-    vehicleInfo,
-    timestamp: new Date().toISOString(),
-    analysisSource: '@gfast/analysis-core (shared module)'
-  };
-}
-
-// ============================================================================
 // ROUTES
 // ============================================================================
 app.use('/api/auth', authRoutes);
@@ -174,6 +56,7 @@ app.use('/api/pricing', pricingRoutes);
 app.use('/api/workshop-pricing', workshopPricingRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/whatsapp/webhook', whatsappRoutes);
 
 // Analysis route - Real Gemini Vision Analysis (with fallback to mock if API unavailable)
 app.post('/api/analysis', async (req, res, next) => {
