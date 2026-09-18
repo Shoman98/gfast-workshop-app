@@ -405,6 +405,7 @@ export default function EstimatePage() {
   const [activeTab, setActiveTab] = useState<'parts' | 'pricing'>('parts')
   const [needsCheckOpen, setNeedsCheckOpen] = useState(true)
   const [agentPricingLoading, setAgentPricingLoading] = useState(false)
+  const [agentMissingParts, setAgentMissingParts] = useState<string[]>([])
   const [vehicleInfo, setVehicleInfo] = useState<{ year: number; make: string; model: string; insurance_company_id: string | null; vin_number?: string; customer_name?: string; customer_mobile?: string }>({ year: 0, make: '', model: '', insurance_company_id: null })
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
@@ -1256,6 +1257,7 @@ export default function EstimatePage() {
                     const token = localStorage.getItem('token')
                     if (!token) return
                     setAgentPricingLoading(true)
+                    setAgentMissingParts([])
                     try {
                       const res = await fetch(apiUrl('/api/pricing/agent'), {
                         method: 'POST',
@@ -1269,13 +1271,16 @@ export default function EstimatePage() {
                       })
                       const data = await res.json()
                       if (data.success && data.results?.length) {
+                        const missing: string[] = []
                         setEditablePartPrices(prev => prev.map(pp => {
                           const match = data.results.find((r: any) => r.part_name_ar === pp.part_name_ar)
                           if (match && match.oem_price != null && match.oem_price > 0) {
                             return { ...pp, price: match.oem_price }
                           }
+                          if (match) missing.push(pp.part_name_ar)
                           return pp
                         }))
+                        setAgentMissingParts(missing)
                       }
                     } catch (err) {
                       console.error('Agent pricing error:', err)
@@ -1296,6 +1301,11 @@ export default function EstimatePage() {
                 </button>
                 <span style={{ fontWeight: '700', color: '#be123c', fontSize: '0.95rem' }}>قطع الغيار</span>
               </div>
+              {agentMissingParts.length > 0 && (
+                <div style={{ padding: '0.5rem 1rem', backgroundColor: '#fffbeb', borderBottom: '1px solid #fde68a', fontSize: '0.75rem', color: '#92400e', textAlign: 'right', direction: 'rtl' }}>
+                  ⚠️ لم يتم العثور على سعر OEM لـ: {agentMissingParts.join(' · ')}
+                </div>
+              )}
               {editablePartPrices.map((pp, i) => (
                 <div key={pp.partId + i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 1rem', borderBottom: '1px solid #fef2f2', backgroundColor: i % 2 === 0 ? 'white' : '#fff9f9' }}>
                   <input
