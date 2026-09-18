@@ -76,9 +76,7 @@ function buildGroups(rates, parts, includePartPrice, dentMultipliers = {}) {
     for (const part of parts) {
       const rate = rateMap[part.part_name_ar]
       if (!rate) continue
-      const price = rate.part_price || 0
-      partPrices.push({ part_name_ar: part.part_name_ar, partId: part.partId, part_price: price })
-      partsTotal += price
+      partPrices.push({ part_name_ar: part.part_name_ar, partId: part.partId, part_price: 0 })
     }
     result.part_prices = partPrices
     result.parts_total = parseFloat(partsTotal.toFixed(2))
