@@ -407,7 +407,7 @@ export default function EstimatePage() {
   const [vehicleInfo, setVehicleInfo] = useState<{ year: number; make: string; model: string; insurance_company_id: string | null; vin_number?: string; customer_name?: string; customer_mobile?: string }>({ year: 0, make: '', model: '', insurance_company_id: null })
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
-  const fetchPricing = async (allParts: any[], make: string, model: string, year: number) => {
+  const fetchPricing = async (allParts: any[], make: string, model: string, year: number, forceReset = false) => {
     if (!make || !model) return
     const token = localStorage.getItem('token')
     if (!token) return
@@ -465,6 +465,7 @@ export default function EstimatePage() {
           ;[...(data.repair?.groups || []), ...(data.replace?.groups || [])].forEach((g: LaborGroup) => {
             incoming[g.labor_key] = (incoming[g.labor_key] || 0) + g.total
           })
+          if (forceReset) return incoming
           const merged: Record<string, number> = { ...prev }
           Object.entries(incoming).forEach(([k, v]) => {
             if (prev[k] === undefined) merged[k] = v
@@ -721,8 +722,8 @@ export default function EstimatePage() {
     }
   }
 
-  const refreshPricing = (updatedParts: Part[]) => {
-    fetchPricing(updatedParts, vehicleInfo.make, vehicleInfo.model, vehicleInfo.year)
+  const refreshPricing = (updatedParts: Part[], forceReset = false) => {
+    fetchPricing(updatedParts, vehicleInfo.make, vehicleInfo.model, vehicleInfo.year, forceReset)
   }
 
   const updatePart = (index: number, field: keyof Part, value: any) => {
@@ -755,7 +756,7 @@ export default function EstimatePage() {
         : null
       updated[index] = { ...updated[index], repair_subtype: newSubtype } as any
       setParts(updated)
-      refreshPricing(updated)
+      refreshPricing(updated, true)
     }
   }
 
