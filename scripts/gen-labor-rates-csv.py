@@ -92,7 +92,7 @@ def generate(cfg):
         'part_id', 'part_name_ar', 'part_name_en', 'category',
         'refitting_labor_hrs', 'dent_hrs', 'paint_hrs', 'elec_hrs',
         'intr_hrs', 'cooling_hrs', 'susp_hrs', 'mechanical_hrs', 'glass_hrs',
-        cfg['total_col'], 'hr_price_egp',
+        cfg['total_col'], 'hr_price_egp', 'paint_1hr_price_egp',
     ]
     if cfg['has_part_price']:
         base_cols.append('part_price')
@@ -128,8 +128,10 @@ def generate(cfg):
             gls = hrs.get('glass_hrs')           or None
             total = sum(v for v in [ref, dnt, pnt, elc, itr, col, ssp, mec, gls] if v)
 
-            tier     = make_tier.get(vehicle_make, 'Mid')
-            hr_price = tier_rates.get(tier, tier_rates.get('Mid', {'labor': 350}))['labor']
+            tier        = make_tier.get(vehicle_make, 'Mid')
+            tier_rate   = tier_rates.get(tier, tier_rates.get('Mid', {'labor': 350, 'paint': 2000}))
+            hr_price    = tier_rate['labor']
+            paint_1hr   = tier_rate.get('paint', 2000)
 
             if isinstance(last_updated, datetime.datetime):
                 last_updated = last_updated.strftime('%Y-%m-%d')
@@ -138,7 +140,7 @@ def generate(cfg):
                 part_id, part_name_ar, part_name_en, category,
                 ref or '', dnt or '', pnt or '', elc or '',
                 itr or '', col or '', ssp or '', mec or '', gls or '',
-                total or '', hr_price,
+                total or '', hr_price, paint_1hr,
             ]
             if cfg['has_part_price']:
                 out.append(part_price if part_price is not None else '')

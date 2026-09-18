@@ -34,7 +34,7 @@ export const HOUR_FIELDS = [
 
 /** Which fields are user-editable (and therefore overridable) per pricing type. */
 export function overrideFields(pricingType) {
-  const base = [...HOUR_FIELDS, 'hr_price_egp'];
+  const base = [...HOUR_FIELDS, 'hr_price_egp', 'paint_1hr_price_egp'];
   return pricingType === 'replace' ? [...base, 'part_price'] : base;
 }
 
