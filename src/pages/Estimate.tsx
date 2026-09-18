@@ -401,6 +401,9 @@ export default function EstimatePage() {
   const [estimateStatus, setEstimateStatus] = useState<'draft' | 'confirmed'>('draft')
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showRemoveDialog, setShowRemoveDialog] = useState<{ index: number; partName: string } | null>(null)
+  const [expandedLabors, setExpandedLabors] = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab] = useState<'parts' | 'pricing'>('parts')
+  const [needsCheckOpen, setNeedsCheckOpen] = useState(true)
   const [vehicleInfo, setVehicleInfo] = useState<{ year: number; make: string; model: string; insurance_company_id: string | null; vin_number?: string; customer_name?: string; customer_mobile?: string }>({ year: 0, make: '', model: '', insurance_company_id: null })
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
@@ -998,49 +1001,64 @@ export default function EstimatePage() {
     }
   }
 
+  const _totalLabor = Object.values(laborGroupPrices).reduce((s, v) => s + (v || 0), 0)
+  const _totalParts = editablePartPrices.reduce((s, p) => s + (p.price || 0), 0)
+  const _grandTotal = _totalLabor + _totalParts
+  const toggleLabor = (key: string) => setExpandedLabors(prev => {
+    const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next
+  })
+
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', direction: 'rtl' }}>
-      {/* Header */}
-      <div style={{
-        backgroundColor: 'white',
-        borderBottom: '1px solid #e5e7eb',
-        position: 'sticky',
-        top: 0,
-        zIndex: 40,
-      }}>
-        <div style={{
-          maxWidth: '80rem',
-          margin: '0 auto',
-          padding: '0.75rem 0.75rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#2563eb' }}>تحرير التقدير</h1>
-          <button
-            onClick={() => navigate('/dashboard')}
-            style={{
-              color: '#2563eb',
-              fontWeight: '500',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              textDecoration: 'underline',
-            }}
-          >
-            ← العودة
-          </button>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', direction: 'rtl', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
+      <style>{`
+        .est-grid{display:grid;grid-template-columns:1fr;gap:1rem}
+        @media(min-width:768px){
+          .est-grid{grid-template-columns:1fr 1fr;align-items:start}
+          .est-pricing-col{position:sticky;top:68px;max-height:calc(100vh - 76px);overflow-y:auto}
+          .est-tab-bar{display:none!important}
+          .est-col{display:block!important}
+        }
+      `}</style>
+      {/* Enhanced sticky header */}
+      <div style={{ backgroundColor: 'white', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 40, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+        <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+          {/* Right: back + vehicle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+            <button onClick={() => navigate('/dashboard')} style={{ color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: 0, flexShrink: 0 }}>←</button>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.65rem', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>تقدير</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {vehicleInfo.year} {vehicleInfo.make} {vehicleInfo.model}
+              </div>
+            </div>
+          </div>
+          {/* Left: total + confirm */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: '0.65rem', color: '#9ca3af', fontWeight: '600' }}>الإجمالي</div>
+              <div style={{ fontSize: '1rem', fontWeight: '800', color: '#1e3a8a' }}>{_grandTotal.toLocaleString()} ج.م</div>
+            </div>
+            <button
+              onClick={confirmEstimate}
+              disabled={confirming || parts.length === 0 || estimateStatus === 'confirmed'}
+              style={{ padding: '0.5rem 1rem', backgroundColor: estimateStatus === 'confirmed' ? '#16a34a' : confirming || parts.length === 0 ? '#9ca3af' : '#2563eb', color: 'white', borderRadius: '0.5rem', fontWeight: '700', fontSize: '0.85rem', border: 'none', cursor: confirming || parts.length === 0 || estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+            >
+              {estimateStatus === 'confirmed' ? '✅ مؤكد' : confirming ? '⏳...' : '✅ تأكيد'}
+            </button>
+          </div>
+        </div>
+        {/* Mobile tab bar */}
+        <div className="est-tab-bar" style={{ display: 'flex', borderTop: '1px solid #f3f4f6' }}>
+          {(['parts', 'pricing'] as const).map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} style={{ flex: 1, padding: '0.55rem', fontSize: '0.85rem', fontWeight: '700', border: 'none', cursor: 'pointer', backgroundColor: 'white', borderBottom: activeTab === tab ? '2px solid #2563eb' : '2px solid transparent', color: activeTab === tab ? '#2563eb' : '#6b7280' }}>
+              {tab === 'parts' ? `القطع (${parts.length})` : 'التسعير'}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Content */}
       <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '0.75rem 0.5rem' }}>
-        <div style={{
-          backgroundColor: 'white',
-          borderRadius: '0.75rem',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-          padding: '1rem 0.75rem',
-        }}>
           {error && (
             <div style={{
               marginBottom: '1.5rem',
@@ -1097,217 +1115,138 @@ export default function EstimatePage() {
             </div>
           )}
 
-          {/* Parts Cards */}
-          <div style={{ marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#111827' }}>قائمة الأجزاء</h2>
+        {/* ── TWO-COLUMN GRID ── */}
+        <div className="est-grid">
+
+        {/* ══ LEFT COLUMN: Parts ══ */}
+        <div className="est-col" style={{ display: activeTab === 'parts' ? 'block' : 'none' }}>
+
+          {/* Parts Cards — compact */}
+          <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden', marginBottom: '0.75rem' }}>
+            <div style={{ padding: '0.65rem 1rem', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: '600' }}>{parts.length} قطعة</span>
+              <span style={{ fontWeight: '700', color: '#111827', fontSize: '0.95rem' }}>قائمة الأجزاء</span>
+            </div>
 
             {parts.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                {parts.map((part, idx) => (
-                  <div key={idx} style={{
-                    backgroundColor: '#f9fafb',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '0.5rem',
-                    padding: '0.75rem 1rem',
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                      <button
-                        onClick={() => removePart(idx)}
-                        disabled={estimateStatus === 'confirmed'}
-                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', padding: 0 }}
-                      >❌</button>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: '600', color: '#111827', fontSize: '0.95rem' }}>{part.part_name_ar}</div>
-                        {part.confidence && (
-                          <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>{Math.round(part.confidence * 100)}% ثقة</div>
-                        )}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {parts.map((part, idx) => {
+                  const subtype = (part as any).repair_subtype as string | null
+                  const subtypeColors: Record<string, { bg: string; text: string }> = {
+                    PDR: { bg: '#f0fdf4', text: '#16a34a' }, SmallDent: { bg: '#eff6ff', text: '#2563eb' },
+                    MedDent: { bg: '#fff7ed', text: '#ea580c' }, HeavyDent: { bg: '#fef2f2', text: '#dc2626' },
+                    ChassisDamage: { bg: '#faf5ff', text: '#7c3aed' },
+                  }
+                  const sc = subtype ? (subtypeColors[subtype] || { bg: '#f3f4f6', text: '#374151' }) : null
+                  return (
+                    <div key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      {/* Compact single row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.75rem' }}>
+                        <button onClick={() => removePart(idx)} disabled={estimateStatus === 'confirmed'}
+                          style={{ color: '#dc2626', background: 'none', border: 'none', cursor: estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer', fontSize: '0.75rem', padding: '0 2px', flexShrink: 0, opacity: estimateStatus === 'confirmed' ? 0.4 : 1 }}>✕</button>
+                        <span style={{ fontWeight: '600', color: '#111827', fontSize: '0.88rem', flex: 1, textAlign: 'right' }}>{part.part_name_ar}</span>
+                        {part.confidence && <span style={{ fontSize: '0.65rem', color: '#9ca3af', flexShrink: 0 }}>{Math.round(part.confidence * 100)}%</span>}
+                        {sc && subtype && <span style={{ fontSize: '0.62rem', fontWeight: '700', padding: '0.1rem 0.35rem', borderRadius: '999px', backgroundColor: sc.bg, color: sc.text, border: `1px solid ${sc.text}33`, whiteSpace: 'nowrap', flexShrink: 0 }}>{subtype}</span>}
+                        <select
+                          value={pendingLaborPick?.index === idx ? pendingLaborPick.newSeverity : part.severity_label}
+                          onChange={(e) => updatePart(idx, 'severity_label', e.target.value as any)}
+                          disabled={estimateStatus === 'confirmed'}
+                          style={{ padding: '0.28rem 0.4rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', fontSize: '0.78rem', width: '80px', backgroundColor: part.severity_label === 'Replace' ? '#fef2f2' : '#f0fdf4', color: part.severity_label === 'Replace' ? '#dc2626' : '#16a34a', fontWeight: '600', cursor: 'pointer', flexShrink: 0 }}
+                        >
+                          <option value="Repair">إصلاح</option>
+                          <option value="Replace">استبدال</option>
+                        </select>
                       </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <select
-                      value={pendingLaborPick?.index === idx ? pendingLaborPick.newSeverity : part.severity_label}
-                      onChange={(e) => updatePart(idx, 'severity_label', e.target.value as any)}
-                      disabled={estimateStatus === 'confirmed'}
-                      style={{
-                        padding: '0.4rem 0.5rem', border: '1px solid #d1d5db', borderRadius: '0.375rem',
-                        textAlign: 'right', fontSize: '0.875rem', width: '90px',
-                        backgroundColor: part.severity_label === 'Replace' ? '#fef2f2' : '#f0fdf4',
-                        color: part.severity_label === 'Replace' ? '#dc2626' : '#16a34a',
-                        fontWeight: '600', cursor: 'pointer',
-                      }}
-                    >
-                      <option value="Repair">إصلاح</option>
-                      <option value="Replace">استبدال</option>
-                    </select>
-                    {/* Repair sub-type badge */}
-                    {part.severity_label === 'Repair' && (part as any).repair_subtype && (() => {
-                      const subtype = (part as any).repair_subtype as string
-                      const colors: Record<string, { bg: string; text: string }> = {
-                        PDR:           { bg: '#f0fdf4', text: '#16a34a' },
-                        SmallDent:     { bg: '#eff6ff', text: '#2563eb' },
-                        MedDent:       { bg: '#fff7ed', text: '#ea580c' },
-                        HeavyDent:     { bg: '#fef2f2', text: '#dc2626' },
-                        ChassisDamage: { bg: '#faf5ff', text: '#7c3aed' },
-                      }
-                      const c = colors[subtype] || { bg: '#f3f4f6', text: '#374151' }
-                      return (
-                        <span style={{
-                          fontSize: '0.7rem', fontWeight: '700', padding: '0.2rem 0.5rem',
-                          borderRadius: '999px', backgroundColor: c.bg, color: c.text,
-                          border: `1px solid ${c.text}33`, whiteSpace: 'nowrap',
-                        }}>
-                          {subtype}
-                        </span>
-                      )
-                    })()}
-                    </div>
-
-                    {/* Inline labor picker for unknown parts with pending severity change */}
-                    {pendingLaborPick?.index === idx && (
-                      <div style={{ marginTop: '0.5rem', border: '1.5px solid #fbbf24', borderRadius: '0.5rem', overflow: 'hidden' }}>
-                        <div style={{ padding: '0.5rem 0.75rem', backgroundColor: '#fffbeb', fontSize: '0.8rem', fontWeight: '700', color: '#92400e', borderBottom: '1px solid #fde68a', textAlign: 'right' }}>
-                          حدد أنواع الأعمال للوضع الجديد
+                      {/* Inline labor picker for unknown parts */}
+                      {pendingLaborPick?.index === idx && (
+                        <div style={{ margin: '0 0.75rem 0.5rem', border: '1.5px solid #fbbf24', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                          <div style={{ padding: '0.4rem 0.75rem', backgroundColor: '#fffbeb', fontSize: '0.78rem', fontWeight: '700', color: '#92400e', borderBottom: '1px solid #fde68a', textAlign: 'right' }}>حدد أنواع الأعمال للوضع الجديد</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: 'white' }}>
+                            {LABOR_TYPES.map(lt => (
+                              <label key={lt.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.4rem', padding: '0.35rem 0.75rem', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', fontSize: '0.78rem', backgroundColor: pendingLaborPick.selected.includes(lt.key) ? '#fffbeb' : 'white', direction: 'rtl' }}>
+                                <span>{lt.nameAr}</span>
+                                <input type="checkbox" checked={pendingLaborPick.selected.includes(lt.key)}
+                                  onChange={() => setPendingLaborPick(prev => prev ? { ...prev, selected: prev.selected.includes(lt.key) ? prev.selected.filter(k => k !== lt.key) : [...prev.selected, lt.key] } : prev)}
+                                  style={{ width: '14px', height: '14px', accentColor: '#d97706', cursor: 'pointer' }} />
+                              </label>
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem', padding: '0.4rem 0.75rem', backgroundColor: '#fffbeb', borderTop: '1px solid #fde68a' }}>
+                            <button onClick={confirmLaborPick} disabled={pendingLaborPick.selected.length === 0}
+                              style={{ flex: 1, padding: '0.35rem', backgroundColor: pendingLaborPick.selected.length === 0 ? '#9ca3af' : '#d97706', color: 'white', border: 'none', borderRadius: '0.375rem', fontWeight: '700', fontSize: '0.78rem', cursor: pendingLaborPick.selected.length === 0 ? 'not-allowed' : 'pointer' }}>تأكيد</button>
+                            <button onClick={() => setPendingLaborPick(null)}
+                              style={{ padding: '0.35rem 0.75rem', backgroundColor: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '0.375rem', fontWeight: '600', fontSize: '0.78rem', cursor: 'pointer' }}>إلغاء</button>
+                          </div>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', backgroundColor: 'white' }}>
-                          {LABOR_TYPES.map(lt => (
-                            <label key={lt.key} style={{
-                              display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-                              gap: '0.4rem', padding: '0.4rem 0.75rem', cursor: 'pointer',
-                              borderBottom: '1px solid #f3f4f6', fontSize: '0.8rem',
-                              backgroundColor: pendingLaborPick.selected.includes(lt.key) ? '#fffbeb' : 'white',
-                              direction: 'rtl',
-                            }}>
-                              <span>{lt.nameAr}</span>
-                              <input
-                                type="checkbox"
-                                checked={pendingLaborPick.selected.includes(lt.key)}
-                                onChange={() => setPendingLaborPick(prev => prev ? {
-                                  ...prev,
-                                  selected: prev.selected.includes(lt.key)
-                                    ? prev.selected.filter(k => k !== lt.key)
-                                    : [...prev.selected, lt.key]
-                                } : prev)}
-                                style={{ width: '14px', height: '14px', accentColor: '#d97706', cursor: 'pointer' }}
-                              />
-                            </label>
-                          ))}
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', padding: '0.5rem 0.75rem', backgroundColor: '#fffbeb', borderTop: '1px solid #fde68a' }}>
-                          <button
-                            onClick={confirmLaborPick}
-                            disabled={pendingLaborPick.selected.length === 0}
-                            style={{ flex: 1, padding: '0.4rem', backgroundColor: pendingLaborPick.selected.length === 0 ? '#9ca3af' : '#d97706', color: 'white', border: 'none', borderRadius: '0.375rem', fontWeight: '700', fontSize: '0.8rem', cursor: pendingLaborPick.selected.length === 0 ? 'not-allowed' : 'pointer' }}
-                          >تأكيد</button>
-                          <button
-                            onClick={() => setPendingLaborPick(null)}
-                            style={{ padding: '0.4rem 0.75rem', backgroundColor: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '0.375rem', fontWeight: '600', fontSize: '0.8rem', cursor: 'pointer' }}
-                          >إلغاء</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-                لا توجد أجزاء بعد
-              </div>
-            )}
-
-          </div>
-
-          {/* Needs Check Parts Section */}
-          {needsCheckParts.length > 0 && (
-            <div style={{ marginBottom: '2rem' }}>
-              {/* Red Warning Banner */}
-              <div style={{
-                marginBottom: '1.5rem',
-                padding: '1rem 1.5rem',
-                backgroundColor: '#fee2e2',
-                border: '2px solid #dc2626',
-                borderRadius: '0.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1rem'
-              }}>
-                <span style={{ fontSize: '2rem' }}>⚠️</span>
-                <div>
-                  <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#991b1b', marginBottom: '0.25rem' }}>
-                    أجزاء تحتاج فحص ({needsCheckParts.length})
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: '#7f1d1d' }}>
-                    يرجى مراجعة الأجزاء أدناه والموافقة أو الرفض قبل تأكيد التقدير
-                  </div>
-                </div>
-              </div>
-
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#dc2626' }}>
-                قائمة الأجزاء المحتاجة للفحص
-              </h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                {needsCheckParts.map((part, idx) => (
-                  <div key={idx} style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.5rem', padding: '0.75rem 1rem' }}>
-                    <div style={{ textAlign: 'right', marginBottom: '0.5rem' }}>
-                      <div style={{ fontWeight: '600', color: '#991b1b', fontSize: '0.95rem' }}>{part.part_name_ar}</div>
-                      <div style={{ fontSize: '0.7rem', color: '#dc2626' }}>{Math.round(part.confidence * 100)}% ثقة (منخفضة)</div>
-                      {part.reason_for_uncertainty && (
-                        <div style={{ fontSize: '0.7rem', color: '#b91c1c', marginTop: '0.25rem' }}>{part.reason_for_uncertainty}</div>
                       )}
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button
-                          onClick={() => approveNeedsCheckPart(idx)}
-                          disabled={estimateStatus === 'confirmed'}
-                          style={{ padding: '0.5rem 0.875rem', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '0.375rem', fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer' }}
-                        >✅ موافق</button>
-                        <button
-                          onClick={() => rejectNeedsCheckPart(idx)}
-                          disabled={estimateStatus === 'confirmed'}
-                          style={{ padding: '0.5rem 0.875rem', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '0.375rem', fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer' }}
-                        >❌ رفض</button>
+                  )
+                })}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af', fontSize: '0.9rem' }}>لا توجد أجزاء بعد</div>
+            )}
+          </div>
+
+          {/* Needs Check — compact collapsible */}
+          {needsCheckParts.length > 0 && (
+            <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden', marginBottom: '0.75rem', border: '1.5px solid #fecaca' }}>
+              <button onClick={() => setNeedsCheckOpen(o => !o)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.65rem 1rem', background: '#fef2f2', border: 'none', cursor: 'pointer' }}>
+                <span style={{ fontSize: '0.78rem', color: '#dc2626', fontWeight: '700' }}>{needsCheckOpen ? '▲' : '▼'}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.72rem', backgroundColor: '#dc2626', color: 'white', borderRadius: '999px', padding: '0.05rem 0.45rem', fontWeight: '700' }}>{needsCheckParts.length}</span>
+                  <span style={{ fontWeight: '700', color: '#991b1b', fontSize: '0.88rem' }}>⚠️ تحتاج فحص</span>
+                </div>
+              </button>
+              {needsCheckOpen && (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {needsCheckParts.map((part, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderTop: '1px solid #fee2e2' }}>
+                      <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
+                        <button onClick={() => approveNeedsCheckPart(idx)} disabled={estimateStatus === 'confirmed'}
+                          style={{ padding: '0.25rem 0.6rem', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '0.375rem', fontWeight: '700', fontSize: '0.75rem', cursor: 'pointer' }}>✓</button>
+                        <button onClick={() => rejectNeedsCheckPart(idx)} disabled={estimateStatus === 'confirmed'}
+                          style={{ padding: '0.25rem 0.6rem', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '0.375rem', fontWeight: '700', fontSize: '0.75rem', cursor: 'pointer' }}>✕</button>
                       </div>
-                      <span style={{
-                        padding: '0.25rem 0.625rem',
-                        backgroundColor: part.severity_label === 'Repair' ? '#dbeafe' : '#fee2e2',
-                        color: part.severity_label === 'Repair' ? '#1e40af' : '#991b1b',
-                        borderRadius: '0.375rem',
-                        fontWeight: '600',
-                        fontSize: '0.8rem',
-                      }}>
+                      <span style={{ flex: 1, fontWeight: '600', color: '#991b1b', fontSize: '0.85rem', textAlign: 'right' }}>{part.part_name_ar}</span>
+                      <span style={{ fontSize: '0.65rem', color: '#9ca3af', flexShrink: 0 }}>{Math.round(part.confidence * 100)}%</span>
+                      <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', borderRadius: '0.25rem', backgroundColor: part.severity_label === 'Repair' ? '#dbeafe' : '#fee2e2', color: part.severity_label === 'Repair' ? '#1e40af' : '#991b1b', fontWeight: '600', flexShrink: 0 }}>
                         {part.severity_label === 'Repair' ? 'إصلاح' : 'استبدال'}
                       </span>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* Add New Part */}
-          <div style={{
-            marginBottom: '1.25rem',
-            padding: '0.75rem',
-            backgroundColor: '#f9fafb',
-            borderRadius: '0.5rem',
-            border: '2px solid #e5e7eb',
-          }}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1.25rem', color: '#111827' }}>إضافة جزء جديد</h3>
-            <AddPartForm
-              onAdd={(part) => {
-                const updated = [...parts, { ...part, is_ai_detected: false, ai_original_severity: null as any }]
-                setParts(updated)
-                logAudit('add_part', `تم إضافة قطعة جديدة: ${part.part_name_ar}`)
-                refreshPricing(updated)
-              }}
-              disabled={estimateStatus === 'confirmed'}
-              existingParts={parts}
-            />
+          <div style={{ backgroundColor: 'white', borderRadius: '0.75rem', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden', marginBottom: '0.75rem' }}>
+            <div style={{ padding: '0.65rem 1rem', borderBottom: '1px solid #f3f4f6' }}>
+              <span style={{ fontWeight: '700', color: '#111827', fontSize: '0.88rem' }}>➕ إضافة جزء جديد</span>
+            </div>
+            <div style={{ padding: '0.75rem' }}>
+              <AddPartForm
+                onAdd={(part) => {
+                  const updated = [...parts, { ...part, is_ai_detected: false, ai_original_severity: null as any }]
+                  setParts(updated)
+                  logAudit('add_part', `تم إضافة قطعة جديدة: ${part.part_name_ar}`)
+                  refreshPricing(updated)
+                }}
+                disabled={estimateStatus === 'confirmed'}
+                existingParts={parts}
+              />
+            </div>
           </div>
+
+        </div>{/* ══ END LEFT COLUMN ══ */}
+
+        {/* ══ RIGHT COLUMN: Pricing ══ */}
+        <div className="est-col est-pricing-col" style={{ display: activeTab === 'pricing' ? 'block' : 'none' }}>
 
           {/* Spare Parts (Replace) — editable */}
           {editablePartPrices.length > 0 && (
-            <div style={{ marginBottom: '2rem', border: '1px solid #fecdd3', borderRadius: '0.6rem', overflow: 'hidden' }}>
+            <div style={{ marginBottom: '0.75rem', border: '1px solid #fecdd3', borderRadius: '0.75rem', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', backgroundColor: '#fff1f2', borderBottom: '1px solid #fecdd3' }}>
                 <span></span>
                 <span style={{ fontWeight: '700', color: '#be123c', fontSize: '1rem' }}>قطع الغيار</span>
@@ -1351,8 +1290,7 @@ export default function EstimatePage() {
           )}
 
           {/* Pricing Breakdown Section */}
-          <div style={{ marginBottom: '2rem' }}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '1rem', color: '#111827' }}>تفاصيل التكاليف</h3>
+          <div style={{ marginBottom: '0.75rem' }}>
 
             {pricingLoading && (
               <div style={{ padding: '1.5rem', textAlign: 'center', color: '#6b7280', backgroundColor: '#f9fafb', borderRadius: '0.5rem' }}>
@@ -1400,163 +1338,135 @@ export default function EstimatePage() {
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-                  {/* ── المصنعيات ── */}
+                  {/* ── المصنعيات — accordion ── */}
                   {unifiedGroups.length > 0 && (
-                    <div style={{ border: '1.5px solid #ddd6fe', borderRadius: '0.75rem', overflow: 'hidden' }}>
+                    <div style={{ border: '1.5px solid #ddd6fe', borderRadius: '0.75rem', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
                       {/* Section header */}
-                      <div style={{ backgroundColor: '#faf5ff', padding: '0.75rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ddd6fe' }}>
-                        <span style={{ fontWeight: '800', color: '#5b21b6', fontSize: '1rem' }}>المصنعيات</span>
+                      <div style={{ backgroundColor: '#faf5ff', padding: '0.65rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ddd6fe' }}>
                         <span style={{ fontWeight: '700', color: '#7c3aed', fontSize: '0.85rem' }}>{totalLabor.toLocaleString()} ج.م</span>
+                        <span style={{ fontWeight: '800', color: '#5b21b6', fontSize: '0.95rem' }}>المصنعيات</span>
                       </div>
 
                       {unifiedGroups.map(({ laborKey, laborNameAr, repairGroup, replaceGroup, isExtraRepair, isExtraReplace }) => {
                         const groupTotal = laborGroupPrices[laborKey] ?? 0
-
                         const repManKey = `repair_${laborKey}`
                         const rplManKey = `replace_${laborKey}`
                         const repManuals = manualLaborEntries[repManKey] || []
                         const rplManuals = manualLaborEntries[rplManKey] || []
-
                         const hasBothSides = (!!repairGroup || isExtraRepair) && (!!replaceGroup || isExtraReplace)
                         const addType = unifiedAddType[laborKey] || (replaceGroup || isExtraReplace ? 'replace' : 'repair')
                         const activeManKey = `${addType}_${laborKey}`
                         const pendingAdd = pendingManualAdd[activeManKey] || { partName: '', costStr: '' }
+                        const isOpen = expandedLabors.has(laborKey)
+                        const entryCount = (repairGroup?.entries.filter(e => !deletedEntries.has(`${laborKey}_${e.part_name_ar}`)).length || 0)
+                          + repManuals.length
+                          + (replaceGroup?.entries.filter(e => !deletedEntries.has(`${laborKey}_${e.part_name_ar}`)).length || 0)
+                          + rplManuals.length
 
                         return (
                           <div key={laborKey} style={{ borderBottom: '1px solid #ede9fe' }}>
-                            {/* Group header — one price per labor name */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 1.25rem', backgroundColor: '#f5f3ff', gap: '0.75rem' }}>
+                            {/* Accordion header — always visible */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', backgroundColor: '#f5f3ff' }}>
+                              <button onClick={() => toggleLabor(laborKey)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', fontSize: '0.7rem', padding: '0 2px', flexShrink: 0 }}>
+                                {isOpen ? '▼' : '▶'}
+                              </button>
+                              {entryCount > 0 && (
+                                <span style={{ fontSize: '0.62rem', backgroundColor: '#7c3aed', color: 'white', borderRadius: '999px', padding: '0.05rem 0.4rem', fontWeight: '700', flexShrink: 0 }}>{entryCount}</span>
+                              )}
+                              <span onClick={() => toggleLabor(laborKey)} style={{ fontWeight: '700', color: '#111827', fontSize: '0.85rem', flex: 1, textAlign: 'right', cursor: 'pointer' }}>{laborNameAr}</span>
                               {estimateStatus !== 'confirmed' ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }}>
                                   <input type="number" min="0" value={laborGroupPrices[laborKey] ?? ''} placeholder="0"
+                                    onClick={e => e.stopPropagation()}
                                     onChange={(e2) => setLaborGroupPrices(prev => ({ ...prev, [laborKey]: Math.max(0, parseFloat(e2.target.value) || 0) }))}
-                                    style={{ width: '95px', padding: '0.35rem 0.5rem', border: '1.5px solid #c4b5fd', borderRadius: '0.375rem', textAlign: 'center', fontSize: '0.85rem', direction: 'ltr', color: '#7c3aed', fontWeight: '700', outline: 'none' }}
+                                    style={{ width: '85px', padding: '0.28rem 0.4rem', border: '1.5px solid #c4b5fd', borderRadius: '0.375rem', textAlign: 'center', fontSize: '0.8rem', direction: 'ltr', color: '#7c3aed', fontWeight: '700', outline: 'none' }}
                                   />
-                                  <span style={{ fontSize: '0.72rem', color: '#7c3aed', fontWeight: '700' }}>ج.م</span>
+                                  <span style={{ fontSize: '0.7rem', color: '#7c3aed', fontWeight: '700' }}>ج.م</span>
                                 </div>
                               ) : (
-                                <span style={{ fontWeight: '700', color: '#7c3aed', fontSize: '0.88rem' }}>{groupTotal.toLocaleString()} ج.م</span>
-                              )}
-                              <span style={{ fontWeight: '700', color: '#111827', fontSize: '0.9rem' }}>{laborNameAr}</span>
-                            </div>
-
-                            {/* Entries */}
-                            <div style={{ padding: '0.35rem 1.25rem 0.6rem', backgroundColor: 'white' }}>
-
-                              {/* Repair DB entries */}
-                              {repairGroup?.entries.filter(e => !deletedEntries.has(`${laborKey}_${e.part_name_ar}`)).map((e, ei) => {
-                                const ek = `${laborKey}_${e.part_name_ar}`
-                                return (
-                                  <div key={`r_${ei}`} style={{ display: 'flex', alignItems: 'center', padding: '0.28rem 0', fontSize: '0.8rem', color: '#6b7280', gap: '0.5rem' }}>
-                                    {estimateStatus !== 'confirmed' && (
-                                      <button onClick={() => setDeleteConfirm({ ek, label: e.part_name_ar })}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '0.7rem', padding: '0 2px', flexShrink: 0 }}>✕</button>
-                                    )}
-                                    <span style={{ flex: 1, textAlign: 'right' }}>{e.part_name_ar}</span>
-                                    <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#f0fdf4', color: '#059669', fontWeight: '700', whiteSpace: 'nowrap' }}>إصلاح</span>
-                                  </div>
-                                )
-                              })}
-
-                              {/* Repair manual entries */}
-                              {repManuals.map(m => (
-                                <div key={m.id} style={{ display: 'flex', alignItems: 'center', padding: '0.28rem 0', fontSize: '0.8rem', color: '#6b7280', gap: '0.5rem' }}>
-                                  {estimateStatus !== 'confirmed' && (
-                                    <button onClick={() => removeManualEntry('repair', laborKey, m.id)}
-                                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '0.7rem', padding: '0 2px', flexShrink: 0 }}>✕</button>
-                                  )}
-                                  <span style={{ flex: 1, textAlign: 'right' }}>{m.part_name_ar}</span>
-                                  {hasBothSides && <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#f0fdf4', color: '#059669', fontWeight: '700', whiteSpace: 'nowrap' }}>إصلاح</span>}
-                                </div>
-                              ))}
-
-                              {/* Replace DB entries */}
-                              {replaceGroup?.entries.filter(e => !deletedEntries.has(`${laborKey}_${e.part_name_ar}`)).map((e, ei) => {
-                                const ek = `${laborKey}_${e.part_name_ar}`
-                                return (
-                                  <div key={`p_${ei}`} style={{ display: 'flex', alignItems: 'center', padding: '0.28rem 0', fontSize: '0.8rem', color: '#6b7280', gap: '0.5rem' }}>
-                                    {estimateStatus !== 'confirmed' && (
-                                      <button onClick={() => setDeleteConfirm({ ek, label: e.part_name_ar })}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '0.7rem', padding: '0 2px', flexShrink: 0 }}>✕</button>
-                                    )}
-                                    <span style={{ flex: 1, textAlign: 'right' }}>{e.part_name_ar}</span>
-                                    <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#fef2f2', color: '#dc2626', fontWeight: '700', whiteSpace: 'nowrap' }}>استبدال</span>
-                                  </div>
-                                )
-                              })}
-
-                              {/* Replace manual entries */}
-                              {rplManuals.map(m => (
-                                <div key={m.id} style={{ display: 'flex', alignItems: 'center', padding: '0.28rem 0', fontSize: '0.8rem', color: '#6b7280', gap: '0.5rem' }}>
-                                  {estimateStatus !== 'confirmed' && (
-                                    <button onClick={() => removeManualEntry('replace', laborKey, m.id)}
-                                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '0.7rem', padding: '0 2px', flexShrink: 0 }}>✕</button>
-                                  )}
-                                  <span style={{ flex: 1, textAlign: 'right' }}>{m.part_name_ar}</span>
-                                  {hasBothSides && <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#fef2f2', color: '#dc2626', fontWeight: '700', whiteSpace: 'nowrap' }}>استبدال</span>}
-                                </div>
-                              ))}
-
-                              {/* Add entry row */}
-                              {estimateStatus !== 'confirmed' && (
-                                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px dashed #ede9fe' }}>
-                                  <button
-                                    onClick={() => {
-                                      if (!pendingAdd.partName) return
-                                      setManualLaborEntries(prev => ({
-                                        ...prev,
-                                        [activeManKey]: [...(prev[activeManKey] || []), { id: Date.now().toString(), part_name_ar: pendingAdd.partName, cost: 0 }]
-                                      }))
-                                      setPendingManualAdd(prev => ({ ...prev, [activeManKey]: { partName: '', costStr: '' } }))
-                                    }}
-                                    style={{ padding: '0.25rem 0.6rem', backgroundColor: '#7c3aed', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer', flexShrink: 0 }}>➕</button>
-                                  {hasBothSides && (
-                                    <select value={addType}
-                                      onChange={(e2) => setUnifiedAddType(prev => ({ ...prev, [laborKey]: e2.target.value as 'repair' | 'replace' }))}
-                                      style={{ width: '72px', flexShrink: 0, padding: '0.22rem 0.3rem', border: '1px solid #ddd6fe', borderRadius: '0.375rem', fontSize: '0.72rem', textAlign: 'right', color: addType === 'repair' ? '#059669' : '#dc2626', fontWeight: '700' }}>
-                                      <option value="repair">إصلاح</option>
-                                      <option value="replace">استبدال</option>
-                                    </select>
-                                  )}
-                                  <PartSelect
-                                    value={pendingAdd.partName}
-                                    onChange={(v) => setPendingManualAdd(prev => ({ ...prev, [activeManKey]: { ...pendingAdd, partName: v } }))}
-                                    options={parts.map(p => ({ label: p.part_name_ar, value: p.part_name_ar }))}
-                                    placeholder="-- اختر جزء --"
-                                  />
-                                </div>
+                                <span style={{ fontWeight: '700', color: '#7c3aed', fontSize: '0.82rem', flexShrink: 0 }}>{groupTotal.toLocaleString()} ج.م</span>
                               )}
                             </div>
+
+                            {/* Expanded entries */}
+                            {isOpen && (
+                              <div style={{ padding: '0.35rem 1rem 0.5rem', backgroundColor: 'white' }}>
+                                {/* Repair DB entries */}
+                                {repairGroup?.entries.filter(e => !deletedEntries.has(`${laborKey}_${e.part_name_ar}`)).map((e, ei) => {
+                                  const ek = `${laborKey}_${e.part_name_ar}`
+                                  return (
+                                    <div key={`r_${ei}`} style={{ display: 'flex', alignItems: 'center', padding: '0.22rem 0', fontSize: '0.78rem', color: '#6b7280', gap: '0.4rem' }}>
+                                      {estimateStatus !== 'confirmed' && <button onClick={() => setDeleteConfirm({ ek, label: e.part_name_ar })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '0.65rem', padding: 0, flexShrink: 0 }}>✕</button>}
+                                      <span style={{ flex: 1, textAlign: 'right' }}>{e.part_name_ar}</span>
+                                      <span style={{ fontSize: '0.62rem', padding: '0.08rem 0.35rem', borderRadius: '4px', background: '#f0fdf4', color: '#059669', fontWeight: '700', whiteSpace: 'nowrap' }}>إصلاح</span>
+                                    </div>
+                                  )
+                                })}
+                                {/* Repair manual entries */}
+                                {repManuals.map(m => (
+                                  <div key={m.id} style={{ display: 'flex', alignItems: 'center', padding: '0.22rem 0', fontSize: '0.78rem', color: '#6b7280', gap: '0.4rem' }}>
+                                    {estimateStatus !== 'confirmed' && <button onClick={() => removeManualEntry('repair', laborKey, m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '0.65rem', padding: 0, flexShrink: 0 }}>✕</button>}
+                                    <span style={{ flex: 1, textAlign: 'right' }}>{m.part_name_ar}</span>
+                                    {hasBothSides && <span style={{ fontSize: '0.62rem', padding: '0.08rem 0.35rem', borderRadius: '4px', background: '#f0fdf4', color: '#059669', fontWeight: '700', whiteSpace: 'nowrap' }}>إصلاح</span>}
+                                  </div>
+                                ))}
+                                {/* Replace DB entries */}
+                                {replaceGroup?.entries.filter(e => !deletedEntries.has(`${laborKey}_${e.part_name_ar}`)).map((e, ei) => {
+                                  const ek = `${laborKey}_${e.part_name_ar}`
+                                  return (
+                                    <div key={`p_${ei}`} style={{ display: 'flex', alignItems: 'center', padding: '0.22rem 0', fontSize: '0.78rem', color: '#6b7280', gap: '0.4rem' }}>
+                                      {estimateStatus !== 'confirmed' && <button onClick={() => setDeleteConfirm({ ek, label: e.part_name_ar })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '0.65rem', padding: 0, flexShrink: 0 }}>✕</button>}
+                                      <span style={{ flex: 1, textAlign: 'right' }}>{e.part_name_ar}</span>
+                                      <span style={{ fontSize: '0.62rem', padding: '0.08rem 0.35rem', borderRadius: '4px', background: '#fef2f2', color: '#dc2626', fontWeight: '700', whiteSpace: 'nowrap' }}>استبدال</span>
+                                    </div>
+                                  )
+                                })}
+                                {/* Replace manual entries */}
+                                {rplManuals.map(m => (
+                                  <div key={m.id} style={{ display: 'flex', alignItems: 'center', padding: '0.22rem 0', fontSize: '0.78rem', color: '#6b7280', gap: '0.4rem' }}>
+                                    {estimateStatus !== 'confirmed' && <button onClick={() => removeManualEntry('replace', laborKey, m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '0.65rem', padding: 0, flexShrink: 0 }}>✕</button>}
+                                    <span style={{ flex: 1, textAlign: 'right' }}>{m.part_name_ar}</span>
+                                    {hasBothSides && <span style={{ fontSize: '0.62rem', padding: '0.08rem 0.35rem', borderRadius: '4px', background: '#fef2f2', color: '#dc2626', fontWeight: '700', whiteSpace: 'nowrap' }}>استبدال</span>}
+                                  </div>
+                                ))}
+                                {/* Add entry row */}
+                                {estimateStatus !== 'confirmed' && (
+                                  <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', marginTop: '0.4rem', paddingTop: '0.4rem', borderTop: '1px dashed #ede9fe' }}>
+                                    <button onClick={() => { if (!pendingAdd.partName) return; setManualLaborEntries(prev => ({ ...prev, [activeManKey]: [...(prev[activeManKey] || []), { id: Date.now().toString(), part_name_ar: pendingAdd.partName, cost: 0 }] })); setPendingManualAdd(prev => ({ ...prev, [activeManKey]: { partName: '', costStr: '' } })) }}
+                                      style={{ padding: '0.22rem 0.5rem', backgroundColor: '#7c3aed', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.72rem', fontWeight: '700', cursor: 'pointer', flexShrink: 0 }}>➕</button>
+                                    {hasBothSides && (
+                                      <select value={addType} onChange={(e2) => setUnifiedAddType(prev => ({ ...prev, [laborKey]: e2.target.value as 'repair' | 'replace' }))}
+                                        style={{ width: '68px', flexShrink: 0, padding: '0.2rem 0.25rem', border: '1px solid #ddd6fe', borderRadius: '0.375rem', fontSize: '0.7rem', textAlign: 'right', color: addType === 'repair' ? '#059669' : '#dc2626', fontWeight: '700' }}>
+                                        <option value="repair">إصلاح</option>
+                                        <option value="replace">استبدال</option>
+                                      </select>
+                                    )}
+                                    <PartSelect value={pendingAdd.partName} onChange={(v) => setPendingManualAdd(prev => ({ ...prev, [activeManKey]: { ...pendingAdd, partName: v } }))} options={parts.map(p => ({ label: p.part_name_ar, value: p.part_name_ar }))} placeholder="-- اختر جزء --" />
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         )
                       })}
 
-                      {/* Add new labor type */}
+                      {/* Add new labor type — pinned at bottom */}
                       {estimateStatus !== 'confirmed' && availableLaborTypes.length > 0 && (
-                        <div style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1.25rem', alignItems: 'center', backgroundColor: '#faf5ff', borderTop: '1px solid #ede9fe' }}>
-                          <button
-                            onClick={() => {
-                              if (!pendingLaborNewKey) return
-                              setExtraLaborGroups(prev => ({ ...prev, repair: [...prev.repair, pendingLaborNewKey] }))
-                              setPendingLaborNewKey('')
-                            }}
+                        <div style={{ display: 'flex', gap: '0.5rem', padding: '0.6rem 0.75rem', alignItems: 'center', backgroundColor: '#faf5ff', borderTop: '1px solid #ede9fe' }}>
+                          <button onClick={() => { if (!pendingLaborNewKey) return; setExtraLaborGroups(prev => ({ ...prev, repair: [...prev.repair, pendingLaborNewKey] })); setPendingLaborNewKey('') }}
                             disabled={!pendingLaborNewKey}
-                            style={{ padding: '0.35rem 0.9rem', backgroundColor: pendingLaborNewKey ? '#7c3aed' : '#9ca3af', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.8rem', fontWeight: '700', cursor: pendingLaborNewKey ? 'pointer' : 'not-allowed', flexShrink: 0 }}>
+                            style={{ padding: '0.3rem 0.75rem', backgroundColor: pendingLaborNewKey ? '#7c3aed' : '#9ca3af', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.78rem', fontWeight: '700', cursor: pendingLaborNewKey ? 'pointer' : 'not-allowed', flexShrink: 0 }}>
                             + إضافة عمل
                           </button>
-                          <PartSelect
-                            value={pendingLaborNewKey}
-                            onChange={setPendingLaborNewKey}
-                            options={availableLaborTypes.map(lt => ({ label: lt.nameAr, value: lt.key }))}
-                            placeholder="-- اختر نوع العمل --"
-                          />
+                          <PartSelect value={pendingLaborNewKey} onChange={setPendingLaborNewKey} options={availableLaborTypes.map(lt => ({ label: lt.nameAr, value: lt.key }))} placeholder="-- اختر نوع العمل --" />
                         </div>
                       )}
                     </div>
                   )}
 
                   {/* Grand Total */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 1.25rem', backgroundColor: '#1e3a8a', borderRadius: '0.6rem', color: 'white', fontWeight: '800', fontSize: '1.05rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.85rem 1rem', backgroundColor: '#1e3a8a', borderRadius: '0.6rem', color: 'white', fontWeight: '800', fontSize: '1rem', marginTop: '0.5rem' }}>
                     <span>{(totalLabor + totalParts).toLocaleString()} ج.م</span>
                     <span>الإجمالي الكلي</span>
                   </div>
@@ -1584,39 +1494,8 @@ export default function EstimatePage() {
             )}
           </div>
 
-          {/* Actions */}
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button
-              onClick={confirmEstimate}
-              disabled={confirming || parts.length === 0 || estimateStatus === 'confirmed'}
-              style={{
-                flex: 1,
-                padding: '1rem 1.5rem',
-                backgroundColor: confirming || parts.length === 0 || estimateStatus === 'confirmed' ? '#9ca3af' : '#2563eb',
-                color: 'white',
-                borderRadius: '0.5rem',
-                fontWeight: 'bold',
-                fontSize: '1.125rem',
-                border: 'none',
-                cursor: confirming || parts.length === 0 || estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {estimateStatus === 'confirmed' ? '✅ مؤكد' : confirming ? '⏳ جاري...' : '✅ تأكيد التقدير'}
-            </button>
-            <button
-              onClick={() => navigate('/dashboard')}
-              style={{
-                padding: '1rem 1.5rem',
-                border: '2px solid #d1d5db',
-                borderRadius: '0.5rem',
-                fontWeight: 'bold',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-              }}
-            >
-              ← إلغاء
-            </button>
-          </div>
+        </div>{/* ══ END RIGHT COLUMN ══ */}
+        </div>{/* ══ END GRID ══ */}
 
           {/* Delete Labor Entry Confirmation */}
           {deleteConfirm && (
@@ -1779,7 +1658,6 @@ export default function EstimatePage() {
               </div>
             </div>
           )}
-        </div>
       </div>
     </div>
   )
