@@ -157,4 +157,49 @@ router.post('/', authenticate, async (req, res, next) => {
   }
 })
 
+/**
+ * POST /api/pricing/agent
+ * Fetch OEM prices from the local pricing agent for all Replace parts.
+ * Calls are run in parallel — expect ~60s total.
+ */
+router.post('/agent', authenticate, async (req, res, next) => {
+  try {
+    const { parts, make, model, year } = req.body
+    const agentUrl = process.env.PRICING_AGENT_URL || 'http://localhost:8100'
+
+    const replaceParts = (parts || []).filter(p => p.severity_label === 'Replace' && p.part_name_ar)
+
+    if (replaceParts.length === 0) {
+      return res.json({ success: true, results: [] })
+    }
+
+    const results = await Promise.all(
+      replaceParts.map(async (part) => {
+        try {
+          const r = await fetch(`${agentUrl}/pricing-engine`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ make, model, year: String(year), part: part.part_name_ar }),
+            signal: AbortSignal.timeout(120_000),
+          })
+          const data = await r.json()
+          return {
+            part_name_ar: part.part_name_ar,
+            partId: part.partId || null,
+            oem_price: data.prices?.oem?.typical ?? null,
+            confidence: data.prices?.oem?.confidence ?? 0,
+          }
+        } catch {
+          return { part_name_ar: part.part_name_ar, partId: part.partId || null, oem_price: null, confidence: 0 }
+        }
+      })
+    )
+
+    res.json({ success: true, results })
+  } catch (err) {
+    console.error('❌ Agent pricing error:', err.message)
+    next({ message: err.message, status: 500 })
+  }
+})
+
 export default router

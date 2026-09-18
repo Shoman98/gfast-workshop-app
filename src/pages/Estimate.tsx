@@ -404,6 +404,7 @@ export default function EstimatePage() {
   const [expandedLabors, setExpandedLabors] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'parts' | 'pricing'>('parts')
   const [needsCheckOpen, setNeedsCheckOpen] = useState(true)
+  const [agentPricingLoading, setAgentPricingLoading] = useState(false)
   const [vehicleInfo, setVehicleInfo] = useState<{ year: number; make: string; model: string; insurance_company_id: string | null; vin_number?: string; customer_name?: string; customer_mobile?: string }>({ year: 0, make: '', model: '', insurance_company_id: null })
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
@@ -1248,9 +1249,52 @@ export default function EstimatePage() {
           {/* Spare Parts (Replace) — editable */}
           {editablePartPrices.length > 0 && (
             <div style={{ marginBottom: '0.75rem', border: '1px solid #fecdd3', borderRadius: '0.75rem', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', backgroundColor: '#fff1f2', borderBottom: '1px solid #fecdd3' }}>
-                <span></span>
-                <span style={{ fontWeight: '700', color: '#be123c', fontSize: '1rem' }}>قطع الغيار</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 1rem', backgroundColor: '#fff1f2', borderBottom: '1px solid #fecdd3' }}>
+                <button
+                  disabled={agentPricingLoading || estimateStatus === 'confirmed'}
+                  onClick={async () => {
+                    const token = localStorage.getItem('token')
+                    if (!token) return
+                    setAgentPricingLoading(true)
+                    try {
+                      const res = await fetch(apiUrl('/api/pricing/agent'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({
+                          parts: parts.map(p => ({ part_name_ar: p.part_name_ar, severity_label: p.severity_label, partId: p.partId })),
+                          make: vehicleInfo.make,
+                          model: vehicleInfo.model,
+                          year: vehicleInfo.year,
+                        }),
+                      })
+                      const data = await res.json()
+                      if (data.success && data.results?.length) {
+                        setEditablePartPrices(prev => prev.map(pp => {
+                          const match = data.results.find((r: any) => r.part_name_ar === pp.part_name_ar)
+                          if (match && match.oem_price != null && match.oem_price > 0) {
+                            return { ...pp, price: match.oem_price }
+                          }
+                          return pp
+                        }))
+                      }
+                    } catch (err) {
+                      console.error('Agent pricing error:', err)
+                    } finally {
+                      setAgentPricingLoading(false)
+                    }
+                  }}
+                  style={{
+                    padding: '0.35rem 0.85rem',
+                    backgroundColor: agentPricingLoading ? '#9ca3af' : '#be123c',
+                    color: 'white', border: 'none', borderRadius: '0.375rem',
+                    fontWeight: '700', fontSize: '0.78rem',
+                    cursor: agentPricingLoading || estimateStatus === 'confirmed' ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '0.35rem',
+                  }}
+                >
+                  {agentPricingLoading ? '⏳ جاري الاستعلام...' : '🔍 احصل على الأسعار'}
+                </button>
+                <span style={{ fontWeight: '700', color: '#be123c', fontSize: '0.95rem' }}>قطع الغيار</span>
               </div>
               {editablePartPrices.map((pp, i) => (
                 <div key={pp.partId + i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 1rem', borderBottom: '1px solid #fef2f2', backgroundColor: i % 2 === 0 ? 'white' : '#fff9f9' }}>
