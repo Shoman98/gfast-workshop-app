@@ -389,7 +389,7 @@ export default function EstimatePage() {
   const [laborGroupPrices, setLaborGroupPrices] = useState<Record<string, number>>({})
   const [pricingData, setPricingData] = useState<PricingData | null>(null)
   const [pricingLoading, setPricingLoading] = useState(false)
-  const [editablePartPrices, setEditablePartPrices] = useState<{ partId: string; part_name_ar: string; price: number }[]>([])
+  const [editablePartPrices, setEditablePartPrices] = useState<{ partId: string; part_name_ar: string; price: number; price_type?: 'oem' | 'aftermarket' }[]>([])
   const [deletedEntries, setDeletedEntries] = useState<Set<string>>(new Set())
   const [deleteConfirm, setDeleteConfirm] = useState<{ ek: string; label: string } | null>(null)
   const [manualLaborEntries, setManualLaborEntries] = useState<Record<string, { id: string; part_name_ar: string; cost: number }[]>>({})
@@ -1274,10 +1274,14 @@ export default function EstimatePage() {
                         const missing: string[] = []
                         setEditablePartPrices(prev => prev.map(pp => {
                           const match = data.results.find((r: any) => r.part_name_ar === pp.part_name_ar)
-                          if (match && match.oem_price != null && match.oem_price > 0) {
-                            return { ...pp, price: match.oem_price }
+                          if (!match) return pp
+                          if (match.oem_price != null && match.oem_price > 0) {
+                            return { ...pp, price: match.oem_price, price_type: 'oem' }
                           }
-                          if (match) missing.push(pp.part_name_ar)
+                          if (match.aftermarket_price != null && match.aftermarket_price > 0) {
+                            return { ...pp, price: match.aftermarket_price, price_type: 'aftermarket' }
+                          }
+                          missing.push(pp.part_name_ar)
                           return pp
                         }))
                         setAgentMissingParts(missing)
@@ -1332,7 +1336,15 @@ export default function EstimatePage() {
                       direction: 'ltr',
                     }}
                   />
-                  <span style={{ color: '#374151', fontSize: '0.9rem', textAlign: 'right' }}>{pp.part_name_ar}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', textAlign: 'right' }}>
+                    <span style={{ color: '#374151', fontSize: '0.9rem' }}>{pp.part_name_ar}</span>
+                    {pp.price_type === 'oem' && (
+                      <span style={{ fontSize: '0.62rem', fontWeight: '700', padding: '0.1rem 0.4rem', borderRadius: '999px', backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #86efac', whiteSpace: 'nowrap' }}>أصلي</span>
+                    )}
+                    {pp.price_type === 'aftermarket' && (
+                      <span style={{ fontSize: '0.62rem', fontWeight: '700', padding: '0.1rem 0.4rem', borderRadius: '999px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', whiteSpace: 'nowrap' }}>تجاري</span>
+                    )}
+                  </div>
                 </div>
               ))}
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', backgroundColor: '#fff1f2', borderTop: '1px solid #fecdd3' }}>

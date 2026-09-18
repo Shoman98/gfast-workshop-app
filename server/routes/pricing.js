@@ -187,10 +187,10 @@ router.post('/agent', authenticate, async (req, res, next) => {
             part_name_ar: part.part_name_ar,
             partId: part.partId || null,
             oem_price: data.prices?.oem?.typical ?? null,
-            confidence: data.prices?.oem?.confidence ?? 0,
+            aftermarket_price: data.prices?.aftermarket?.typical ?? null,
           }
         } catch {
-          return { part_name_ar: part.part_name_ar, partId: part.partId || null, oem_price: null, confidence: 0 }
+          return { part_name_ar: part.part_name_ar, partId: part.partId || null, oem_price: null, aftermarket_price: null }
         }
       })
     )
