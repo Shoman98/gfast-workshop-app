@@ -17,6 +17,10 @@ import InsuranceLoginPage from '@/pages/InsuranceLogin'
 import InsuranceDashboard from '@/pages/InsuranceDashboard'
 import InsuranceClaimDetail from '@/pages/InsuranceClaimDetail'
 import InsuranceProtectedRoute from '@/components/InsuranceProtectedRoute'
+import BrokerLoginPage from '@/pages/BrokerLogin'
+import BrokerDashboard from '@/pages/BrokerDashboard'
+import BrokerCaseDetail from '@/pages/BrokerCaseDetail'
+import BrokerProtectedRoute from '@/components/BrokerProtectedRoute'
 
 function useTokenRefresh() {
   useEffect(() => {
@@ -84,6 +88,13 @@ export default function App() {
           <Route path="/insurance/assessment" element={<AnalysisPage />} />
           <Route path="/insurance/estimate/:estimateId" element={<EstimatePage />} />
           <Route path="/insurance/report/:estimateId" element={<ReportPage />} />
+        </Route>
+
+        {/* Broker portal */}
+        <Route path="/broker/login" element={<BrokerLoginPage />} />
+        <Route element={<BrokerProtectedRoute />}>
+          <Route path="/broker/dashboard" element={<BrokerDashboard />} />
+          <Route path="/broker/case/:vin" element={<BrokerCaseDetail />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

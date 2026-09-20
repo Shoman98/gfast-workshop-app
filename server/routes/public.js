@@ -9,8 +9,9 @@ import { supabase } from '../db/supabase.js';
 
 const META_PIXEL_ID = '1576434103838817';
 const META_CAPI_TOKEN = process.env.META_CAPI_TOKEN || 'EAAHP5ZAWffHYBSSbKd9U69GHlFjgzOCZC6UWsCGL5H50kGILJl3Na7PXBwfrxgTMq2JSlFRPfJEy9i4sZCMMw0UN0JFU1YDq9Bma5yo3MLRFhoyk7TBbv0ZBUgkc7QOP9ZBF9Eh5EEetbcoVunbZBWYEqaI95uBm636XZBipKo8jMyQBqgQyfSjZAmxYZAGYT1ZB28lwZDZD';
-import { notifyConsumerBookingAsync } from '../lib/telegram-notify.js';
+import { notifyConsumerBookingAsync, notifyBrokerBookingAsync } from '../lib/telegram-notify.js';
 import { recordBookingStatus } from '../lib/bookingStatuses.js';
+import { linkBookingToMockFnol } from '../lib/brokerStore.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -243,7 +244,7 @@ router.patch('/booking/:id', async (req, res, next) => {
  */
 router.post('/booking', async (req, res, next) => {
   try {
-    const { workshop_id, branch_id, customer_mobile, report_url, image_urls, vehicle_make, vehicle_model, vehicle_year, scheduled_date } = req.body;
+    const { workshop_id, branch_id, customer_mobile, report_url, image_urls, vehicle_make, vehicle_model, vehicle_year, scheduled_date, fnol_id } = req.body;
 
     if (!workshop_id || !customer_mobile) {
       return res.status(400).json({ error: 'workshop_id and customer_mobile required' });
@@ -262,22 +263,31 @@ router.post('/booking', async (req, res, next) => {
         .in('status', ['pending', 'booked']);
     }
 
-    const { data, error } = await supabase
+    const baseBooking = {
+      workshop_id,
+      branch_id: branch_id || null,
+      customer_mobile,
+      report_url: report_url || null,
+      image_urls: image_urls || [],
+      vehicle_make: vehicle_make || null,
+      vehicle_model: vehicle_model || null,
+      vehicle_year: vehicle_year || null,
+      scheduled_date: scheduled_date || null,
+      status: 'new_booking',
+    };
+
+    // Include fnol_id when present (column added by broker-migration.sql). If the
+    // column doesn't exist yet (pre-migration), retry the insert without it so the
+    // booking still succeeds — the FNOL↔booking link is also kept in the broker store.
+    let data, error;
+    ({ data, error } = await supabase
       .from('consumer_bookings')
-      .insert({
-        workshop_id,
-        branch_id: branch_id || null,
-        customer_mobile,
-        report_url: report_url || null,
-        image_urls: image_urls || [],
-        vehicle_make: vehicle_make || null,
-        vehicle_model: vehicle_model || null,
-        vehicle_year: vehicle_year || null,
-        scheduled_date: scheduled_date || null,
-        status: 'new_booking',
-      })
-      .select()
-      .single();
+      .insert(fnol_id ? { ...baseBooking, fnol_id } : baseBooking)
+      .select().single());
+    if (error && fnol_id && /fnol_id/.test(error.message || '')) {
+      ({ data, error } = await supabase
+        .from('consumer_bookings').insert(baseBooking).select().single());
+    }
 
     if (error) throw error;
 
@@ -286,7 +296,7 @@ router.post('/booking', async (req, res, next) => {
     catch (histErr) { console.warn('⚠️  booking history seed failed:', histErr.message); }
 
     // Fetch workshop + branch names for the Telegram notification
-    const { data: ws } = await supabase.from('workshops').select('workshop_name, phone').eq('workshop_id', workshop_id).single();
+    const { data: ws } = await supabase.from('workshops').select('workshop_name, display_name, city, phone').eq('workshop_id', workshop_id).single();
     const { data: br } = branch_id
       ? await supabase.from('workshop_branches').select('branch_name').eq('branch_id', branch_id).single()
       : { data: null };
@@ -303,6 +313,49 @@ router.post('/booking', async (req, res, next) => {
       scheduled_date: scheduled_date || null,
       images_count: (image_urls || []).length,
     }, process.env);
+
+    // If this booking belongs to a broker FNOL, advance the case + fire trigger 2
+    if (fnol_id) {
+      // 1. Update the in-memory mock store (source of truth in local mode)
+      const linked = linkBookingToMockFnol(fnol_id, {
+        booking_id: data.id,
+        status: 'new_booking',
+        scheduled_date: scheduled_date || null,
+        workshop_id,
+        workshop_name: ws?.workshop_name || null,
+        workshop_display_name: ws?.display_name || null,
+        city: ws?.city || null,
+        branch_name: br?.branch_name || null,
+      });
+
+      // 2. Best-effort Supabase update (no-op until the DB tables exist)
+      try {
+        const now = new Date().toISOString();
+        await supabase.from('fnol_reports').update({ status: 'booked', booking_at: now }).eq('id', fnol_id);
+        await supabase.from('broker_cases')
+          .update({ stage: 'booked', booking_id: data.id, updated_at: now })
+          .eq('fnol_id', fnol_id);
+      } catch (brokerErr) {
+        console.warn('⚠️  Supabase broker case update skipped:', brokerErr.message);
+      }
+
+      // 3. Telegram trigger 2 — prefer mock-store data, fall back to booking payload
+      const fnol = linked?.fnol || null;
+      const broker = linked?.broker || null;
+      notifyBrokerBookingAsync({
+        broker_name: broker ? `${broker.name} (${broker.company})` : '-',
+        vin: fnol?.vin,
+        workshop_id,
+        workshop_name: ws?.workshop_name,
+        workshop_phone: ws?.phone || null,
+        branch_name: br?.branch_name || null,
+        customer_mobile,
+        vehicle_make: fnol?.vehicle_make || vehicle_make,
+        vehicle_model: fnol?.vehicle_model || vehicle_model,
+        vehicle_year: fnol?.vehicle_year || vehicle_year,
+        scheduled_date: scheduled_date || null,
+      }, process.env);
+    }
 
     res.json({ success: true, booking: data });
   } catch (err) {

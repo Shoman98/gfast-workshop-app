@@ -61,6 +61,19 @@ function workshopWaLink(payload) {
   return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 }
 
+function formatScheduledDate(value) {
+  if (!value) return '-';
+  // value is "YYYY-MM-DD" — parse as local midnight to avoid timezone shifts
+  const date = new Date(value + 'T00:00:00');
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Cairo',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
+}
+
 function formatEgyptDateTime(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value);
   return new Intl.DateTimeFormat('en-GB', {
@@ -149,7 +162,7 @@ function formatConsumerBookingMessage(payload) {
     `Workshop: ${workshop}${branch ? ` › ${branch}` : ''}`,
     `Mobile: ${escapeTelegramMarkdown(payload.customer_mobile || '-')}`,
     `Vehicle: ${escapeTelegramMarkdown(vehicle)}`,
-    ...(payload.scheduled_date ? [`📅 Booking date: ${escapeTelegramMarkdown(payload.scheduled_date)}`] : []),
+    ...(payload.scheduled_date ? [`📅 Booking date: ${escapeTelegramMarkdown(formatScheduledDate(payload.scheduled_date))}`] : []),
     `Images: ${escapeTelegramMarkdown(String(payload.images_count ?? 0))}`,
     `Time: ${escapeTelegramMarkdown(formatEgyptDateTime(new Date()))}`,
     ...(waLink ? [`[💬 راسل العميل على واتساب](${waLink})`] : []),
@@ -169,4 +182,77 @@ export function notifyConsumerBookingAsync(payload, env, log = console) {
   setImmediate(() => {
     notifyConsumerBooking(payload, env, log);
   });
+}
+
+// ── Broker triggers ───────────────────────────────────────────────────────────
+
+function formatBrokerFnolMessage(payload) {
+  const vehicle = [payload.vehicle_year, payload.vehicle_make, payload.vehicle_model].filter(Boolean).join(' ') || '-';
+  const waLink  = customerWaLink(payload.customer_mobile, BOOKING_WA_MESSAGE);
+  return [
+    '📋 *New FNOL Report*',
+    `Broker: ${escapeTelegramMarkdown(payload.broker_name || payload.broker_id || '-')}`,
+    `VIN: ${escapeTelegramMarkdown(payload.vin || '-')}`,
+    `Customer: ${escapeTelegramMarkdown(payload.customer_mobile || '-')}`,
+    `Vehicle: ${escapeTelegramMarkdown(vehicle)}`,
+    `Location: ${escapeTelegramMarkdown(payload.location || '-')}`,
+    `General images: ${escapeTelegramMarkdown(String(payload.general_images_count ?? 0))}`,
+    `Damage images: ${escapeTelegramMarkdown(String(payload.damage_images_count ?? 0))}`,
+    `Docs: ${escapeTelegramMarkdown(String(payload.docs_count ?? 0))}`,
+    `Time: ${escapeTelegramMarkdown(formatEgyptDateTime(new Date()))}`,
+    ...(waLink ? [`[💬 WhatsApp العميل](${waLink})`] : []),
+  ].join('\n');
+}
+
+function formatBrokerBookingMessage(payload) {
+  const vehicle = [payload.vehicle_year, payload.vehicle_make, payload.vehicle_model].filter(Boolean).join(' ') || '-';
+  const wsLink  = workshopWaLink(payload);
+  return [
+    '🏢 *Workshop Booked — Broker Case*',
+    `Broker: ${escapeTelegramMarkdown(payload.broker_name || '-')}`,
+    `VIN: ${escapeTelegramMarkdown(payload.vin || '-')}`,
+    `Workshop: ${escapeTelegramMarkdown(payload.workshop_name || '-')}${payload.branch_name ? ` › ${escapeTelegramMarkdown(payload.branch_name)}` : ''}`,
+    `Customer: ${escapeTelegramMarkdown(payload.customer_mobile || '-')}`,
+    `Vehicle: ${escapeTelegramMarkdown(vehicle)}`,
+    ...(payload.scheduled_date ? [`📅 Date: ${escapeTelegramMarkdown(formatScheduledDate(payload.scheduled_date))}`] : []),
+    `Time: ${escapeTelegramMarkdown(formatEgyptDateTime(new Date()))}`,
+    ...(wsLink ? [`[🏢 WhatsApp المركز](${wsLink})`] : []),
+  ].join('\n');
+}
+
+function formatBrokerAssessmentMessage(payload) {
+  const vehicle = [payload.vehicle_year, payload.vehicle_make, payload.vehicle_model].filter(Boolean).join(' ') || '-';
+  return [
+    '✅ *Assessment Confirmed — Broker Case*',
+    `Broker: ${escapeTelegramMarkdown(payload.broker_name || '-')}`,
+    `VIN: ${escapeTelegramMarkdown(payload.vin || '-')}`,
+    `Workshop: ${escapeTelegramMarkdown(payload.workshop_name || '-')}`,
+    `Vehicle: ${escapeTelegramMarkdown(vehicle)}`,
+    `Estimate: ${escapeTelegramMarkdown(payload.estimate ? `${Number(payload.estimate).toLocaleString()} EGP` : '-')}`,
+    ...(payload.notes ? [`Notes: ${escapeTelegramMarkdown(payload.notes)}`] : []),
+    `Time: ${escapeTelegramMarkdown(formatEgyptDateTime(new Date()))}`,
+  ].join('\n');
+}
+
+async function notifyBrokerFnol(payload, env, log = console) {
+  try { await sendTelegramMessage(formatBrokerFnolMessage(payload), env); }
+  catch (err) { log.error('❌ Broker FNOL telegram error:', err.message); }
+}
+async function notifyBrokerBooking(payload, env, log = console) {
+  try { await sendTelegramMessage(formatBrokerBookingMessage(payload), env); }
+  catch (err) { log.error('❌ Broker booking telegram error:', err.message); }
+}
+async function notifyBrokerAssessment(payload, env, log = console) {
+  try { await sendTelegramMessage(formatBrokerAssessmentMessage(payload), env); }
+  catch (err) { log.error('❌ Broker assessment telegram error:', err.message); }
+}
+
+export function notifyBrokerFnolAsync(payload, env, log = console) {
+  setImmediate(() => notifyBrokerFnol(payload, env, log));
+}
+export function notifyBrokerBookingAsync(payload, env, log = console) {
+  setImmediate(() => notifyBrokerBooking(payload, env, log));
+}
+export function notifyBrokerAssessmentAsync(payload, env, log = console) {
+  setImmediate(() => notifyBrokerAssessment(payload, env, log));
 }

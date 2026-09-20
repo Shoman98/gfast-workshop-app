@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import estimateRoutes from './routes/estimates.js';
 import insuranceRoutes from './routes/insurance.js';
+import brokerRoutes from './routes/broker.js';
 import imageRoutes from './routes/images.js';
 import pricingRoutes from './routes/pricing.js';
 import workshopPricingRoutes from './routes/workshopPricing.js';
@@ -56,6 +57,7 @@ app.use('/api/pricing', pricingRoutes);
 app.use('/api/workshop-pricing', workshopPricingRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/broker', brokerRoutes);
 app.use('/api/whatsapp/webhook', whatsappRoutes);
 
 // Analysis route - Real Gemini Vision Analysis (with fallback to mock if API unavailable)
