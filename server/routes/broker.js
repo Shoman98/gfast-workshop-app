@@ -240,6 +240,36 @@ router.post('/fnol', async (req, res, next) => {
 // ── Cases (broker authenticated) ─────────────────────────────────────────────
 
 /**
+ * Attach workshop + branch details to each case's booking. consumer_bookings has
+ * no FK to workshops/branches (workshop_id is a plain text column), so PostgREST
+ * can't embed them — we stitch by id in JS.
+ */
+async function attachWorkshops(cases) {
+  const bookings = cases.map(c => c.booking).filter(Boolean);
+  const wsIds     = [...new Set(bookings.map(b => b.workshop_id).filter(Boolean))];
+  const branchIds = [...new Set(bookings.map(b => b.branch_id).filter(Boolean))];
+
+  const wsMap = {}, brMap = {};
+  if (wsIds.length) {
+    const { data } = await supabase.from('workshops')
+      .select('workshop_id, workshop_name, display_name, city').in('workshop_id', wsIds);
+    (data || []).forEach(w => { wsMap[w.workshop_id] = w; });
+  }
+  if (branchIds.length) {
+    const { data } = await supabase.from('workshop_branches')
+      .select('branch_id, branch_name').in('branch_id', branchIds);
+    (data || []).forEach(b => { brMap[b.branch_id] = b; });
+  }
+  for (const c of cases) {
+    if (c.booking) {
+      c.booking.workshop = c.booking.workshop_id ? (wsMap[c.booking.workshop_id] || null) : null;
+      c.booking.branch   = c.booking.branch_id ? (brMap[c.booking.branch_id] || null) : null;
+    }
+  }
+  return cases;
+}
+
+/**
  * GET /api/broker/cases
  * Returns all cases for the authenticated broker with latest status.
  */
@@ -255,15 +285,14 @@ router.get('/cases', requireBroker, async (req, res, next) => {
           location, status, submitted_at, booking_at, assessment_at,
           general_images, damage_images, doc_urls, report_url, analysis_result
         ),
-        booking:consumer_bookings (
-          id, status, scheduled_date,
-          workshop:workshops ( workshop_name, display_name, city )
-        )
+        booking:consumer_bookings ( id, status, scheduled_date, workshop_id, branch_id )
       `)
       .eq('broker_id', req.broker_id)
       .order('created_at', { ascending: false });
 
-    if (!error && data) return res.json({ cases: data });
+    if (!error && data) return res.json({ cases: await attachWorkshops(data) });
+
+    if (error) console.warn('⚠️  broker cases query error, using mock:', error.message);
 
     // 2. Fallback to in-memory store
     const cases = Array.from(MOCK_BROKER_CASES.values())
@@ -293,11 +322,7 @@ router.get('/case/:vin', requireBroker, async (req, res, next) => {
           location, status, submitted_at, booking_at, assessment_at,
           general_images, damage_images, doc_urls, analysis_result, report_url
         ),
-        booking:consumer_bookings (
-          id, status, scheduled_date, created_at,
-          workshop:workshops ( workshop_id, workshop_name, display_name, city ),
-          branch:workshop_branches ( branch_name )
-        )
+        booking:consumer_bookings ( id, status, scheduled_date, created_at, workshop_id, branch_id )
       `)
       .eq('broker_id', req.broker_id)
       .eq('vin', vin)
@@ -305,7 +330,9 @@ router.get('/case/:vin', requireBroker, async (req, res, next) => {
       .limit(1)
       .maybeSingle();
 
-    if (!error && data) return res.json({ case: data });
+    if (!error && data) return res.json({ case: (await attachWorkshops([data]))[0] });
+
+    if (error) console.warn('⚠️  broker case query error, using mock:', error.message);
 
     // 2. Fallback to in-memory store
     const brokerCase = Array.from(MOCK_BROKER_CASES.values())

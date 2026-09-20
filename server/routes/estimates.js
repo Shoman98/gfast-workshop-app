@@ -27,14 +27,15 @@ function advanceBrokerAssessment(estimate, totalCost) {
   // 1. Production: update Supabase broker_cases + fnol_reports by VIN (fire-and-forget)
   ;(async () => {
     try {
-      const { data: bc } = await supabase
+      // No nested workshop embed here — consumer_bookings has no FK to workshops.
+      const { data: bc, error: bcErr } = await supabase
         .from('broker_cases')
-        .select('id, fnol_id, broker_id, vin, booking:consumer_bookings(workshop:workshops(workshop_name))')
+        .select('id, fnol_id, broker_id, vin')
         .eq('vin', vinUpper)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (!bc) return; // VIN not tied to a broker case in Supabase
+      if (bcErr || !bc) return; // VIN not tied to a broker case in Supabase
       const now = new Date().toISOString();
       await supabase.from('broker_cases').update({
         stage: 'assessed',
@@ -55,7 +56,7 @@ function advanceBrokerAssessment(estimate, totalCost) {
         vehicle_make: fnol?.vehicle_make,
         vehicle_model: fnol?.vehicle_model,
         vehicle_year: fnol?.vehicle_year,
-        workshop_name: bc.booking?.workshop?.workshop_name || '-',
+        workshop_name: '-',
         estimate: totalCost,
         notes: null,
       }, process.env);
