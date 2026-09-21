@@ -74,6 +74,7 @@ export default function BrokerFnol() {
     { front: null, back: null, right: null, left: null, roof: null },
   )
   const [damageImages, setDamage]     = useState<File[]>([])
+  const [video, setVideo]             = useState<File | null>(null)
   const [docs, setDocs]               = useState<File[]>([])
 
   const [progress, setProgress] = useState('')
@@ -185,12 +186,13 @@ export default function BrokerFnol() {
       }
 
       // 2. Upload every file group to storage.
-      setProgress('جاري رفع الصور والمستندات...')
-      const [generalUrls, damageUrls, plateUrls, docUrls] = await Promise.all([
+      setProgress('جاري رفع الصور والفيديو...')
+      const [generalUrls, damageUrls, plateUrls, docUrls, videoUrls] = await Promise.all([
         uploadFiles(generalFiles),
         uploadFiles(damageImages),
         uploadFiles([platePhoto]),
         uploadFiles(docs),
+        uploadFiles(video ? [video] : []),
       ])
 
       // 3. Save the FNOL with everything attached.
@@ -211,6 +213,7 @@ export default function BrokerFnol() {
           general_images: generalUrls,
           damage_images: damageUrls,
           doc_urls: docUrls,
+          video_url: videoUrls[0] || null,
           analysis_result: analysisResult,
         }),
       })
@@ -425,6 +428,17 @@ export default function BrokerFnol() {
           <div style={{ marginBottom: 16 }}>
             <label style={label}>صور الأضرار (لقطات قريبة) — اختياري</label>
             <MultiPhoto files={damageImages} onChange={setDamage} />
+          </div>
+
+          {/* Video */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={label}>فيديو للأضرار — اختياري</label>
+            <input type="file" accept="video/*" capture="environment"
+              onChange={e => setVideo(e.target.files?.[0] || null)}
+              style={{ width: '100%', maxWidth: '100%', fontSize: '.85rem', color: '#6b7280', boxSizing: 'border-box' }} />
+            {video && (
+              <div style={{ fontSize: '.78rem', color: '#059669', marginTop: 4, fontWeight: 600 }}>🎬 {video.name} ({(video.size / (1024 * 1024)).toFixed(1)}MB)</div>
+            )}
           </div>
 
           {/* Documents */}
