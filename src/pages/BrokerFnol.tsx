@@ -432,7 +432,7 @@ export default function BrokerFnol() {
 
           {/* Video */}
           <div style={{ marginBottom: 16 }}>
-            <label style={label}>فيديو للأضرار — اختياري</label>
+            <label style={label}>فيديو للسيارة — تأكد من تصوير السيارة بالكامل ورقم السيارة والعداد إن أمكن</label>
             <input type="file" accept="video/*" capture="environment"
               onChange={e => setVideo(e.target.files?.[0] || null)}
               style={{ width: '100%', maxWidth: '100%', fontSize: '.85rem', color: '#6b7280', boxSizing: 'border-box' }} />
