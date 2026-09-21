@@ -186,7 +186,7 @@ export default function BrokerFnol() {
       }
 
       // 2. Upload every file group to storage.
-      setProgress('جاري رفع الصور والفيديو...')
+      setProgress(video ? 'جاري رفع الصور والفيديو...' : 'جاري رفع الصور...')
       const [generalUrls, damageUrls, plateUrls, docUrls, videoUrls] = await Promise.all([
         uploadFiles(generalFiles),
         uploadFiles(damageImages),
