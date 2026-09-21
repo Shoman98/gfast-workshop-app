@@ -118,6 +118,35 @@ export default function BrokerFnol() {
     return data.urls || []
   }
 
+  // Upload a (large) video DIRECTLY to Supabase Storage via a signed URL, with a
+  // progress %. Bypasses the API server so it isn't limited by request size/CORS.
+  // Returns the storage path; the FNOL submit turns it into a signed URL.
+  async function uploadVideoDirect(file: File): Promise<string> {
+    const ext = file.name.split('.').pop() || 'mp4'
+    const r = await fetch(apiUrl('/api/broker/video-upload-url'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ broker_id: broker?.id, ext }),
+    })
+    if (!r.ok) throw new Error('تعذّر بدء رفع الفيديو')
+    const { signedUrl, path } = await r.json()
+
+    await new Promise<void>((resolve, reject) => {
+      const form = new FormData()
+      form.append('cacheControl', '31536000')
+      form.append('', file) // Supabase signed upload expects the file under the empty key
+      const xhr = new XMLHttpRequest()
+      xhr.open('PUT', signedUrl)
+      xhr.setRequestHeader('x-upsert', 'true')
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) setProgress(`جاري رفع الفيديو ${Math.round((e.loaded / e.total) * 100)}%...`)
+      }
+      xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`فشل رفع الفيديو (${xhr.status})`))
+      xhr.onerror = () => reject(new Error('فشل رفع الفيديو'))
+      xhr.send(form)
+    })
+    return path
+  }
+
   // Run the shared wreck-vision analysis pipeline and group the result the way
   // the broker portal expects (repairable / replaceable / needsCheck).
   async function runAnalysis(generalFiles: File[], damageFiles: File[]): Promise<any | null> {
@@ -185,15 +214,18 @@ export default function BrokerFnol() {
         console.warn('Analysis failed, submitting FNOL without report:', analysisErr)
       }
 
-      // 2. Upload every file group to storage.
-      setProgress(video ? 'جاري رفع الصور والفيديو...' : 'جاري رفع الصور...')
-      const [generalUrls, damageUrls, plateUrls, docUrls, videoUrls] = await Promise.all([
+      // 2. Upload photos/docs through the API (small files).
+      setProgress('جاري رفع الصور...')
+      const [generalUrls, damageUrls, plateUrls, docUrls] = await Promise.all([
         uploadFiles(generalFiles),
         uploadFiles(damageImages),
         uploadFiles([platePhoto]),
         uploadFiles(docs),
-        uploadFiles(video ? [video] : []),
       ])
+
+      // 2b. Upload the video DIRECTLY to storage (large file, with progress %).
+      let videoPath: string | null = null
+      if (video) videoPath = await uploadVideoDirect(video)
 
       // 3. Save the FNOL with everything attached.
       setProgress('جاري حفظ المطالبة...')
@@ -213,7 +245,7 @@ export default function BrokerFnol() {
           general_images: generalUrls,
           damage_images: damageUrls,
           doc_urls: docUrls,
-          video_url: videoUrls[0] || null,
+          video_path: videoPath,
           analysis_result: analysisResult,
         }),
       })

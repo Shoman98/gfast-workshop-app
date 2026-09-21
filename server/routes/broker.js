@@ -208,6 +208,24 @@ router.post('/upload-docs', upload.array('docs', 10), async (req, res, next) => 
   } catch (err) { next(err); }
 });
 
+/**
+ * POST /api/broker/video-upload-url
+ * Returns a short-lived signed URL the browser uses to upload a (large) claim
+ * video DIRECTLY to Supabase Storage — bypassing the API server entirely (no
+ * request-size / memory / CORS limits). The FNOL submit later turns the path
+ * into a 1-year signed download URL. Public (broker link flow).
+ */
+router.post('/video-upload-url', async (req, res, next) => {
+  try {
+    const { broker_id, ext } = req.body;
+    const safeExt = String(ext || 'mp4').replace(/[^a-z0-9]/gi, '').slice(0, 5) || 'mp4';
+    const path = `${broker_id || 'unknown'}/video-${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExt}`;
+    const { data, error } = await supabase.storage.from('broker-docs').createSignedUploadUrl(path);
+    if (error) throw new Error(`Signed upload URL failed: ${error.message}`);
+    res.json({ signedUrl: data.signedUrl, path: data.path || path });
+  } catch (err) { next(err); }
+});
+
 // ── FNOL submission ───────────────────────────────────────────────────────────
 
 /**
@@ -220,7 +238,7 @@ router.post('/fnol', async (req, res, next) => {
     const {
       broker_id, vin, vehicle_license, vehicle_license_photo, customer_mobile, location,
       vehicle_make, vehicle_model, vehicle_year,
-      general_images, damage_images, doc_urls, video_url,
+      general_images, damage_images, doc_urls, video_url, video_path,
       analysis_result, report_url,
     } = req.body;
 
@@ -239,6 +257,14 @@ router.post('/fnol', async (req, res, next) => {
     }
     if (!broker) return res.status(404).json({ error: 'Broker not found' });
 
+    // Video uploaded directly to storage → sign a 1-year download URL from its path.
+    let videoUrl = video_url || null;
+    if (!videoUrl && video_path) {
+      const { data: signed } = await supabase.storage
+        .from('broker-docs').createSignedUrl(video_path, 60 * 60 * 24 * 365);
+      videoUrl = signed?.signedUrl || null;
+    }
+
     const vinUpper = vin.trim().toUpperCase();
     const fnolPayload = {
       broker_id,
@@ -253,7 +279,7 @@ router.post('/fnol', async (req, res, next) => {
       general_images: general_images || [],
       damage_images: damage_images || [],
       doc_urls: doc_urls || [],
-      video_url: video_url || null,
+      video_url: videoUrl,
       analysis_result: analysis_result || null,
       report_url: report_url || null,
       status: 'submitted',
