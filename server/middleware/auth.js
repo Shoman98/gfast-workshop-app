@@ -89,3 +89,26 @@ export function requirePricingScope(req, res, next) {
   }
   next();
 }
+
+// ── Broker auth ──────────────────────────────────────────────────────────────
+
+export function generateBrokerToken(brokerId) {
+  return jwt.sign(
+    { broker_id: brokerId, scope: 'broker' },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+}
+
+export function requireBroker(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+  const decoded = verifyToken(authHeader.substring(7));
+  if (!decoded || decoded.scope !== 'broker') {
+    return res.status(401).json({ error: 'Invalid or expired broker token' });
+  }
+  req.broker_id = decoded.broker_id;
+  next();
+}

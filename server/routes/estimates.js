@@ -7,8 +7,103 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../db/supabase.js';
 import { authenticate } from '../middleware/auth.js';
 import { recordBookingStatus, isValidStatus, STATUS_KEYS, CANCELLATION_REASONS } from '../lib/bookingStatuses.js';
+import { linkAssessmentToMockFnol } from '../lib/brokerStore.js';
+import { notifyBrokerAssessmentAsync } from '../lib/telegram-notify.js';
 
 const router = express.Router();
+
+/**
+ * When a workshop confirms an estimate, advance any broker case with the SAME VIN
+ * to "assessed" and hand the broker a copy of the confirmed report. No-op if the
+ * VIN isn't tied to a broker FNOL.
+ */
+function advanceBrokerAssessment(estimate, totalCost) {
+  const bookingId = estimate?.booking_id || null;
+  const vin = estimate?.vin_number;
+  const vinUpper = vin ? String(vin).trim().toUpperCase() : null;
+  console.log(`🔎 advanceBrokerAssessment called: estimate=${estimate?.estimate_id} booking_id=${bookingId} vin=${JSON.stringify(vinUpper)}`);
+  if (!bookingId && !vinUpper) return;
+  const consumerBase = (process.env.CONSUMER_APP_URL || 'https://gfast.it.com').replace(/\/$/, '');
+  const reportUrl = `${consumerBase}/assessment/${estimate.estimate_id}`;
+
+  // 1. Production: resolve the broker case. Prefer the strong link
+  //    estimate → booking → fnol_id → broker_case; fall back to VIN match
+  //    (for estimates created without a broker booking).
+  ;(async () => {
+    try {
+      let bc = null;
+      if (bookingId) {
+        const { data: bk } = await supabase
+          .from('consumer_bookings').select('fnol_id').eq('id', bookingId).maybeSingle();
+        if (bk?.fnol_id) {
+          const { data } = await supabase
+            .from('broker_cases').select('id, fnol_id, broker_id, vin').eq('fnol_id', bk.fnol_id).maybeSingle();
+          bc = data || null;
+        }
+      }
+      if (!bc && vinUpper) {
+        // No nested workshop embed here — consumer_bookings has no FK to workshops.
+        const { data } = await supabase
+          .from('broker_cases')
+          .select('id, fnol_id, broker_id, vin')
+          .eq('vin', vinUpper)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        bc = data || null;
+      }
+      if (!bc) return; // not tied to a broker case
+      const now = new Date().toISOString();
+      await supabase.from('broker_cases').update({
+        stage: 'assessed',
+        assessment_estimate: totalCost ?? null,
+        assessment_url: reportUrl,
+        updated_at: now,
+      }).eq('id', bc.id);
+      await supabase.from('fnol_reports').update({ status: 'assessed', assessment_at: now }).eq('id', bc.fnol_id);
+
+      const { data: fnol } = await supabase.from('fnol_reports')
+        .select('customer_mobile, vehicle_make, vehicle_model, vehicle_year').eq('id', bc.fnol_id).maybeSingle();
+      const { data: broker } = await supabase.from('brokers')
+        .select('name, company').eq('id', bc.broker_id).maybeSingle();
+      notifyBrokerAssessmentAsync({
+        broker_name: broker ? `${broker.name} (${broker.company})` : '-',
+        vin: bc.vin || vinUpper,
+        customer_mobile: fnol?.customer_mobile,
+        vehicle_make: fnol?.vehicle_make,
+        vehicle_model: fnol?.vehicle_model,
+        vehicle_year: fnol?.vehicle_year,
+        workshop_name: '-',
+        estimate: totalCost,
+        notes: null,
+      }, process.env);
+      console.log(`🔗 Broker assessment linked: case ${bc.id} (fnol ${bc.fnol_id}) → assessed via ${bookingId ? 'booking.fnol_id' : 'VIN'}`);
+    } catch (e) { console.warn('⚠️  Broker assessment Supabase update failed:', e?.message); }
+  })();
+
+  // 2. Local/mock fallback (mock store is keyed by VIN)
+  if (!vinUpper) return;
+  const linked = linkAssessmentToMockFnol(vinUpper, {
+    estimate_id: estimate.estimate_id,
+    estimate: totalCost,
+    report_url: reportUrl,
+    notes: null,
+  });
+  if (!linked?.case) return;
+  const f = linked.fnol || {};
+  const b = linked.broker;
+  notifyBrokerAssessmentAsync({
+    broker_name: b ? `${b.name} (${b.company})` : '-',
+    vin: vinUpper,
+    customer_mobile: f.customer_mobile,
+    vehicle_make: f.vehicle_make,
+    vehicle_model: f.vehicle_model,
+    vehicle_year: f.vehicle_year,
+    workshop_name: linked.case.booking?.workshop?.workshop_name || '-',
+    estimate: totalCost,
+    notes: null,
+  }, process.env);
+}
 
 /**
  * GET /api/estimates/consumer-bookings
@@ -592,6 +687,14 @@ router.post('/', authenticate, async (req, res, next) => {
       }
     }
 
+    // Broker flow: a confirmed estimate for a broker's VIN advances the case to assessed.
+    if (status === 'confirmed') {
+      try {
+        const total = Array.isArray(parts) ? parts.reduce((s, p) => s + (p.price || 0), 0) : null;
+        advanceBrokerAssessment(estimate, total);
+      } catch (bErr) { console.warn('⚠️  Broker assessment link failed:', bErr.message); }
+    }
+
     res.json({
       success: true,
       estimate_id: estimate.estimate_id,
@@ -738,6 +841,10 @@ router.post('/:estimateId/confirm', authenticate, async (req, res, next) => {
     if (error) throw error;
 
     console.log(`✅ Estimate confirmed: ${estimateId}`);
+
+    // Broker flow: if this VIN belongs to a broker FNOL, mark it assessed + notify.
+    try { advanceBrokerAssessment(confirmed, totalCost); }
+    catch (bErr) { console.warn('⚠️  Broker assessment link failed:', bErr.message); }
 
     res.json({
       success: true,

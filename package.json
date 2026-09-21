@@ -16,6 +16,7 @@
     "@gfast/analysis-core": "file:./packages/analysis-core",
     "@google/generative-ai": "^0.3.1",
     "@supabase/supabase-js": "^2.38.4",
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.3.0",
     "cors": "^2.8.6",

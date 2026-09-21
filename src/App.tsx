@@ -17,6 +17,14 @@ import InsuranceLoginPage from '@/pages/InsuranceLogin'
 import InsuranceDashboard from '@/pages/InsuranceDashboard'
 import InsuranceClaimDetail from '@/pages/InsuranceClaimDetail'
 import InsuranceProtectedRoute from '@/components/InsuranceProtectedRoute'
+import BrokerLoginPage from '@/pages/BrokerLogin'
+import BrokerDashboard from '@/pages/BrokerDashboard'
+import BrokerCaseDetail from '@/pages/BrokerCaseDetail'
+import BrokerFnol from '@/pages/BrokerFnol'
+import BrokerAssessment from '@/pages/BrokerAssessment'
+import FnolReport from '@/pages/FnolReport'
+import BrokerClaim from '@/pages/BrokerClaim'
+import BrokerProtectedRoute from '@/components/BrokerProtectedRoute'
 
 function useTokenRefresh() {
   useEffect(() => {
@@ -84,6 +92,21 @@ export default function App() {
           <Route path="/insurance/assessment" element={<AnalysisPage />} />
           <Route path="/insurance/estimate/:estimateId" element={<EstimatePage />} />
           <Route path="/insurance/report/:estimateId" element={<ReportPage />} />
+        </Route>
+
+        {/* Broker portal */}
+        {/* Public, disconnected customer FNOL page (shareable + embeddable) */}
+        <Route path="/broker/fnol/:token" element={<BrokerFnol />} />
+        {/* Public confirmed-assessment report (broker "View Report" link target) */}
+        <Route path="/assessment/:estimateId" element={<BrokerAssessment />} />
+        {/* Public printable FNOL claim report (broker "print report" CTA target) */}
+        <Route path="/fnol-report/:id" element={<FnolReport />} />
+        {/* Public customer "return to my claim" page (report + book workshop by FNOL id) */}
+        <Route path="/claim/:fnolId" element={<BrokerClaim />} />
+        <Route path="/broker/login" element={<BrokerLoginPage />} />
+        <Route element={<BrokerProtectedRoute />}>
+          <Route path="/broker/dashboard" element={<BrokerDashboard />} />
+          <Route path="/broker/case/:vin" element={<BrokerCaseDetail />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
