@@ -21,7 +21,8 @@ import {
 } from '../lib/brokerStore.js';
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+// 100 MB cap so a short claim video can be uploaded alongside photos/docs.
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
 const getMockBroker = getMockBrokerByCreds;
 
@@ -128,6 +129,7 @@ router.get('/fnol-report/:id', async (req, res, next) => {
         analysis_result: fnol.analysis_result || null,
         general_images: fnol.general_images || [],
         damage_images: fnol.damage_images || [],
+        video_url: fnol.video_url || null,
         // Booking state so the customer's claim page can show "book" vs "booked".
         booking: booking || null,
       },
@@ -142,7 +144,7 @@ router.get('/fnol-report/:id', async (req, res, next) => {
 
     const { data: fnol } = await supabase
       .from('fnol_reports')
-      .select('id, broker_id, vin, vehicle_license, vehicle_make, vehicle_model, vehicle_year, customer_mobile, general_images, damage_images, analysis_result, submitted_at')
+      .select('id, broker_id, vin, vehicle_license, vehicle_make, vehicle_model, vehicle_year, customer_mobile, general_images, damage_images, video_url, analysis_result, submitted_at')
       .eq('id', req.params.id)
       .maybeSingle();
     if (!fnol) return res.status(404).json({ error: 'FNOL not found' });
@@ -218,7 +220,7 @@ router.post('/fnol', async (req, res, next) => {
     const {
       broker_id, vin, vehicle_license, vehicle_license_photo, customer_mobile, location,
       vehicle_make, vehicle_model, vehicle_year,
-      general_images, damage_images, doc_urls,
+      general_images, damage_images, doc_urls, video_url,
       analysis_result, report_url,
     } = req.body;
 
@@ -251,6 +253,7 @@ router.post('/fnol', async (req, res, next) => {
       general_images: general_images || [],
       damage_images: damage_images || [],
       doc_urls: doc_urls || [],
+      video_url: video_url || null,
       analysis_result: analysis_result || null,
       report_url: report_url || null,
       status: 'submitted',
@@ -352,7 +355,7 @@ router.get('/cases', requireBroker, async (req, res, next) => {
         fnol:fnol_reports (
           id, vin, vehicle_license, vehicle_license_photo, customer_mobile, vehicle_make, vehicle_model, vehicle_year,
           location, status, submitted_at, booking_at, assessment_at,
-          general_images, damage_images, doc_urls, report_url, analysis_result
+          general_images, damage_images, doc_urls, video_url, report_url, analysis_result
         ),
         booking:consumer_bookings ( id, status, scheduled_date, workshop_id, branch_id )
       `)
@@ -389,7 +392,7 @@ router.get('/case/:vin', requireBroker, async (req, res, next) => {
         fnol:fnol_reports (
           id, vehicle_license, vehicle_license_photo, customer_mobile, vehicle_make, vehicle_model, vehicle_year,
           location, status, submitted_at, booking_at, assessment_at,
-          general_images, damage_images, doc_urls, analysis_result, report_url
+          general_images, damage_images, doc_urls, video_url, analysis_result, report_url
         ),
         booking:consumer_bookings ( id, status, scheduled_date, created_at, workshop_id, branch_id )
       `)

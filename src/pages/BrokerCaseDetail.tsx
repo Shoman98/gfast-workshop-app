@@ -20,6 +20,7 @@ interface CaseDetail {
     general_images: string[]
     damage_images: string[]
     doc_urls: string[]
+    video_url?: string | null
     analysis_result?: any
     report_url?: string
     submitted_at: string
@@ -323,20 +324,31 @@ export default function BrokerCaseDetail() {
 
         {/* ── PHOTOS TAB ── */}
         {tab === 'photos' && (
-          <div style={s.card}>
-            <div style={s.cardHeader}>Photos ({allImages.length})</div>
-            {allImages.length === 0
-              ? <div style={{ padding: '30px', textAlign: 'center', color: '#9ca3af' }}>No photos uploaded</div>
-              : (
-                <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
-                  {allImages.map((url, i) => (
-                    <img key={i} src={url} alt="" onClick={() => setLightbox(url)}
-                      style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, cursor: 'zoom-in' }} />
-                  ))}
+          <>
+            <div style={s.card}>
+              <div style={s.cardHeader}>Photos ({allImages.length})</div>
+              {allImages.length === 0
+                ? <div style={{ padding: '30px', textAlign: 'center', color: '#9ca3af' }}>No photos uploaded</div>
+                : (
+                  <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
+                    {allImages.map((url, i) => (
+                      <img key={i} src={url} alt="" onClick={() => setLightbox(url)}
+                        style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, cursor: 'zoom-in' }} />
+                    ))}
+                  </div>
+                )
+              }
+            </div>
+            {caseData.fnol?.video_url && (
+              <div style={{ ...s.card, marginTop: 16 }}>
+                <div style={s.cardHeader}>🎬 Damage Video</div>
+                <div style={{ padding: 16 }}>
+                  <video src={caseData.fnol.video_url} controls preload="metadata"
+                    style={{ width: '100%', maxHeight: 420, borderRadius: 8, background: '#000' }} />
                 </div>
-              )
-            }
-          </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* ── DOCS TAB ── */}

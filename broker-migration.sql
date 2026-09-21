@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS fnol_reports (
 -- Backfill for already-migrated databases.
 ALTER TABLE fnol_reports ADD COLUMN IF NOT EXISTS vehicle_license text;
 ALTER TABLE fnol_reports ADD COLUMN IF NOT EXISTS vehicle_license_photo text;
+ALTER TABLE fnol_reports ADD COLUMN IF NOT EXISTS video_url text;
 
 CREATE INDEX IF NOT EXISTS fnol_reports_broker_idx ON fnol_reports(broker_id);
 CREATE INDEX IF NOT EXISTS fnol_reports_vin_idx    ON fnol_reports(vin);
@@ -75,8 +76,8 @@ ALTER TABLE consumer_bookings
 --    Private bucket; the backend uses the service role key and hands out 1-year
 --    signed URLs, so no client-facing RLS policy is required.
 INSERT INTO storage.buckets (id, name, public, file_size_limit)
-VALUES ('broker-docs', 'broker-docs', false, 20971520)   -- 20 MB, matches multer limit
-ON CONFLICT (id) DO NOTHING;
+VALUES ('broker-docs', 'broker-docs', false, 104857600)   -- 100 MB (photos, docs, claim video)
+ON CONFLICT (id) DO UPDATE SET file_size_limit = EXCLUDED.file_size_limit;
 
 -- 6. Seed the first real broker: Amenli
 --    Portal login: amenli@amenli.com  /  Amenli@2026
