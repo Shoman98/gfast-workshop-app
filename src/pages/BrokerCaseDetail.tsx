@@ -305,11 +305,6 @@ export default function BrokerCaseDetail() {
                         {/* Assessment details */}
                         {st.key === 'assessed' && caseData.stage === 'assessed' && (
                           <div style={{ marginTop: 10, background: '#f0fdf4', borderRadius: 10, padding: '12px 16px', display: 'grid', gap: 6 }}>
-                            {caseData.assessment_estimate != null && (
-                              <div style={{ fontSize: '.9rem', fontWeight: 800, color: '#15803d' }}>
-                                Estimate: {Number(caseData.assessment_estimate).toLocaleString()} EGP
-                              </div>
-                            )}
                             {caseData.assessment_notes && <div style={{ fontSize: '.8rem', color: '#374151' }}>{caseData.assessment_notes}</div>}
                             {caseData.assessment_url && (
                               <a href={caseData.assessment_url} target="_blank" rel="noreferrer"
