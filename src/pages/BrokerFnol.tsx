@@ -83,6 +83,7 @@ export default function BrokerFnol() {
   const [fnolId, setFnolId]     = useState<string | null>(null)  // for the booking step
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
   const [claimCopied, setClaimCopied] = useState(false)
+  const [videoPct, setVideoPct] = useState<number | null>(null)  // background video upload %
 
   // Derived plate value (e.g. "أ ب ج 1234") + completeness (3 letters + ≥3 digits).
   const vehicleLicense = [plateLetters.filter(Boolean).join(' '), plateNumbers.filter(Boolean).join('')].filter(Boolean).join(' ')
@@ -121,7 +122,7 @@ export default function BrokerFnol() {
   // Upload a (large) video DIRECTLY to Supabase Storage via a signed URL, with a
   // progress %. Bypasses the API server so it isn't limited by request size/CORS.
   // Returns the storage path; the FNOL submit turns it into a signed URL.
-  async function uploadVideoDirect(file: File): Promise<string> {
+  async function uploadVideoDirect(file: File, onProgress?: (pct: number) => void): Promise<string> {
     const ext = file.name.split('.').pop() || 'mp4'
     const r = await fetch(apiUrl('/api/broker/video-upload-url'), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -137,9 +138,7 @@ export default function BrokerFnol() {
       const xhr = new XMLHttpRequest()
       xhr.open('PUT', signedUrl)
       xhr.setRequestHeader('x-upsert', 'true')
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) setProgress(`جاري رفع الفيديو ${Math.round((e.loaded / e.total) * 100)}%...`)
-      }
+      xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100)) }
       xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`فشل رفع الفيديو (${xhr.status})`))
       xhr.onerror = () => reject(new Error('فشل رفع الفيديو'))
       xhr.send(form)
@@ -202,6 +201,15 @@ export default function BrokerFnol() {
 
     setScreen('analyzing')
     try {
+      // 0. Kick off the (large) video upload IN THE BACKGROUND so it runs in
+      //    parallel with the analysis instead of after it. Non-fatal: a video
+      //    failure must never lose the claim. Wrapped so it never throws
+      //    unhandled — we read the result right before saving.
+      const videoJob: { path: string | null; error: any } = { path: null, error: null }
+      const videoPromise = video
+        ? uploadVideoDirect(video, setVideoPct).then(p => { videoJob.path = p }).catch(e => { videoJob.error = e })
+        : Promise.resolve()
+
       // 1. Run the wreck-vision analysis pipeline (visible progress step).
       setProgress('جاري تحليل صور الأضرار...')
       let analysisResult: any = null
@@ -223,9 +231,12 @@ export default function BrokerFnol() {
         uploadFiles(docs),
       ])
 
-      // 2b. Upload the video DIRECTLY to storage (large file, with progress %).
-      let videoPath: string | null = null
-      if (video) videoPath = await uploadVideoDirect(video)
+      // 2b. Wait for the background video upload (usually already done).
+      if (video) setProgress('جاري إنهاء رفع الفيديو...')
+      await videoPromise
+      setVideoPct(null)
+      if (videoJob.error) console.warn('Video upload failed, submitting without it:', videoJob.error)
+      const videoPath = videoJob.path
 
       // 3. Save the FNOL with everything attached.
       setProgress('جاري حفظ المطالبة...')
@@ -316,6 +327,14 @@ export default function BrokerFnol() {
           <div style={{ width: 56, height: 56, border: '4px solid #e5e7eb', borderTopColor: '#3F3D9E', borderRadius: '50%', margin: '0 auto 18px', animation: 'gfspin 1s linear infinite' }} />
           <h1 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#111827', margin: '0 0 8px' }}>{progress || 'جاري المعالجة...'}</h1>
           <p style={{ color: '#6b7280', fontSize: '.85rem', margin: 0 }}>قد تستغرق هذه الخطوة حتى 30 ثانية، برجاء عدم إغلاق الصفحة.</p>
+          {videoPct !== null && videoPct < 100 && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: '.78rem', color: '#6b7280', marginBottom: 4 }}>رفع الفيديو {videoPct}%</div>
+              <div style={{ height: 6, background: '#eef2ff', borderRadius: 999, overflow: 'hidden' }}>
+                <div style={{ width: `${videoPct}%`, height: '100%', background: '#3F3D9E', transition: 'width .2s' }} />
+              </div>
+            </div>
+          )}
           <style>{`@keyframes gfspin { to { transform: rotate(360deg) } }`}</style>
         </div>
       </div>
