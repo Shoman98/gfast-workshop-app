@@ -10,6 +10,7 @@ interface BrokerCase {
   created_at: string
   updated_at: string
   fnol: {
+    vehicle_license?: string
     customer_mobile?: string
     vehicle_make?: string
     vehicle_model?: string
@@ -58,6 +59,7 @@ export default function BrokerDashboard() {
   const filtered = cases.filter(c => {
     const q = search.toLowerCase()
     return !q || c.vin.toLowerCase().includes(q)
+      || c.fnol?.vehicle_license?.toLowerCase().includes(q)
       || c.fnol?.customer_mobile?.includes(q)
       || `${c.fnol?.vehicle_make} ${c.fnol?.vehicle_model}`.toLowerCase().includes(q)
       || c.booking?.workshop?.workshop_name?.toLowerCase().includes(q)
@@ -168,6 +170,9 @@ export default function BrokerDashboard() {
                         onClick={() => navigate(`/broker/case/${encodeURIComponent(c.vin)}`)}>
                         <td style={s.td}>
                           <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '.82rem', color: '#111827' }}>{c.vin}</span>
+                          {c.fnol?.vehicle_license && (
+                            <div style={{ fontSize: '.72rem', color: '#6b7280', marginTop: 2 }}>🔖 {c.fnol.vehicle_license}</div>
+                          )}
                         </td>
                         <td style={s.td}>{[c.fnol?.vehicle_year, c.fnol?.vehicle_make, c.fnol?.vehicle_model].filter(Boolean).join(' ') || '—'}</td>
                         <td style={s.td}>{c.fnol?.customer_mobile || '—'}</td>

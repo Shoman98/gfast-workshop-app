@@ -12,6 +12,8 @@ interface CaseDetail {
   assessment_url?: string
   fnol: {
     id: string
+    vehicle_license?: string
+    vehicle_license_photo?: string
     customer_mobile?: string
     vehicle_make?: string; vehicle_model?: string; vehicle_year?: number
     location?: string
@@ -51,24 +53,23 @@ function DamageAnalysis({ analysis }: { analysis: any }) {
     </div>
   )
 
-  const partName = (d: any) => d.nameAr || d.nameEn || d.part || d.partName || 'Unknown part'
+  const partName = (d: any) => d.part_name_ar || d.part_name_en || d.nameAr || d.nameEn || d.part || d.partName || 'قطعة غير محددة'
 
   // Prefer the pre-grouped report the customer saw (identical dedupe/confidence/mapping).
   // Fall back to raw severity split for older FNOLs without broker_report.
   const rep = analysis.broker_report
-  let repairable: any[], replaceable: any[], needsCheck: any[]
+  let repairable: any[], replaceable: any[]
   if (rep) {
     repairable  = rep.repairable  || []
     replaceable = rep.replaceable || []
-    needsCheck  = rep.needsCheck  || []
   } else {
     const damages: any[] = analysis.damages || []
-    const isReplace = (d: any) => (d.severityDecision ?? (d.severityIndex >= 4 ? 'Replace' : 'Repair')) === 'Replace'
+    const isReplace = (d: any) => (d.severity_label ?? d.severityDecision ?? (d.severityIndex >= 4 ? 'Replace' : 'Repair')) === 'Replace'
     repairable  = damages.filter(d => !isReplace(d))
     replaceable = damages.filter(d => isReplace(d))
-    needsCheck  = []
   }
-  const damages = [...repairable, ...replaceable, ...needsCheck]
+  // "تحتاج فحص" (needsCheck) is intentionally hidden from the broker view.
+  const damages = [...repairable, ...replaceable]
 
   const PartList = ({ items, title, color, dot }: { items: any[]; title: string; color: string; dot: string }) => (
     <div style={{ ...card }} dir="rtl">
@@ -94,7 +95,6 @@ function DamageAnalysis({ analysis }: { analysis: any }) {
         <>
           {repairable.length > 0 && <PartList items={repairable} title="🔧 قطع قابلة للإصلاح" color="#15803d" dot="#16a34a" />}
           {replaceable.length > 0 && <PartList items={replaceable} title="🔩 قطع تحتاج استبدال" color="#b91c1c" dot="#dc2626" />}
-          {needsCheck.length > 0 && <PartList items={needsCheck} title="🔍 تحتاج فحص" color="#b45309" dot="#d97706" />}
         </>
       )}
     </div>
@@ -199,6 +199,17 @@ export default function BrokerCaseDetail() {
               <div style={{ color: 'rgba(255,255,255,.6)', fontSize: '.85rem', marginTop: 4 }}>
                 {[caseData.fnol?.vehicle_year, caseData.fnol?.vehicle_make, caseData.fnol?.vehicle_model].filter(Boolean).join(' ') || ''}
               </div>
+              {caseData.fnol?.vehicle_license && (
+                <div style={{ color: 'rgba(255,255,255,.6)', fontSize: '.85rem', marginTop: 2, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  🔖 اللوحة: <span style={{ fontFamily: 'monospace', color: 'white' }}>{caseData.fnol.vehicle_license}</span>
+                  {caseData.fnol?.vehicle_license_photo && (
+                    <a href={caseData.fnol.vehicle_license_photo} target="_blank" rel="noreferrer">
+                      <img src={caseData.fnol.vehicle_license_photo} alt="لوحة"
+                        style={{ width: 44, height: 30, objectFit: 'cover', borderRadius: 4, border: '1px solid rgba(255,255,255,.3)' }} />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
             <div style={{ background: stageIdx === 2 ? '#15803d' : stageIdx === 1 ? '#d97706' : '#3F3D9E', borderRadius: 999, padding: '6px 16px', fontSize: '.8rem', fontWeight: 700 }}>
               {stages[stageIdx].icon} {stages[stageIdx].label}
@@ -220,7 +231,16 @@ export default function BrokerCaseDetail() {
 
         {/* ── REPORT TAB (the Gemini damage report the customer saw) ── */}
         {tab === 'report' && (
-          <DamageAnalysis analysis={caseData.fnol?.analysis_result} />
+          <>
+            {caseData.fnol?.id && (
+              <button
+                onClick={() => window.open(`/fnol-report/${caseData.fnol!.id}`, '_blank')}
+                style={{ width: '100%', marginBottom: 14, padding: '12px', background: '#3F3D9E', color: 'white', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: '.9rem', cursor: 'pointer' }}>
+                🖨️ طباعة تقرير المطالبة
+              </button>
+            )}
+            <DamageAnalysis analysis={caseData.fnol?.analysis_result} />
+          </>
         )}
 
         {/* ── TIMELINE TAB ── */}

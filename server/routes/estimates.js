@@ -18,24 +18,41 @@ const router = express.Router();
  * VIN isn't tied to a broker FNOL.
  */
 function advanceBrokerAssessment(estimate, totalCost) {
+  const bookingId = estimate?.booking_id || null;
   const vin = estimate?.vin_number;
-  if (!vin) return;
-  const vinUpper = String(vin).trim().toUpperCase();
+  const vinUpper = vin ? String(vin).trim().toUpperCase() : null;
+  console.log(`🔎 advanceBrokerAssessment called: estimate=${estimate?.estimate_id} booking_id=${bookingId} vin=${JSON.stringify(vinUpper)}`);
+  if (!bookingId && !vinUpper) return;
   const consumerBase = (process.env.CONSUMER_APP_URL || 'https://gfast.it.com').replace(/\/$/, '');
   const reportUrl = `${consumerBase}/assessment/${estimate.estimate_id}`;
 
-  // 1. Production: update Supabase broker_cases + fnol_reports by VIN (fire-and-forget)
+  // 1. Production: resolve the broker case. Prefer the strong link
+  //    estimate → booking → fnol_id → broker_case; fall back to VIN match
+  //    (for estimates created without a broker booking).
   ;(async () => {
     try {
-      // No nested workshop embed here — consumer_bookings has no FK to workshops.
-      const { data: bc, error: bcErr } = await supabase
-        .from('broker_cases')
-        .select('id, fnol_id, broker_id, vin')
-        .eq('vin', vinUpper)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (bcErr || !bc) return; // VIN not tied to a broker case in Supabase
+      let bc = null;
+      if (bookingId) {
+        const { data: bk } = await supabase
+          .from('consumer_bookings').select('fnol_id').eq('id', bookingId).maybeSingle();
+        if (bk?.fnol_id) {
+          const { data } = await supabase
+            .from('broker_cases').select('id, fnol_id, broker_id, vin').eq('fnol_id', bk.fnol_id).maybeSingle();
+          bc = data || null;
+        }
+      }
+      if (!bc && vinUpper) {
+        // No nested workshop embed here — consumer_bookings has no FK to workshops.
+        const { data } = await supabase
+          .from('broker_cases')
+          .select('id, fnol_id, broker_id, vin')
+          .eq('vin', vinUpper)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        bc = data || null;
+      }
+      if (!bc) return; // not tied to a broker case
       const now = new Date().toISOString();
       await supabase.from('broker_cases').update({
         stage: 'assessed',
@@ -51,7 +68,7 @@ function advanceBrokerAssessment(estimate, totalCost) {
         .select('name, company').eq('id', bc.broker_id).maybeSingle();
       notifyBrokerAssessmentAsync({
         broker_name: broker ? `${broker.name} (${broker.company})` : '-',
-        vin: vinUpper,
+        vin: bc.vin || vinUpper,
         customer_mobile: fnol?.customer_mobile,
         vehicle_make: fnol?.vehicle_make,
         vehicle_model: fnol?.vehicle_model,
@@ -60,10 +77,12 @@ function advanceBrokerAssessment(estimate, totalCost) {
         estimate: totalCost,
         notes: null,
       }, process.env);
-    } catch (e) { /* tables missing → mock path below handles it */ }
+      console.log(`🔗 Broker assessment linked: case ${bc.id} (fnol ${bc.fnol_id}) → assessed via ${bookingId ? 'booking.fnol_id' : 'VIN'}`);
+    } catch (e) { console.warn('⚠️  Broker assessment Supabase update failed:', e?.message); }
   })();
 
-  // 2. Local/mock fallback
+  // 2. Local/mock fallback (mock store is keyed by VIN)
+  if (!vinUpper) return;
   const linked = linkAssessmentToMockFnol(vinUpper, {
     estimate_id: estimate.estimate_id,
     estimate: totalCost,

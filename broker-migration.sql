@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS fnol_reports (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   broker_id       uuid NOT NULL REFERENCES brokers(id),
   vin             text NOT NULL,
+  vehicle_license text,                            -- license/plate number
+  vehicle_license_photo text,                      -- photo of the plate (mandatory in FNOL form)
   customer_mobile text,
   location        text,
   vehicle_make    text,
@@ -38,6 +40,10 @@ CREATE TABLE IF NOT EXISTS fnol_reports (
   booking_at      timestamptz,
   assessment_at   timestamptz
 );
+
+-- Backfill for already-migrated databases.
+ALTER TABLE fnol_reports ADD COLUMN IF NOT EXISTS vehicle_license text;
+ALTER TABLE fnol_reports ADD COLUMN IF NOT EXISTS vehicle_license_photo text;
 
 CREATE INDEX IF NOT EXISTS fnol_reports_broker_idx ON fnol_reports(broker_id);
 CREATE INDEX IF NOT EXISTS fnol_reports_vin_idx    ON fnol_reports(vin);
@@ -65,13 +71,12 @@ CREATE INDEX IF NOT EXISTS broker_cases_vin_idx    ON broker_cases(vin);
 ALTER TABLE consumer_bookings
   ADD COLUMN IF NOT EXISTS fnol_id uuid REFERENCES fnol_reports(id);
 
--- 5. Supabase Storage bucket (run once via dashboard or use this as a reminder)
--- INSERT INTO storage.buckets (id, name, public) VALUES ('broker-docs', 'broker-docs', false)
--- ON CONFLICT DO NOTHING;
---
--- Storage policy (allow service role full access, brokers read own files):
--- The backend uses the service role key so no RLS policy needed server-side.
--- For direct client uploads add a policy here if required in the future.
+-- 5. Supabase Storage bucket for FNOL uploads (photos, plate photo, documents).
+--    Private bucket; the backend uses the service role key and hands out 1-year
+--    signed URLs, so no client-facing RLS policy is required.
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('broker-docs', 'broker-docs', false, 20971520)   -- 20 MB, matches multer limit
+ON CONFLICT (id) DO NOTHING;
 
 -- 6. Seed the first real broker: Amenli
 --    Portal login: amenli@amenli.com  /  Amenli@2026

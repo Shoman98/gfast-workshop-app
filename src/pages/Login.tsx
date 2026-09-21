@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { apiUrl } from '@/lib/api'
 import { authenticateInsurance } from '@/mock/insurance'
 
-type Role = 'workshop' | 'insurance'
+type Role = 'workshop' | 'insurance' | 'broker'
 
 type Branch = { branch_id: string; branch_name: string; city?: string; phone?: string }
 type WorkshopChoice = { workshop_id: string; workshop_name: string; city?: string }
@@ -28,6 +28,10 @@ export default function LoginPage() {
   const [companyId, setCompanyId] = useState('')
   const [password, setPassword] = useState('')
 
+  // Broker fields
+  const [brokerEmail, setBrokerEmail] = useState('')
+  const [brokerPassword, setBrokerPassword] = useState('')
+
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -39,6 +43,7 @@ export default function LoginPage() {
     setBranches([])
     setPendingWorkshop(null)
     setWorkshopId(''); setPin(''); setCompanyId(''); setPassword('')
+    setBrokerEmail(''); setBrokerPassword('')
   }
 
   // Apply a successful auth response: either finish (token) or advance to the
@@ -126,6 +131,27 @@ export default function LoginPage() {
     }
   }
 
+  const handleBrokerLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    if (!brokerEmail || !brokerPassword) { setError('يرجى إدخال البريد الإلكتروني وكلمة المرور'); return }
+    setLoading(true)
+    try {
+      const response = await fetch(apiUrl('/api/broker/auth/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: brokerEmail.trim(), password: brokerPassword }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.token) { setError(data.error || 'بيانات غير صحيحة'); setLoading(false); return }
+      localStorage.setItem('broker_session', JSON.stringify({ token: data.token, broker: data.broker }))
+      navigate('/broker/dashboard')
+    } catch (err) {
+      setError((err as Error).message)
+      setLoading(false)
+    }
+  }
+
   const handleInsuranceLogin = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -169,31 +195,33 @@ export default function LoginPage() {
         <div style={{ backgroundColor: 'white', borderRadius: '1.25rem', boxShadow: '0 24px 48px rgba(0,0,0,.2)', overflow: 'hidden' }}>
 
           {/* Role selector */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '1px solid #e5e7eb' }}>
             {([
               { key: 'workshop' as Role, label: 'ورشة', icon: '🔧' },
               { key: 'insurance' as Role, label: 'شركة تأمين', icon: '🏦' },
+              { key: 'broker' as Role, label: 'وسيط تأمين', icon: '🤝' },
             ]).map(({ key, label, icon }) => (
               <button
                 key={key}
                 onClick={() => reset(key)}
                 style={{
-                  padding: '1.25rem',
+                  padding: '1.1rem 0.5rem',
                   border: 'none',
                   background: role === key ? '#eff6ff' : 'white',
                   color: role === key ? '#1e40af' : '#6b7280',
                   fontWeight: role === key ? 700 : 500,
-                  fontSize: '0.95rem',
+                  fontSize: '0.85rem',
                   cursor: 'pointer',
                   borderBottom: role === key ? '2px solid #2563eb' : '2px solid transparent',
                   transition: 'all .15s',
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '0.5rem',
+                  gap: '0.35rem',
                 }}
               >
-                <span>{icon}</span> {label}
+                <span style={{ fontSize: '1.1rem' }}>{icon}</span> {label}
               </button>
             ))}
           </div>
@@ -352,6 +380,45 @@ export default function LoginPage() {
                   style={{ padding: '0.875rem', background: '#1e40af', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', marginTop: '0.25rem' }}
                 >
                   🏦 دخول
+                </button>
+              </form>
+            )}
+
+            {/* Broker form */}
+            {role === 'broker' && (
+              <form onSubmit={handleBrokerLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>البريد الإلكتروني</label>
+                  <input
+                    style={inputStyle}
+                    type="email"
+                    placeholder="you@company.com"
+                    value={brokerEmail}
+                    onChange={e => setBrokerEmail(e.target.value)}
+                    disabled={loading}
+                    onFocus={e => (e.target.style.borderColor = '#2563eb')}
+                    onBlur={e => (e.target.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>كلمة المرور</label>
+                  <input
+                    style={inputStyle}
+                    type="password"
+                    placeholder="••••••••"
+                    value={brokerPassword}
+                    onChange={e => setBrokerPassword(e.target.value)}
+                    disabled={loading}
+                    onFocus={e => (e.target.style.borderColor = '#2563eb')}
+                    onBlur={e => (e.target.style.borderColor = '#d1d5db')}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{ padding: '0.875rem', background: loading ? '#9ca3af' : '#3F3D9E', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 700, fontSize: '1rem', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '0.25rem' }}
+                >
+                  {loading ? 'جاري الدخول...' : '🤝 دخول'}
                 </button>
               </form>
             )}

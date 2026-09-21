@@ -107,6 +107,73 @@ router.get('/link/:token', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+/**
+ * GET /api/broker/fnol-report/:id — PUBLIC printable FNOL report.
+ * Returns vehicle + broker + the analysis (part names only, resolved client-side)
+ * + the photos submitted in the FNOL. Powers the shareable "print claim" page.
+ */
+router.get('/fnol-report/:id', async (req, res, next) => {
+  try {
+    const shape = (fnol, broker, booking) => ({
+      report: {
+        fnol_id: fnol.id,
+        vin: fnol.vin || null,
+        vehicle_license: fnol.vehicle_license || null,
+        vehicle_make: fnol.vehicle_make || null,
+        vehicle_model: fnol.vehicle_model || null,
+        vehicle_year: fnol.vehicle_year || null,
+        customer_mobile: fnol.customer_mobile || null,
+        submitted_at: fnol.submitted_at || null,
+        broker_company: broker?.company || null,
+        analysis_result: fnol.analysis_result || null,
+        general_images: fnol.general_images || [],
+        damage_images: fnol.damage_images || [],
+        // Booking state so the customer's claim page can show "book" vs "booked".
+        booking: booking || null,
+      },
+    });
+
+    // Mock store first (local dev)
+    const mockFnol = MOCK_FNOL_REPORTS.get(req.params.id);
+    if (mockFnol) {
+      const broker = MOCK_BROKERS.find(b => b.id === mockFnol.broker_id);
+      return res.json(shape(mockFnol, broker, mockFnol.booking || null));
+    }
+
+    const { data: fnol } = await supabase
+      .from('fnol_reports')
+      .select('id, broker_id, vin, vehicle_license, vehicle_make, vehicle_model, vehicle_year, customer_mobile, general_images, damage_images, analysis_result, submitted_at')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    if (!fnol) return res.status(404).json({ error: 'FNOL not found' });
+
+    const { data: broker } = await supabase
+      .from('brokers').select('company').eq('id', fnol.broker_id).maybeSingle();
+
+    // Latest booking for this FNOL (if the customer already booked a workshop)
+    const { data: bk } = await supabase
+      .from('consumer_bookings')
+      .select('id, status, scheduled_date, workshop_id')
+      .eq('fnol_id', fnol.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    let booking = null;
+    if (bk && bk.status !== 'superseded') {
+      const { data: ws } = await supabase
+        .from('workshops').select('workshop_name, display_name, city').eq('workshop_id', bk.workshop_id).maybeSingle();
+      booking = {
+        status: bk.status,
+        scheduled_date: bk.scheduled_date || null,
+        workshop_name: ws?.display_name || ws?.workshop_name || null,
+        city: ws?.city || null,
+      };
+    }
+
+    res.json(shape(fnol, broker, booking));
+  } catch (err) { next(err); }
+});
+
 // ── Docs upload ───────────────────────────────────────────────────────────────
 
 /**
@@ -149,7 +216,7 @@ router.post('/upload-docs', upload.array('docs', 10), async (req, res, next) => 
 router.post('/fnol', async (req, res, next) => {
   try {
     const {
-      broker_id, vin, customer_mobile, location,
+      broker_id, vin, vehicle_license, vehicle_license_photo, customer_mobile, location,
       vehicle_make, vehicle_model, vehicle_year,
       general_images, damage_images, doc_urls,
       analysis_result, report_url,
@@ -174,6 +241,8 @@ router.post('/fnol', async (req, res, next) => {
     const fnolPayload = {
       broker_id,
       vin: vinUpper,
+      vehicle_license: vehicle_license || null,
+      vehicle_license_photo: vehicle_license_photo || null,
       customer_mobile: customer_mobile || null,
       location: location || null,
       vehicle_make: vehicle_make || null,
@@ -281,7 +350,7 @@ router.get('/cases', requireBroker, async (req, res, next) => {
       .select(`
         id, vin, stage, created_at, updated_at,
         fnol:fnol_reports (
-          id, vin, customer_mobile, vehicle_make, vehicle_model, vehicle_year,
+          id, vin, vehicle_license, vehicle_license_photo, customer_mobile, vehicle_make, vehicle_model, vehicle_year,
           location, status, submitted_at, booking_at, assessment_at,
           general_images, damage_images, doc_urls, report_url, analysis_result
         ),
@@ -318,7 +387,7 @@ router.get('/case/:vin', requireBroker, async (req, res, next) => {
         id, vin, stage, assessment_notes, assessment_estimate, assessment_url,
         created_at, updated_at,
         fnol:fnol_reports (
-          id, customer_mobile, vehicle_make, vehicle_model, vehicle_year,
+          id, vehicle_license, vehicle_license_photo, customer_mobile, vehicle_make, vehicle_model, vehicle_year,
           location, status, submitted_at, booking_at, assessment_at,
           general_images, damage_images, doc_urls, analysis_result, report_url
         ),
