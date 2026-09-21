@@ -199,6 +199,7 @@ router.post('/pre-booking', upload.array('images', 12), async (req, res, next) =
 router.patch('/booking/:id', async (req, res, next) => {
   try {
     const { workshop_id, branch_id, scheduled_date } = req.body;
+    console.log(`📅 [PATCH /booking/${req.params.id}] workshop=${workshop_id} branch=${branch_id || '-'} scheduled_date=${JSON.stringify(scheduled_date)}`);
     if (!workshop_id) return res.status(400).json({ error: 'workshop_id required' });
 
     const { data, error } = await supabase
@@ -245,6 +246,9 @@ router.patch('/booking/:id', async (req, res, next) => {
 router.post('/booking', async (req, res, next) => {
   try {
     const { workshop_id, branch_id, customer_mobile, report_url, image_urls, vehicle_make, vehicle_model, vehicle_year, scheduled_date, fnol_id } = req.body;
+
+    // Diagnostic: confirm what the consumer app actually sends (esp. the picked date).
+    console.log(`📅 [POST /booking] workshop=${workshop_id} branch=${branch_id || '-'} mobile=${customer_mobile} scheduled_date=${JSON.stringify(scheduled_date)} fnol=${fnol_id || '-'}`);
 
     if (!workshop_id || !customer_mobile) {
       return res.status(400).json({ error: 'workshop_id and customer_mobile required' });
