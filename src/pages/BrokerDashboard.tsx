@@ -167,7 +167,7 @@ export default function BrokerDashboard() {
                     const wsName = c.booking?.workshop?.display_name || c.booking?.workshop?.workshop_name
                     return (
                       <tr key={c.id} style={{ cursor: 'pointer' }}
-                        onClick={() => navigate(`/broker/case/${encodeURIComponent(c.vin)}`)}>
+                        onClick={() => navigate(`/broker/case/${encodeURIComponent(c.id)}`)}>
                         <td style={s.td}>
                           <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '.82rem', color: '#111827' }}>{c.vin}</span>
                           {c.fnol?.vehicle_license && (

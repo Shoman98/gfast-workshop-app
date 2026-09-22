@@ -117,7 +117,7 @@ function TimelineDot({ done, active }: { done: boolean; active: boolean }) {
 }
 
 export default function BrokerCaseDetail() {
-  const { vin } = useParams<{ vin: string }>()
+  const { caseId } = useParams<{ caseId: string }>()
   const navigate = useNavigate()
   const session  = getBrokerSession()
   const [caseData, setCaseData] = useState<CaseDetail | null>(null)
@@ -126,15 +126,15 @@ export default function BrokerCaseDetail() {
   const [tab, setTab]           = useState<'report' | 'timeline' | 'photos' | 'docs'>('report')
 
   useEffect(() => {
-    if (!session || !vin) return
-    fetch(apiUrl(`/api/broker/case/${encodeURIComponent(vin)}`), {
+    if (!session || !caseId) return
+    fetch(apiUrl(`/api/broker/case/${encodeURIComponent(caseId)}`), {
       headers: { Authorization: `Bearer ${session.token}` },
     })
       .then(r => r.json())
       .then(d => setCaseData(d.case || null))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [vin])
+  }, [caseId])
 
   const s: Record<string, React.CSSProperties> = {
     page: { minHeight: '100vh', background: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },

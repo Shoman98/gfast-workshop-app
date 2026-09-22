@@ -106,7 +106,7 @@ export default function App() {
         <Route path="/broker/login" element={<BrokerLoginPage />} />
         <Route element={<BrokerProtectedRoute />}>
           <Route path="/broker/dashboard" element={<BrokerDashboard />} />
-          <Route path="/broker/case/:vin" element={<BrokerCaseDetail />} />
+          <Route path="/broker/case/:caseId" element={<BrokerCaseDetail />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
