@@ -402,17 +402,18 @@ router.get('/cases', requireBroker, async (req, res, next) => {
 });
 
 /**
- * GET /api/broker/case/:vin
- * Full timeline for a single VIN owned by this broker.
+ * GET /api/broker/case/:id
+ * Full timeline for a single broker case. `:id` is the broker_case id (preferred —
+ * unambiguous when several claims share a VIN). Falls back to VIN lookup (newest)
+ * for older links.
  */
-router.get('/case/:vin', requireBroker, async (req, res, next) => {
+router.get('/case/:id', requireBroker, async (req, res, next) => {
   try {
-    const vin = req.params.vin.trim().toUpperCase();
+    const raw = req.params.id;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw);
+    const vin = raw.trim().toUpperCase();
 
-    // 1. Try Supabase (production)
-    const { data, error } = await supabase
-      .from('broker_cases')
-      .select(`
+    const SELECT = `
         id, vin, stage, assessment_notes, assessment_estimate, assessment_url,
         created_at, updated_at,
         fnol:fnol_reports (
@@ -421,20 +422,20 @@ router.get('/case/:vin', requireBroker, async (req, res, next) => {
           general_images, damage_images, doc_urls, video_url, analysis_result, report_url
         ),
         booking:consumer_bookings ( id, status, scheduled_date, created_at, workshop_id, branch_id )
-      `)
-      .eq('broker_id', req.broker_id)
-      .eq('vin', vin)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      `;
+
+    // 1. Try Supabase (production) — by case id when given, else newest for the VIN.
+    let q = supabase.from('broker_cases').select(SELECT).eq('broker_id', req.broker_id);
+    q = isUuid ? q.eq('id', raw) : q.eq('vin', vin).order('created_at', { ascending: false }).limit(1);
+    const { data, error } = await q.maybeSingle();
 
     if (!error && data) return res.json({ case: (await attachWorkshops([data]))[0] });
 
     if (error) console.warn('⚠️  broker case query error, using mock:', error.message);
 
-    // 2. Fallback to in-memory store
+    // 2. Fallback to in-memory store (match by id first, then VIN)
     const brokerCase = Array.from(MOCK_BROKER_CASES.values())
-      .filter(c => c.broker_id === req.broker_id && c.vin === vin)
+      .filter(c => c.broker_id === req.broker_id && (c.id === raw || c.vin === vin))
       .map(c => ({ ...c, fnol: MOCK_FNOL_REPORTS.get(c.fnol_id) || null, booking: c.booking || null }))
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
 
