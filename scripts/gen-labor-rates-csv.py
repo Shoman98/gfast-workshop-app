@@ -43,26 +43,30 @@ CONFIGS = {
     },
 }
 
+HOUR_FIELDS = [
+    'refitting_labor_hrs', 'dent_hrs', 'paint_hrs', 'elec_hrs', 'intr_hrs',
+    'cooling_hrs', 'susp_hrs', 'mechanical_hrs', 'glass_hrs',
+]
+
+
 def build_lookups(wb):
-    # Part hours: part_id -> {field: value}
+    # Part hours: part_id -> {field: value}. Columns are mapped BY HEADER NAME,
+    # never by fixed position: the Replace and Repair source sheets order the
+    # labor columns differently (Replace goes refitting, elec, intr, ... paint,
+    # dent), so positional reads silently scrambled the categories — e.g.
+    # Replace's intr_hrs column was being written into paint_hrs, which is why
+    # airbags showed up under "أعمال دهان".
     part_hours = {}
-    ph_headers = None
+    ph_idx = None
     for i, row in enumerate(wb['Part_Hours_Reference'].iter_rows(values_only=True)):
         if i == 0:
-            ph_headers = list(row)
+            ph_idx = {h: k for k, h in enumerate(row) if h}
+            missing = [f for f in HOUR_FIELDS if f not in ph_idx]
+            if missing:
+                raise SystemExit(f'Part_Hours_Reference missing columns: {missing}')
             continue
         if row[0]:
-            part_hours[row[0]] = {
-                'refitting_labor_hrs': row[3],
-                'dent_hrs':            row[4],
-                'paint_hrs':           row[5],
-                'elec_hrs':            row[6],
-                'intr_hrs':            row[7],
-                'cooling_hrs':         row[8],
-                'susp_hrs':            row[9],
-                'mechanical_hrs':      row[10],
-                'glass_hrs':           row[11],
-            }
+            part_hours[row[0]] = {f: row[ph_idx[f]] for f in HOUR_FIELDS}
 
     # Make -> tier
     make_tier = {}
