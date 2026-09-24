@@ -9,6 +9,10 @@ import { supabase } from '../db/supabase.js';
 
 const META_PIXEL_ID = '1576434103838817';
 const META_CAPI_TOKEN = process.env.META_CAPI_TOKEN || 'EAAHP5ZAWffHYBSSbKd9U69GHlFjgzOCZC6UWsCGL5H50kGILJl3Na7PXBwfrxgTMq2JSlFRPfJEy9i4sZCMMw0UN0JFU1YDq9Bma5yo3MLRFhoyk7TBbv0ZBUgkc7QOP9ZBF9Eh5EEetbcoVunbZBWYEqaI95uBm636XZBipKo8jMyQBqgQyfSjZAmxYZAGYT1ZB28lwZDZD';
+
+const TIKTOK_PIXEL_ID = 'DAQKI4JC77U88MSO4S50';
+// Set TIKTOK_ACCESS_TOKEN in the server env (Railway). Never commit the token.
+const TIKTOK_ACCESS_TOKEN = process.env.TIKTOK_ACCESS_TOKEN || '';
 import { notifyConsumerBookingAsync, notifyBrokerBookingAsync } from '../lib/telegram-notify.js';
 import { recordBookingStatus } from '../lib/bookingStatuses.js';
 import { linkBookingToMockFnol } from '../lib/brokerStore.js';
@@ -644,6 +648,61 @@ router.post('/meta-event', async (req, res) => {
     await fetch(`https://graph.facebook.com/v18.0/${META_PIXEL_ID}/events`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false }); // silent — never block the user
+  }
+});
+
+/**
+ * POST /api/public/tiktok-event
+ * Forwards browser pixel events to TikTok Events API for deduplication.
+ * Access token stays server-side (set TIKTOK_ACCESS_TOKEN in the server env).
+ */
+router.post('/tiktok-event', async (req, res) => {
+  try {
+    if (!TIKTOK_ACCESS_TOKEN) return res.json({ success: false, skipped: 'no token' });
+    const { event_name, event_id, user_agent, source_url, ttclid, ttp, external_id, phone, value, currency, workshop_name, city } = req.body;
+    if (!event_name || !event_id) return res.status(400).json({ error: 'event_name and event_id required' });
+
+    const { createHash } = await import('crypto');
+    const sha256 = (v) => createHash('sha256').update(String(v).trim().toLowerCase()).digest('hex');
+
+    // ttclid/ttp/ip/user_agent are NOT hashed; email/phone/external_id MUST be hashed.
+    const user = {
+      user_agent: user_agent || req.headers['user-agent'] || '',
+      ip: req.ip || '',
+    };
+    if (ttclid) user.ttclid = ttclid;
+    if (ttp) user.ttp = ttp;
+    if (external_id) user.external_id = sha256(external_id);
+    if (phone) user.phone = sha256(phone.replace(/\D/g, ''));
+
+    const properties = { content_type: 'product' };
+    if (value !== undefined) properties.value = value;
+    if (currency) properties.currency = currency;
+    if (workshop_name) properties.content_name = workshop_name;
+    if (city) properties.content_category = city;
+
+    const payload = {
+      event_source: 'web',
+      event_source_id: TIKTOK_PIXEL_ID,
+      data: [{
+        event: event_name,
+        event_time: Math.floor(Date.now() / 1000),
+        event_id,
+        user,
+        page: { url: source_url || '' },
+        properties,
+      }],
+    };
+
+    await fetch('https://business-api.tiktok.com/open_api/v1.3/event/track/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Access-Token': TIKTOK_ACCESS_TOKEN },
       body: JSON.stringify(payload),
     });
 
