@@ -31,6 +31,12 @@ export const SIDE_STATUSES = [
 export const ALL_STATUSES = [...PROGRESS_STATUSES, ...SIDE_STATUSES];
 export const STATUS_KEYS = ALL_STATUSES.map(s => s.key);
 
+// Admin CRM statuses — stored in admin_status, never touches workshop status
+export const ADMIN_STATUS_KEYS = [...STATUS_KEYS, 'cancelled'];
+export function isValidAdminStatus(status) {
+  return ADMIN_STATUS_KEYS.includes(status);
+}
+
 // Map pre-existing (legacy) rows onto the new lifecycle for display.
 export const LEGACY_STATUS_ALIAS = {
   pending: 'booked',

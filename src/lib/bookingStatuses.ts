@@ -30,6 +30,18 @@ export const SIDE_STATUSES: BookingStatusMeta[] = [
 
 export const ALL_STATUSES = [...PROGRESS_STATUSES, ...SIDE_STATUSES]
 
+// Admin-only CRM statuses — stored in admin_status column, never touches workshop status
+export const ADMIN_STATUSES: BookingStatusMeta[] = [
+  ...PROGRESS_STATUSES,
+  ...SIDE_STATUSES,
+  { key: 'cancelled', ar: 'ملغي', en: 'Cancelled', color: '#dc2626', bg: '#fef2f2' },
+]
+
+export function adminStatusMeta(status: string | null | undefined): BookingStatusMeta {
+  const key = status || 'new_booking'
+  return ADMIN_STATUSES.find(s => s.key === key) || { key, ar: key, en: key, color: '#374151', bg: '#f3f4f6' }
+}
+
 // Map legacy rows onto the new lifecycle for display.
 export const LEGACY_ALIAS: Record<string, string> = {
   pending: 'new_booking', contacted: 'new_booking', confirmed: 'booked', completed: 'ready_to_deliver',
