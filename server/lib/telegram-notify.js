@@ -247,6 +247,29 @@ async function notifyBrokerAssessment(payload, env, log = console) {
   catch (err) { log.error('❌ Broker assessment telegram error:', err.message); }
 }
 
+function formatSolutionsMessage(payload) {
+  const typeLabel = payload.type === 'insurers' ? '🏦 Insurers' : payload.type === 'repairers' ? '🔧 Repairers' : '🚗 Dealerships';
+  return [
+    `*New Business Inquiry* ${typeLabel}`,
+    `Name: ${payload.first_name || '-'}`,
+    `Email: ${payload.email || '-'}`,
+    `Company: ${payload.company || '-'}`,
+    `Job Title: ${payload.job_title || '-'}`,
+    `Workshop: ${payload.workshop_name || '-'}`,
+    `Mobile: ${payload.mobile || '-'}`,
+    `Time: ${formatEgyptDateTime(new Date())}`,
+  ].join('\n');
+}
+
+async function notifySolutionsForm(payload, env, log = console) {
+  try { await sendTelegramMessage(formatSolutionsMessage(payload), env); }
+  catch (err) { log.error('❌ Solutions form telegram error:', err.message); }
+}
+
+export function notifySolutionsFormAsync(payload, env, log = console) {
+  setImmediate(() => notifySolutionsForm(payload, env, log));
+}
+
 export function notifyBrokerFnolAsync(payload, env, log = console) {
   setImmediate(() => notifyBrokerFnol(payload, env, log));
 }
