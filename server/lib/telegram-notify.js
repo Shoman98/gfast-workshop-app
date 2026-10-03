@@ -248,7 +248,7 @@ async function notifyBrokerAssessment(payload, env, log = console) {
 }
 
 function formatSolutionsMessage(payload) {
-  const typeLabel = payload.type === 'insurers' ? '🏦 Insurers' : payload.type === 'repairers' ? '🔧 Repairers' : '🚗 Dealerships';
+  const typeLabel = payload.type === 'insurers' ? '🏦 Insurers' : payload.type === 'brokers' ? '🤝 Brokers' : payload.type === 'dealerships' ? '🚗 Dealerships' : '🔧 Repairers';
   return [
     `*New Business Inquiry* ${typeLabel}`,
     `Name: ${payload.first_name || '-'}`,
