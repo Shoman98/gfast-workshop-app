@@ -713,24 +713,22 @@ router.post('/tiktok-event', async (req, res) => {
 });
 
 // ── POST /api/public/solutions/submit ── business inquiry form
-router.post('/solutions/submit', async (req, res, next) => {
+router.post('/solutions/submit', async (req, res) => {
+  const { type, first_name, email, company, job_title, workshop_name, mobile } = req.body || {};
+
+  if (!first_name) return res.status(400).json({ error: 'first_name required' });
+
+  const payload = { type, first_name, email, company, job_title, workshop_name, mobile };
+
+  // Always fire Telegram first — independent of DB
+  notifySolutionsFormAsync(payload, process.env);
+
+  // Save to DB best-effort (don't fail the request if table missing)
   try {
-    const { type, first_name, email, company, job_title, workshop_name, mobile } = req.body;
-    if (!first_name) return res.status(400).json({ error: 'first_name required' });
+    await supabase.from('solutions_submissions').insert(payload);
+  } catch (_) { /* silent */ }
 
-    const { data, error } = await supabase.from('solutions_submissions').insert({
-      type, first_name, email, company, job_title, workshop_name, mobile,
-    }).select().single();
-
-    const payload = data || { type, first_name, email, company, job_title, workshop_name, mobile };
-    notifySolutionsFormAsync(payload, process.env);
-
-    if (error) {
-      notifySolutionsFormAsync({ type, first_name, email, company, job_title, workshop_name, mobile }, process.env);
-    }
-
-    res.status(201).json({ success: true });
-  } catch (err) { next(err); }
+  res.status(201).json({ success: true });
 });
 
 export default router;

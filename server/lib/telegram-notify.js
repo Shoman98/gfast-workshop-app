@@ -249,16 +249,15 @@ async function notifyBrokerAssessment(payload, env, log = console) {
 
 function formatSolutionsMessage(payload) {
   const typeLabel = payload.type === 'insurers' ? '🏦 Insurers' : payload.type === 'brokers' ? '🤝 Brokers' : payload.type === 'dealerships' ? '🚗 Dealerships' : '🔧 Repairers';
-  return [
-    `*New Business Inquiry* ${typeLabel}`,
-    `Name: ${payload.first_name || '-'}`,
-    `Email: ${payload.email || '-'}`,
-    `Company: ${payload.company || '-'}`,
-    `Job Title: ${payload.job_title || '-'}`,
-    `Workshop: ${payload.workshop_name || '-'}`,
-    `Mobile: ${payload.mobile || '-'}`,
-    `Time: ${formatEgyptDateTime(new Date())}`,
-  ].join('\n');
+  const lines = [`*New Business Inquiry — ${typeLabel}*`];
+  if (payload.first_name)    lines.push(`👤 Name: ${payload.first_name}`);
+  if (payload.email)         lines.push(`📧 Email: ${payload.email}`);
+  if (payload.mobile)        lines.push(`📱 Mobile: ${payload.mobile}`);
+  if (payload.company)       lines.push(`🏢 Company: ${payload.company}`);
+  if (payload.job_title)     lines.push(`💼 Job Title: ${payload.job_title}`);
+  if (payload.workshop_name) lines.push(`🔧 Workshop: ${payload.workshop_name}`);
+  lines.push(`🕐 Time: ${formatEgyptDateTime(new Date())}`);
+  return lines.join('\n');
 }
 
 async function notifySolutionsForm(payload, env, log = console) {
