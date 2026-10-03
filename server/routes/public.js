@@ -13,7 +13,7 @@ const META_CAPI_TOKEN = process.env.META_CAPI_TOKEN || 'EAAHP5ZAWffHYBSSbKd9U69G
 const TIKTOK_PIXEL_ID = 'DAQKI4JC77U88MSO4S50';
 // Set TIKTOK_ACCESS_TOKEN in the server env (Railway). Never commit the token.
 const TIKTOK_ACCESS_TOKEN = process.env.TIKTOK_ACCESS_TOKEN || '';
-import { notifyConsumerBookingAsync, notifyBrokerBookingAsync } from '../lib/telegram-notify.js';
+import { notifyConsumerBookingAsync, notifyBrokerBookingAsync, notifySolutionsFormAsync } from '../lib/telegram-notify.js';
 import { recordBookingStatus } from '../lib/bookingStatuses.js';
 import { linkBookingToMockFnol } from '../lib/brokerStore.js';
 
@@ -711,5 +711,25 @@ router.post('/tiktok-event', async (req, res) => {
     res.json({ success: false }); // silent — never block the user
   }
 });
+
+// ── POST /api/public/solutions/submit ── business inquiry form
+router.post('/solutions/submit', async (req, res) => {
+  const { type, first_name, email, company, job_title, workshop_name, mobile } = req.body || {};
+
+  if (!first_name) return res.status(400).json({ error: 'first_name required' });
+
+  const payload = { type, first_name, email, company, job_title, workshop_name, mobile };
+
+  // Always fire Telegram first — independent of DB
+  notifySolutionsFormAsync(payload, process.env);
+
+  // Save to DB best-effort (don't fail the request if table missing)
+  try {
+    await supabase.from('solutions_submissions').insert(payload);
+  } catch (_) { /* silent */ }
+
+  res.status(201).json({ success: true });
+});
+
 
 export default router;

@@ -247,6 +247,28 @@ async function notifyBrokerAssessment(payload, env, log = console) {
   catch (err) { log.error('❌ Broker assessment telegram error:', err.message); }
 }
 
+function formatSolutionsMessage(payload) {
+  const typeLabel = payload.type === 'insurers' ? '🏦 Insurers' : payload.type === 'brokers' ? '🤝 Brokers' : payload.type === 'dealerships' ? '🚗 Dealerships' : '🔧 Repairers';
+  const lines = [`*New Business Inquiry — ${typeLabel}*`];
+  if (payload.first_name)    lines.push(`👤 Name: ${payload.first_name}`);
+  if (payload.email)         lines.push(`📧 Email: ${payload.email}`);
+  if (payload.mobile)        lines.push(`📱 Mobile: ${payload.mobile}`);
+  if (payload.company)       lines.push(`🏢 Company: ${payload.company}`);
+  if (payload.job_title)     lines.push(`💼 Job Title: ${payload.job_title}`);
+  if (payload.workshop_name) lines.push(`🔧 Workshop: ${payload.workshop_name}`);
+  lines.push(`🕐 Time: ${formatEgyptDateTime(new Date())}`);
+  return lines.join('\n');
+}
+
+async function notifySolutionsForm(payload, env, log = console) {
+  try { await sendTelegramMessage(formatSolutionsMessage(payload), env); }
+  catch (err) { log.error('❌ Solutions form telegram error:', err.message); }
+}
+
+export function notifySolutionsFormAsync(payload, env, log = console) {
+  setImmediate(() => notifySolutionsForm(payload, env, log));
+}
+
 export function notifyBrokerFnolAsync(payload, env, log = console) {
   setImmediate(() => notifyBrokerFnol(payload, env, log));
 }

@@ -7,7 +7,7 @@ import express from 'express';
 import multer from 'multer';
 import { supabase } from '../db/supabase.js';
 import { authenticate } from '../middleware/auth.js';
-import { recordBookingStatus, isValidStatus, STATUS_KEYS, CANCELLATION_REASONS } from '../lib/bookingStatuses.js';
+import { recordBookingStatus, isValidStatus, STATUS_KEYS, CANCELLATION_REASONS, isValidAdminStatus } from '../lib/bookingStatuses.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
@@ -161,7 +161,7 @@ router.get('/bookings', authenticate, requireSuperAdmin, async (req, res, next) 
       .order('created_at', { ascending: false });
 
     if (workshop_id) q = q.eq('workshop_id', workshop_id);
-    if (status)      q = q.eq('status', status);
+    if (status)      q = q.eq('admin_status', status);
     if (from)        q = q.gte('created_at', from);
     if (to)          q = q.lte('created_at', to);
 
@@ -187,16 +187,14 @@ router.patch('/bookings/:id', authenticate, requireSuperAdmin, async (req, res, 
     }
 
     if (status !== undefined) {
-      if (!isValidStatus(status)) {
-        return res.status(400).json({ error: `status must be one of: ${STATUS_KEYS.join(', ')}` });
+      if (!isValidAdminStatus(status)) {
+        return res.status(400).json({ error: `admin_status must be one of: ${[...STATUS_KEYS, 'cancelled'].join(', ')}` });
       }
-      if (status === 'cancelled' && !CANCELLATION_REASONS.includes(cancellation_reason)) {
-        return res.status(400).json({ error: `cancellation_reason required: ${CANCELLATION_REASONS.join(' / ')}` });
-      }
-      await recordBookingStatus(id, status, {
-        changed_by: 'admin',
-        cancellation_reason: status === 'cancelled' ? cancellation_reason : null,
-      });
+      const { error: sErr } = await supabase
+        .from('consumer_bookings')
+        .update({ admin_status: status })
+        .eq('id', id);
+      if (sErr) throw sErr;
     }
 
     const { data, error } = await supabase.from('consumer_bookings').select('*').eq('id', id).single();
