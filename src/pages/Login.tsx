@@ -197,7 +197,7 @@ export default function LoginPage() {
           {/* Role selector */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '1px solid #e5e7eb' }}>
             {([
-              { key: 'workshop' as Role, label: 'ورشة', icon: '🔧' },
+              { key: 'workshop' as Role, label: 'مركز خدمة', icon: '🔧' },
               { key: 'insurance' as Role, label: 'شركة تأمين', icon: '🏦' },
               { key: 'broker' as Role, label: 'وسيط تأمين', icon: '🤝' },
             ]).map(({ key, label, icon }) => (
