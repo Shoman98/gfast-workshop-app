@@ -3736,8 +3736,19 @@ function combineStageResults(stage1, stage2, stage3, stage4) {
         hiddenDamageIndicators: []
       };
     });
-    damages = [...damages, ...structuralDamages];
-    console.log(`  Converted ${structuralDamages.length} structural concerns to damage items`);
+    // Only include chassis-zone parts if a chassis/undercarriage image was actually provided
+    const chassisOnlyParts = new Set(['front_chassis_rails', 'rear_chassis', 'rear_subframe', 'front_subframe_crossmember']);
+    const hasChassissImage = (stage1?.visibleAreas || []).some(a => a === 'front_chassis_rails' || a === 'rear_chassis');
+    const filteredStructural = structuralDamages.filter(d => {
+      const key = (d.partName || '').toLowerCase();
+      if (chassisOnlyParts.has(key) && !hasChassissImage) {
+        console.log(`  [Stage3 FILTER] Excluded "${d.partName}" — no chassis-view image provided`);
+        return false;
+      }
+      return true;
+    });
+    damages = [...damages, ...filteredStructural];
+    console.log(`  Converted ${filteredStructural.length} structural concerns to damage items (${structuralDamages.length - filteredStructural.length} chassis-only excluded)`);
   }
 
   // Structural concerns are now part of the damages array — clear to avoid duplicate display
