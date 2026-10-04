@@ -3461,11 +3461,22 @@ async function runStage2(images, vehicleInfo, stage1Result, imageViews, imageAng
   result.damages = (result.damages || []).map(correctTrimDamageType);
   result.needs_check_parts = (result.needs_check_parts || []).map(correctTrimDamageType);
 
-  // --- Deduplication: same part_name in same array → keep highest confidence ---
+  // --- Deduplication: same part_name + same side → keep highest confidence ---
+  // Extract side from description so c_pillar_left ≠ c_pillar_right
+  function extractSideKey(partName, description) {
+    const base = (partName || '').toLowerCase().trim().replace(/\s+/g, '_');
+    const desc = (description || '').toLowerCase();
+    const isLeft  = desc.includes('شمال') || desc.includes('left')  || desc.includes('يسر') || desc.includes('أيسر');
+    const isRight = desc.includes('يمين') || desc.includes('right') || desc.includes('أيمن');
+    if (isLeft)  return base + '_left';
+    if (isRight) return base + '_right';
+    return base;
+  }
+
   function dedupeByPartName(arr, label) {
     const map = new Map();
     for (const item of arr) {
-      const key = (item.part_name || '').toLowerCase().trim().replace(/\s+/g, '_');
+      const key = extractSideKey(item.part_name, item.description);
       if (!map.has(key)) {
         map.set(key, item);
       } else {
