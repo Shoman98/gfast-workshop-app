@@ -28,18 +28,23 @@ export default function FnolReport() {
   const [report, setReport] = useState<Report | null>(null)
   const [state, setState]   = useState<'loading' | 'notfound' | 'ready'>('loading')
   const [copied, setCopied] = useState(false)
-  // Parts excluded from print/copy ONLY (keys: r<i> repair, p<i> replace).
-  // Seeded from the URL so a copied link reproduces the same selection.
-  // This never touches the stored FNOL analysis.
+  // Parts excluded from print/copy ONLY. Never touches stored analysis.
   const [removed, setRemoved] = useState<Set<string>>(() => {
     const ex = new URLSearchParams(window.location.search).get('exclude')
     return new Set(ex ? ex.split(',').filter(Boolean) : [])
   })
   const toggle = (key: string) => setRemoved(prev => {
-    const next = new Set(prev)
-    next.has(key) ? next.delete(key) : next.add(key)
-    return next
+    const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next
   })
+  // Promoted parts: key → target section ('r' | 'p'). Seeded from URL ?promote=r0:p,n2:r
+  const [promoted, setPromoted] = useState<Record<string, 'r' | 'p'>>(() => {
+    const pm = new URLSearchParams(window.location.search).get('promote')
+    if (!pm) return {}
+    return Object.fromEntries(pm.split(',').filter(Boolean).map(s => s.split(':') as [string,'r'|'p']))
+  })
+  const promote = (key: string, target: 'r' | 'p') => setPromoted(prev =>
+    prev[key] === target ? (({ [key]: _, ...rest }) => rest)(prev) : { ...prev, [key]: target }
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -59,6 +64,9 @@ export default function FnolReport() {
     const url = new URL(window.location.href)
     if (removed.size) url.searchParams.set('exclude', [...removed].join(','))
     else url.searchParams.delete('exclude')
+    const pm = Object.entries(promoted).map(([k,v]) => `${k}:${v}`).join(',')
+    if (pm) url.searchParams.set('promote', pm)
+    else url.searchParams.delete('promote')
     navigator.clipboard.writeText(url.toString())
     setCopied(true); setTimeout(() => setCopied(false), 2000)
   }
@@ -106,29 +114,70 @@ export default function FnolReport() {
   })
   const photos = [...(report.general_images || []), ...(report.damage_images || [])]
 
-  const PartList = ({ items, sectionKey, title, color, indicator, subtitle }: { items: any[]; sectionKey: string; title: string; color: string; indicator: string; subtitle?: string }) => {
-    items = items.filter(d => !!(d.part_name_ar || d.nameAr))
-    if (items.length === 0) return null
-    const includedCount = items.filter((_, i) => !removed.has(sectionKey + i)).length
+  // Build the effective lists after applying promotions
+  // promoted items from other sections are injected; promoted-away items are excluded
+  const buildEffective = (items: any[], sectionKey: string, targetSection: 'r' | 'p' | 'n') => {
+    // items originally in this section, minus those promoted away
+    const base = items
+      .filter(d => !!(d.part_name_ar || d.nameAr))
+      .map((d, i) => ({ d, origKey: sectionKey + i }))
+      .filter(({ origKey }) => promoted[origKey] === undefined)
+    // items from other sections promoted INTO this section
+    const incoming: { d: any; origKey: string }[] = []
+    if (targetSection !== 'n') {
+      const others: [any[], string][] = targetSection === 'r'
+        ? [[replaceable, 'p'], [needsCheck, 'n']]
+        : [[repairable, 'r'], [needsCheck, 'n']]
+      for (const [arr, sk] of others) {
+        arr.filter(d => !!(d.part_name_ar || d.nameAr)).forEach((d, i) => {
+          if (promoted[sk + i] === targetSection) incoming.push({ d, origKey: sk + i })
+        })
+      }
+    }
+    return [...base, ...incoming]
+  }
+
+  const PartList = ({ items, sectionKey, title, color, indicator, subtitle, section }: {
+    items: any[]; sectionKey: string; title: string; color: string; indicator: string; subtitle?: string; section: 'r' | 'p' | 'n'
+  }) => {
+    const effective = buildEffective(items, sectionKey, section)
+    if (effective.length === 0) return null
+    const includedCount = effective.filter(({ origKey }) => !removed.has(origKey)).length
     return (
-      // When every part is removed, hide the whole section from print only.
       <div style={card} className={includedCount === 0 ? 'gf-removed' : undefined}>
         <div style={{ padding: '13px 18px', borderBottom: '1px solid #f1f5f9', fontWeight: 700, fontSize: '.95rem', color }}>{title} ({includedCount})</div>
         {subtitle && <div style={{ padding: '8px 18px 0', fontSize: '.82rem', color: '#6b7280', lineHeight: 1.5 }}>{subtitle}</div>}
         <ul style={{ listStyle: 'none', margin: 0, padding: '6px 0' }}>
-          {items.map((d, i) => {
-            const key = sectionKey + i
-            const isRemoved = removed.has(key)
+          {effective.map(({ d, origKey }, i) => {
+            const isRemoved   = removed.has(origKey)
+            const isPromoted  = promoted[origKey] !== undefined
             return (
-              <li key={i} className={isRemoved ? 'gf-removed' : undefined}
-                style={{ padding: '9px 18px', borderBottom: i < items.length - 1 ? '1px solid #f8fafc' : 'none', display: 'flex', alignItems: 'center', gap: 8, opacity: isRemoved ? 0.45 : 1 }}>
+              <li key={origKey} className={isRemoved ? 'gf-removed' : undefined}
+                style={{ padding: '9px 18px', borderBottom: i < effective.length - 1 ? '1px solid #f8fafc' : 'none', display: 'flex', alignItems: 'center', gap: 6, opacity: isRemoved ? 0.45 : 1 }}>
                 <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: '.92rem', color: '#111827', textDecoration: isRemoved ? 'line-through' : 'none' }}>
-                  <span style={{ color }}>{indicator}</span> {partName(d)}
+                  <span style={{ color: isPromoted ? '#7c3aed' : color }}>{isPromoted ? '↑' : indicator}</span>
+                  {partName(d)}
+                  {isPromoted && <span style={{ fontSize: '.7rem', color: '#7c3aed', fontWeight: 400 }}>(مُحوَّل)</span>}
                 </span>
-                <button className="gf-no-print" onClick={() => toggle(key)}
-                  style={{ flexShrink: 0, padding: '3px 10px', borderRadius: 999, border: `1px solid ${isRemoved ? '#16a34a' : '#fecaca'}`, background: isRemoved ? '#f0fdf4' : '#fef2f2', color: isRemoved ? '#15803d' : '#dc2626', fontSize: '.72rem', fontWeight: 700, cursor: 'pointer' }}>
-                  {isRemoved ? '↩ إرجاع' : '× إزالة'}
-                </button>
+                <div className="gf-no-print" style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  {/* Promote buttons — only shown when not removed */}
+                  {!isRemoved && section !== 'r' && (
+                    <button onClick={() => promote(origKey, 'r')}
+                      style={{ padding: '3px 8px', borderRadius: 999, border: `1px solid ${promoted[origKey]==='r' ? '#7c3aed' : '#d1fae5'}`, background: promoted[origKey]==='r' ? '#ede9fe' : '#f0fdf4', color: promoted[origKey]==='r' ? '#7c3aed' : '#15803d', fontSize: '.68rem', fontWeight: 700, cursor: 'pointer' }}>
+                      {promoted[origKey]==='r' ? '↩' : '→ إصلاح'}
+                    </button>
+                  )}
+                  {!isRemoved && section !== 'p' && (
+                    <button onClick={() => promote(origKey, 'p')}
+                      style={{ padding: '3px 8px', borderRadius: 999, border: `1px solid ${promoted[origKey]==='p' ? '#7c3aed' : '#fee2e2'}`, background: promoted[origKey]==='p' ? '#ede9fe' : '#fef2f2', color: promoted[origKey]==='p' ? '#7c3aed' : '#b91c1c', fontSize: '.68rem', fontWeight: 700, cursor: 'pointer' }}>
+                      {promoted[origKey]==='p' ? '↩' : '→ استبدال'}
+                    </button>
+                  )}
+                  <button onClick={() => toggle(origKey)}
+                    style={{ padding: '3px 8px', borderRadius: 999, border: `1px solid ${isRemoved ? '#16a34a' : '#fecaca'}`, background: isRemoved ? '#f0fdf4' : '#fef2f2', color: isRemoved ? '#15803d' : '#dc2626', fontSize: '.68rem', fontWeight: 700, cursor: 'pointer' }}>
+                    {isRemoved ? '↩ إرجاع' : '× إزالة'}
+                  </button>
+                </div>
               </li>
             )
           })}
@@ -164,10 +213,10 @@ export default function FnolReport() {
       {/* Selection hint (screen only) */}
       {(repairable.length > 0 || replaceable.length > 0) && (
         <div className="gf-no-print" style={{ maxWidth: 780, margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', color: '#6b7280', fontSize: '.78rem' }}>
-          <span>اضغط «إزالة» لاستبعاد قطعة من الطباعة/النسخ فقط — لا يؤثر على التقرير الأصلي.</span>
-          {removed.size > 0 && (
-            <button onClick={() => setRemoved(new Set())} style={{ padding: '3px 12px', borderRadius: 999, border: '1px solid #d1d5db', background: 'white', color: '#374151', fontSize: '.75rem', fontWeight: 700, cursor: 'pointer' }}>
-              إظهار الكل ({removed.size})
+          <span>اضغط «→ إصلاح» أو «→ استبدال» لتحويل قطعة · «× إزالة» لاستبعادها — لا يؤثر على التقرير الأصلي.</span>
+          {(removed.size > 0 || Object.keys(promoted).length > 0) && (
+            <button onClick={() => { setRemoved(new Set()); setPromoted({}) }} style={{ padding: '3px 12px', borderRadius: 999, border: '1px solid #d1d5db', background: 'white', color: '#374151', fontSize: '.75rem', fontWeight: 700, cursor: 'pointer' }}>
+              إعادة تعيين الكل
             </button>
           )}
         </div>
@@ -178,9 +227,9 @@ export default function FnolReport() {
         <div style={{ ...card, padding: 30, textAlign: 'center', color: '#9ca3af' }}>لم يتم رصد أضرار في الصور.</div>
       ) : (
         <>
-          <PartList items={repairable}  sectionKey="r" title="🔧 قطع قابلة للإصلاح (موصى به)"  color="#15803d" indicator="✓" />
-          <PartList items={replaceable} sectionKey="p" title="🔩 قطع تحتاج استبدال (موصى به)"  color="#b91c1c" indicator="●" />
-          <PartList items={needsCheck}  sectionKey="n" title="🔍 قطع تحتاج فحص"               color="#92400e" indicator="?" subtitle="هذه القطع قد تكون سليمة ويُنصح بفحصها في المركز." />
+          <PartList items={repairable}  sectionKey="r" section="r" title="🔧 قطع قابلة للإصلاح (موصى به)"  color="#15803d" indicator="✓" />
+          <PartList items={replaceable} sectionKey="p" section="p" title="🔩 قطع تحتاج استبدال (موصى به)"  color="#b91c1c" indicator="●" />
+          <PartList items={needsCheck}  sectionKey="n" section="n" title="🔍 قطع تحتاج فحص"               color="#92400e" indicator="?" subtitle="هذه القطع قد تكون سليمة ويُنصح بفحصها في المركز." />
         </>
       )}
 
