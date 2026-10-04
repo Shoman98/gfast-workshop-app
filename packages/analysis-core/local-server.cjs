@@ -2316,10 +2316,9 @@ VALIDATION RULES (MANDATORY):
 ---------------------------------------
 - Any part with confidence < 0.70 MUST be listed ONLY in "needs_check_parts".
 - No part with confidence < 0.70 may appear in "damages".
-- Any damage description containing uncertainty words such as:
-  English: "likely", "possible", "may", "unclear", "not sure", "probably", "potential", "suspect"
-  Arabic: "احتمال", "يحتمل", "قد يكون", "ربما", "من المحتمل", "يُشتبه", "غير واضح", "يبدو أن"
-  MUST be listed ONLY in "needs_check_parts" — NEVER in "damages".
+- Any damage description containing words such as:
+  "likely", "possible", "may", "unclear", "not sure"
+  MUST be listed ONLY in "needs_check_parts".
 - Parts listed in "needs_check_parts" MUST NOT be duplicated in "damages".
 - Parts listed in "damages" MUST have confidence >= 0.70 and assertive wording. SELF-CHECK RULE:
 - Before final output, verify that no part violates the confidence thresholds.
@@ -3038,7 +3037,6 @@ DETECTION RULES:
 8. If photo quality is "Retake needed", reduce all confidences by 0.15.
 9. Do NOT report both upper and lower bumper unless BOTH are clearly damaged — pick the specific section.
 10. If no damage is visible, return empty arrays — do NOT fabricate findings.
-11. ONE ENTRY PER PART — STRICTLY ENFORCED: Each part_name must appear AT MOST ONCE in "damages" and AT MOST ONCE in "needs_check_parts". If the same part appears in multiple photos or from different angles, combine all observations into a SINGLE entry with the most complete description. Do NOT create separate entries for the same part seen in different photos. If you find yourself writing the same part_name twice, STOP — merge them into one entry keeping the highest confidence and combining the descriptions.
 
 LEFT/RIGHT CRITICAL RULE:
 - Always determine left/right from the DRIVER'S perspective sitting inside the car
@@ -3462,92 +3460,6 @@ async function runStage2(images, vehicleInfo, stage1Result, imageViews, imageAng
   }
   result.damages = (result.damages || []).map(correctTrimDamageType);
   result.needs_check_parts = (result.needs_check_parts || []).map(correctTrimDamageType);
-
-  // --- Uncertainty language check: move parts with hedging language from damages → needs_check ---
-  const UNCERTAINTY_WORDS = [
-    // Arabic
-    'احتمال', 'يحتمل', 'قد يكون', 'ربما', 'من المحتمل', 'يُشتبه', 'غير واضح', 'يبدو أن',
-    // English
-    'likely', 'possible', 'may ', 'probably', 'potential', 'suspect', 'unclear', 'not sure', 'might',
-  ];
-
-  function hasUncertainLanguage(item) {
-    const desc = (item.description || '').toLowerCase();
-    const reason = (item.reason_for_uncertainty || '').toLowerCase();
-    return UNCERTAINTY_WORDS.some(w => desc.includes(w) || reason.includes(w));
-  }
-
-  const movedToNeedsCheck = [];
-  result.damages = (result.damages || []).filter(d => {
-    if (hasUncertainLanguage(d)) {
-      console.log(`  [Stage2 UNCERTAIN] Moving "${d.part_name}" from damages → needs_check (uncertain language in description)`);
-      appendLog(`  [Stage2 UNCERTAIN] Moved "${d.part_name}" to needs_check — uncertain language detected`);
-      movedToNeedsCheck.push({ ...d, reason_for_uncertainty: 'Description contains uncertain/speculative language' });
-      return false;
-    }
-    return true;
-  });
-  result.needs_check_parts = [...(result.needs_check_parts || []), ...movedToNeedsCheck];
-
-  // --- Deduplication: same part_name + same side → keep highest confidence ---
-  // Extract side from description so c_pillar_left ≠ c_pillar_right
-  function extractSideKey(partName, description) {
-    const base = (partName || '').toLowerCase().trim().replace(/\s+/g, '_');
-    const desc = (description || '').toLowerCase();
-    const isLeft  = desc.includes('شمال') || desc.includes('left')  || desc.includes('يسر') || desc.includes('أيسر');
-    const isRight = desc.includes('يمين') || desc.includes('right') || desc.includes('أيمن');
-    if (isLeft)  return base + '_left';
-    if (isRight) return base + '_right';
-    return base;
-  }
-
-  function dedupeByPartName(arr, label) {
-    const map = new Map();
-    for (const item of arr) {
-      const key = extractSideKey(item.part_name, item.description);
-      if (!map.has(key)) {
-        map.set(key, item);
-      } else {
-        const existing = map.get(key);
-        const existingConf = existing.confidence || 0;
-        const newConf = item.confidence || 0;
-        if (newConf > existingConf) {
-          const merged = { ...item };
-          if (item.description && existing.description && item.description !== existing.description) {
-            merged.description = `${item.description}; ${existing.description}`;
-          }
-          map.set(key, merged);
-        } else if (existing.description && item.description && existing.description !== item.description) {
-          map.set(key, { ...existing, description: `${existing.description}; ${item.description}` });
-        }
-        console.log(`  [Stage2 DEDUP ${label}] Merged duplicate "${item.part_name}" (kept highest confidence ${Math.max(existingConf, newConf)})`);
-        appendLog(`  [Stage2 DEDUP] Merged duplicate "${item.part_name}" in ${label}`);
-      }
-    }
-    return Array.from(map.values());
-  }
-
-  const beforeDamages = result.damages.length;
-  const beforeNeeds = (result.needs_check_parts || []).length;
-  result.damages = dedupeByPartName(result.damages, 'damages');
-  result.needs_check_parts = dedupeByPartName(result.needs_check_parts || [], 'needs_check');
-
-  // Remove from needs_check if already in damages
-  const confirmedKeys = new Set(result.damages.map(d => (d.part_name || '').toLowerCase().trim().replace(/\s+/g, '_')));
-  result.needs_check_parts = result.needs_check_parts.filter(p => {
-    const key = (p.part_name || '').toLowerCase().trim().replace(/\s+/g, '_');
-    if (confirmedKeys.has(key)) {
-      console.log(`  [Stage2 DEDUP] Removed "${p.part_name}" from needs_check — already in damages`);
-      appendLog(`  [Stage2 DEDUP] Removed "${p.part_name}" from needs_check (exists in damages)`);
-      return false;
-    }
-    return true;
-  });
-
-  const dedupRemoved = (beforeDamages - result.damages.length) + (beforeNeeds - result.needs_check_parts.length);
-  if (dedupRemoved > 0) {
-    console.log(`  [Stage2 DEDUP] Removed/merged ${dedupRemoved} duplicate entries`);
-  }
 
   console.log(`  Confirmed damages: ${result.damages.length}`);
   console.log(`  Needs check: ${(result.needs_check_parts || []).length}`);
