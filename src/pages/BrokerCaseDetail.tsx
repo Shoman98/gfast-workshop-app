@@ -59,18 +59,19 @@ function DamageAnalysis({ analysis }: { analysis: any }) {
   // Prefer the pre-grouped report the customer saw (identical dedupe/confidence/mapping).
   // Fall back to raw severity split for older FNOLs without broker_report.
   const rep = analysis.broker_report
-  let repairable: any[], replaceable: any[]
+  let repairable: any[], replaceable: any[], needsCheck: any[]
   if (rep) {
     repairable  = rep.repairable  || []
     replaceable = rep.replaceable || []
+    needsCheck  = rep.needsCheck  || []
   } else {
     const damages: any[] = analysis.damages || []
     const isReplace = (d: any) => (d.severity_label ?? d.severityDecision ?? (d.severityIndex >= 4 ? 'Replace' : 'Repair')) === 'Replace'
     repairable  = damages.filter(d => !isReplace(d))
     replaceable = damages.filter(d => isReplace(d))
+    needsCheck  = analysis.needs_check_parts || []
   }
-  // "تحتاج فحص" (needsCheck) is intentionally hidden from the broker view.
-  const damages = [...repairable, ...replaceable]
+  const damages = [...repairable, ...replaceable, ...needsCheck]
 
   const PartList = ({ items, title, color, dot }: { items: any[]; title: string; color: string; dot: string }) => (
     <div style={{ ...card }} dir="rtl">
@@ -94,8 +95,9 @@ function DamageAnalysis({ analysis }: { analysis: any }) {
         <div style={{ ...card, padding: 40, textAlign: 'center', color: '#9ca3af' }}>No damages detected in the uploaded photos.</div>
       ) : (
         <>
-          {repairable.length > 0 && <PartList items={repairable} title="🔧 قطع قابلة للإصلاح" color="#15803d" dot="#16a34a" />}
-          {replaceable.length > 0 && <PartList items={replaceable} title="🔩 قطع تحتاج استبدال" color="#b91c1c" dot="#dc2626" />}
+          {repairable.length > 0  && <PartList items={repairable}  title="🔧 قطع قابلة للإصلاح"     color="#15803d" dot="#16a34a" />}
+          {replaceable.length > 0 && <PartList items={replaceable} title="🔩 قطع تحتاج استبدال"      color="#b91c1c" dot="#dc2626" />}
+          {needsCheck.length > 0  && <PartList items={needsCheck}  title="🔍 قطع تحتاج فحص ميداني"  color="#92400e" dot="#d97706" />}
         </>
       )}
     </div>
