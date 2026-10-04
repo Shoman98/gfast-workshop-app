@@ -3664,18 +3664,13 @@ function combineStageResults(stage1, stage2, stage3, stage4) {
 
   damages = [...damages, ...needsCheckDamages];
 
-  // Safety flags conversion - always add airbag deployments as damages
+  // Safety flags conversion — airbag_module always needs replacement after any deployment.
+  // Specific airbag parts (driver, passenger, curtains) are left to Gemini's visual detection.
   if (safetyFlags.airbag_deployment) {
     console.log('🎯 Converting airbag_deployment safety flag to damage items');
-    // Add the specific deployed airbag parts, not just the control module
     const airbagParts = [
-      { partName: 'steering_wheel_driver_airbag', description: 'Driver airbag deployed' },
-      { partName: 'steering_wheel_airbag',        description: 'Passenger airbag deployed' },
-      { partName: 'left_side_curtain_airbags',    description: 'Left curtain airbag deployed' },
-      { partName: 'right_side_curtain_airbags',   description: 'Right curtain airbag deployed' },
-      { partName: 'airbag_module',                description: 'Airbag control module — requires replacement after deployment' },
+      { partName: 'airbag_module', description: 'Airbag control module — requires replacement after deployment' },
     ];
-    // Only add parts not already detected by Gemini
     const existingNames = new Set(damages.map(d => (d.partName || '').toLowerCase()));
     for (const p of airbagParts) {
       if (!existingNames.has(p.partName)) {
