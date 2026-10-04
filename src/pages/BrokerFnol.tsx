@@ -19,6 +19,38 @@ interface Broker { id: string; name: string; company: string }
 
 type Screen = 'loading' | 'invalid' | 'form' | 'analyzing' | 'success'
 
+// Exact same mapper as consumer AnalysisResultPage — single source of truth.
+const CONFIDENCE_THRESHOLD = 70
+function splitDamages(analysis: any) {
+  const all = analysis.damages || []
+  const deduped = all.reduce((acc: any[], d: any) => {
+    const key = (d.nameAr || d.nameEn || d.part || '').toLowerCase().trim()
+    if (!acc.find((x: any) => (x.nameAr || x.nameEn || x.part || '').toLowerCase().trim() === key)) acc.push(d)
+    return acc
+  }, [])
+  const confirmedDamages = deduped.filter((d: any) => (d.confidence ?? 85) >= CONFIDENCE_THRESHOLD)
+  const lowConf          = deduped.filter((d: any) => (d.confidence ?? 85) < CONFIDENCE_THRESHOLD)
+  const hiddenDamages    = (analysis.hiddenDamageAssessment || []).map((item: any) => ({
+    part: item.suspected_hidden_part?.replace(/_/g, ' ') || 'Hidden Component',
+    nameEn: item.nameEn || item.suspected_hidden_part?.replace(/_/g, ' '),
+    nameAr: item.nameAr,
+    damageType: 'Hidden Damage',
+    damageTypes: ['Hidden Damage'],
+    description: `${item.hidden_indicator?.replace('[HIDDEN] ', '')}. Located behind: ${item.visible_damage_part?.replace(/_/g, ' ')}`,
+    confidence: item.confidence || 65,
+    needsInvestigation: true,
+  }))
+  const confirmedKeys = new Set(confirmedDamages.map((d: any) => (d.nameAr || d.nameEn || d.part || '').toLowerCase().trim()))
+  const seenNeedsCheck = new Set<string>()
+  const needsCheck = [...lowConf, ...hiddenDamages].filter((d: any) => {
+    const key = (d.nameAr || d.nameEn || d.part || '').toLowerCase().trim()
+    if (!key || confirmedKeys.has(key) || seenNeedsCheck.has(key)) return false
+    seenNeedsCheck.add(key)
+    return true
+  })
+  return { confirmedDamages, needsCheck }
+}
+
 // Guided general-photo slots — one required angle each.
 const GENERAL_SLOTS = [
   { key: 'front', label: 'أمامي',      hint: 'مقدمة السيارة' },
@@ -187,15 +219,14 @@ export default function BrokerFnol() {
     if (!res.ok || !data.success || !data.analysis) throw new Error(data.error || 'فشل تحليل الصور')
 
     const enriched = data.analysis
-    const damages: any[] = enriched.damages || []
-    // enrichAnalysisWithParts tags each part with severity_label ('Repair'|'Replace').
-    const isReplace = (d: any) => (d.severity_label ?? d.severityDecision ?? (d.severityIndex >= 4 ? 'Replace' : 'Repair')) === 'Replace'
+    const { confirmedDamages, needsCheck } = splitDamages(enriched)
+    const isReplace = (d: any) => (d.severityDecision ?? 'Replace') === 'Replace'
     return {
       ...enriched,
       broker_report: {
-        repairable:  damages.filter(d => !isReplace(d)),
-        replaceable: damages.filter(d => isReplace(d)),
-        needsCheck:  enriched.needs_check_parts || [],
+        repairable:  confirmedDamages.filter(d => !isReplace(d)),
+        replaceable: confirmedDamages.filter(d => isReplace(d)),
+        needsCheck,
       },
     }
   }
@@ -542,33 +573,32 @@ export default function BrokerFnol() {
 // Grouped قطع غيار report — identical grouping/labels to the broker portal,
 // fed by the same wreck-vision analysis pipeline (@gfast/analysis-core).
 export function DamageReport({ report }: { report: any }) {
-  const partName = (d: any) => d.part_name_ar || d.part_name_en || d.nameAr || d.nameEn || d.partName || d.part || 'قطعة غير محددة'
+  const partName = (d: any) => d.part_name_ar || d.nameAr || ''
 
   const rep = report?.broker_report
-  let repairable: any[], replaceable: any[]
+  let repairable: any[], replaceable: any[], needsCheck: any[]
   if (rep) {
-    repairable = rep.repairable || []; replaceable = rep.replaceable || []
+    repairable = rep.repairable || []; replaceable = rep.replaceable || []; needsCheck = rep.needsCheck || []
   } else {
-    const damages: any[] = report?.damages || []
-    const isReplace = (d: any) => (d.severity_label ?? d.severityDecision ?? (d.severityIndex >= 4 ? 'Replace' : 'Repair')) === 'Replace'
-    repairable = damages.filter(d => !isReplace(d)); replaceable = damages.filter(d => isReplace(d))
+    const { confirmedDamages, needsCheck: nc } = splitDamages(report || {})
+    const isReplace = (d: any) => (d.severityDecision ?? 'Replace') === 'Replace'
+    repairable = confirmedDamages.filter(d => !isReplace(d)); replaceable = confirmedDamages.filter(d => isReplace(d)); needsCheck = nc
   }
-  // "تحتاج فحص" (needsCheck) is intentionally hidden from the customer report.
-  const total = repairable.length + replaceable.length
+  const total = repairable.length + replaceable.length + needsCheck.length
 
   const cardStyle: React.CSSProperties = { background: 'white', borderRadius: 14, boxShadow: '0 1px 4px rgba(0,0,0,.07)', overflow: 'hidden', marginBottom: 14 }
 
-  const Section = ({ items, title, color, dot }: { items: any[]; title: string; color: string; dot: string }) => (
-    items.length === 0 ? null : (
+  const Section = ({ items, title, color, dot, subtitle }: { items: any[]; title: string; color: string; dot: string; subtitle?: string }) => (
+    (items = items.filter(d => !!(d.part_name_ar || d.nameAr))).length === 0 ? null : (
       <div style={cardStyle} dir="rtl">
         <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', fontWeight: 700, fontSize: '.92rem', color }}>{title} ({items.length})</div>
+        {subtitle && <div style={{ padding: '8px 18px 0', fontSize: '.8rem', color: '#6b7280', lineHeight: 1.5 }}>{subtitle}</div>}
         <ul style={{ listStyle: 'none', margin: 0, padding: '6px 0' }}>
           {items.map((d, i) => (
             <li key={i} style={{ padding: '10px 18px', borderBottom: i < items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: '.92rem', color: '#111827' }}>
                 <span style={{ color: dot }}>●</span> {partName(d)}
               </span>
-              {d.description && <div style={{ marginTop: 5, fontSize: '.82rem', color: '#6b7280', lineHeight: 1.6 }}>{d.description}</div>}
             </li>
           ))}
         </ul>
@@ -582,8 +612,9 @@ export function DamageReport({ report }: { report: any }) {
         <div style={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>📋 تقرير الأضرار المبدئي</div>
         <div style={{ fontSize: '.8rem', color: '#6b7280', marginTop: 3 }}>{total > 0 ? `تم رصد ${total} قطعة` : 'لم يتم رصد أضرار واضحة في الصور'}</div>
       </div>
-      <Section items={repairable}  title="🔧 قطع قابلة للإصلاح" color="#15803d" dot="#16a34a" />
-      <Section items={replaceable} title="🔨 قطع تحتاج استبدال"  color="#b91c1c" dot="#dc2626" />
+      <Section items={repairable}  title="🔧 قطع قابلة للإصلاح (موصى به)"  color="#15803d" dot="#16a34a" />
+      <Section items={replaceable} title="🔩 قطع تحتاج استبدال (موصى به)"  color="#b91c1c" dot="#dc2626" />
+      <Section items={needsCheck}  title="🔍 قطع تحتاج فحص"               color="#92400e" dot="#d97706" subtitle="هذه القطع قد تكون سليمة ويُنصح بفحصها في المركز." />
     </div>
   )
 }

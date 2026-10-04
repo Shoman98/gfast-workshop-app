@@ -70,8 +70,8 @@ const DAMAGE_TYPE_INDEX = {
   'scratch': 1,
   'scuff marks': 1,
   'scuff': 1,
-  'buckled': 3,
-  'buckling': 3,
+  'buckled': 4,
+  'buckling': 4,
   'severe buckling': 4,
   'broken': 5,
   'crack': 5,
@@ -355,6 +355,18 @@ const PARTS_DATABASE = {
   exhaust_middle_pipe: { price: 0, nameEn: 'exhaust middle pipe', nameAr: 'ماسورة الشكمان الوسط', partId: 'PT_0103', category: 'mechanical', isSafety: false },
   exhaust_rear_pipe: { price: 0, nameEn: 'exhaust rear pipe', nameAr: 'ماسورة الشكمان الخلفية', partId: 'PT_0104', category: 'mechanical', isSafety: false },
   brake_hoses: { price: 0, nameEn: 'brake hoses', nameAr: 'خراطيم الفرامل', partId: 'PT_0105', category: 'mechanical', isSafety: false },
+  front_right_brake_caliper: { price: 0, nameEn: 'front right brake caliper', nameAr: 'كليبر فرامل أمامي يمين', partId: 'PT_0308', category: 'mechanical', isSafety: true },
+  front_left_brake_caliper:  { price: 0, nameEn: 'front left brake caliper',  nameAr: 'كليبر فرامل أمامي شمال', partId: 'PT_0309', category: 'mechanical', isSafety: true },
+  rear_right_brake_caliper:  { price: 0, nameEn: 'rear right brake caliper',  nameAr: 'كليبر فرامل خلفي يمين',  partId: 'PT_0310', category: 'mechanical', isSafety: true },
+  rear_left_brake_caliper:   { price: 0, nameEn: 'rear left brake caliper',   nameAr: 'كليبر فرامل خلفي شمال',  partId: 'PT_0311', category: 'mechanical', isSafety: true },
+  front_right_brake_rotor:   { price: 0, nameEn: 'front right brake rotor',   nameAr: 'طنبوره فرامل أمامي يمين', partId: 'PT_0312', category: 'mechanical', isSafety: true },
+  front_left_brake_rotor:    { price: 0, nameEn: 'front left brake rotor',    nameAr: 'طنبوره فرامل أمامي شمال', partId: 'PT_0313', category: 'mechanical', isSafety: true },
+  rear_right_brake_rotor:    { price: 0, nameEn: 'rear right brake rotor',    nameAr: 'طنبوره فرامل خلفي يمين',  partId: 'PT_0314', category: 'mechanical', isSafety: true },
+  rear_left_brake_rotor:     { price: 0, nameEn: 'rear left brake rotor',     nameAr: 'طنبوره فرامل خلفي شمال',  partId: 'PT_0315', category: 'mechanical', isSafety: true },
+  rear_right_brake_drum:     { price: 0, nameEn: 'rear right brake drum',     nameAr: 'طبلة فرامل خلفي يمين',    partId: 'PT_0316', category: 'mechanical', isSafety: true },
+  rear_left_brake_drum:      { price: 0, nameEn: 'rear left brake drum',      nameAr: 'طبلة فرامل خلفي شمال',    partId: 'PT_0317', category: 'mechanical', isSafety: true },
+  front_brake_pads:          { price: 0, nameEn: 'front brake pads',          nameAr: 'تيل فرامل أمامي',          partId: 'PT_0318', category: 'mechanical', isSafety: true },
+  rear_brake_pads:           { price: 0, nameEn: 'rear brake pads',           nameAr: 'تيل فرامل خلفي',           partId: 'PT_0319', category: 'mechanical', isSafety: true },
   gas_hoses: { price: 0, nameEn: 'gas hoses', nameAr: 'خراطيم البنزين', partId: 'PT_0106', category: 'mechanical', isSafety: false },
   fuel_tank: { price: 0, nameEn: 'fuel tank', nameAr: 'تانك البنزين', partId: 'PT_0107', category: 'mechanical', isSafety: false },
   engine_block: { price: 0, nameEn: 'engine block', nameAr: 'بلوك الموتور', partId: 'PT_0108', category: 'mechanical', isSafety: false },
@@ -367,7 +379,7 @@ const PARTS_DATABASE = {
   front_differential: { price: 0, nameEn: 'front differential', nameAr: 'دفرنس أمامي', partId: 'PT_0115', category: 'mechanical', isSafety: false },
   rear_differential: { price: 0, nameEn: 'rear differential', nameAr: 'دفرنس خلفي', partId: 'PT_0116', category: 'mechanical', isSafety: false },
   radiator: { price: 0, nameEn: 'radiator', nameAr: 'ردياتير', partId: 'PT_0117', category: 'cooling', isSafety: false },
-  ac_condenser: { price: 0, nameEn: 'ac condenser', nameAr: '(سربنتينه التكييف)', partId: 'PT_0118', category: 'cooling', isSafety: false },
+  ac_condenser: { price: 0, nameEn: 'ac condenser', nameAr: 'سربنتينه التكييف', partId: 'PT_0118', category: 'cooling', isSafety: false },
   intercooler_turbo: { price: 0, nameEn: 'intercooler turbo', nameAr: 'انتركولر التيربو', partId: 'PT_0119', category: 'cooling', isSafety: false },
   radiator_cap: { price: 0, nameEn: 'radiator cap', nameAr: 'غطا الردياتير', partId: 'PT_0120', category: 'cooling', isSafety: false },
   transmission_cooler: { price: 0, nameEn: 'transmission cooler', nameAr: 'مبرد الفتيس', partId: 'PT_0121', category: 'cooling', isSafety: false },
@@ -393,6 +405,7 @@ const PARTS_DATABASE = {
   inner_tie_rod: { price: 0, nameEn: 'inner tie rod', nameAr: 'باره داخلي', partId: 'PT_0141', category: 'suspension', isSafety: false },
   outer_tie_rod: { price: 0, nameEn: 'outer tie rod', nameAr: 'باره خارجي', partId: 'PT_0142', category: 'suspension', isSafety: false },
   suspension_control_arms: { price: 0, nameEn: 'suspension control arms', nameAr: 'مقصات امامي', partId: 'PT_0143', category: 'suspension', isSafety: false },
+  rear_suspension_control_arms: { price: 0, nameEn: 'rear suspension control arms', nameAr: 'مقصات خلفي', partId: 'PT_0323', category: 'suspension', isSafety: false },
   tie_rods: { price: 0, nameEn: 'tie rods', nameAr: 'بارات خارجي', partId: 'PT_0144', category: 'suspension', isSafety: false },
   front_left_suspension_assembly: { price: 0, nameEn: 'front left suspension assembly', nameAr: 'مساعد امامي شمال', partId: 'PT_0145', category: 'suspension', isSafety: false },
   front_right_suspension_assembly: { price: 0, nameEn: 'front right suspension assembly', nameAr: 'مساعد امامي يمين', partId: 'PT_0146', category: 'suspension', isSafety: false },
@@ -402,7 +415,7 @@ const PARTS_DATABASE = {
   cooling_fan_assembly: { price: 0, nameEn: 'cooling fan assembly', nameAr: 'مروحه تبريد', partId: 'PT_0150', category: 'cooling', isSafety: false },
   radiator_and_cooling_fan_assembly: { price: 0, nameEn: 'radiator and cooling fan assembly', nameAr: 'طقم تبريد', partId: 'PT_0151', category: 'cooling', isSafety: false },
   radiator_and_condenser: { price: 0, nameEn: 'radiator and condenser', nameAr: 'طقم تبريد بدون مروحه', partId: 'PT_0152', category: 'cooling', isSafety: false },
-  underbody_chassis: { price: 0, nameEn: 'underbody chassis', nameAr: 'بطن العربية/الشاسيه السفلي', partId: 'PT_0153', category: 'chassis_structure', isSafety: false },
+  underbody_chassis: { price: 0, nameEn: 'underbody chassis', nameAr: 'قنطره اماميه', partId: 'PT_0153', category: 'chassis_structure', isSafety: false },
   engine_shield: { price: 0, nameEn: 'engine shield', nameAr: 'غطاء/درع حماية الموتور السفلي', partId: 'PT_0154', category: 'mechanical', isSafety: false },
   rear_shield: { price: 0, nameEn: 'rear shield', nameAr: 'غطاء/درع حماية خلفي', partId: 'PT_0155', category: 'mechanical', isSafety: false },
   front_shield: { price: 0, nameEn: 'front shield', nameAr: 'غطاء/درع حماية أمامي', partId: 'PT_0156', category: 'mechanical', isSafety: false },
@@ -416,6 +429,7 @@ const PARTS_DATABASE = {
   hood_latch_assembly: { price: 0, nameEn: 'hood latch assembly', nameAr: 'كالون كبود', partId: 'PT_0164', category: 'exterior', isSafety: false },
   front_right_rail: { price: 0, nameEn: 'front rail right', nameAr: 'سلاح رفرف امامي يمين', partId: 'PT_0165', category: 'chassis_structure', isSafety: false },
   front_left_rail: { price: 0, nameEn: 'front rail left', nameAr: 'سلاح رفرف امامي شمال', partId: 'PT_0166', category: 'chassis_structure', isSafety: false },
+  front_chassis_rails: { price: 0, nameEn: 'front chassis rails', nameAr: 'سلاح شاسيه امامي', partId: 'PT_0320', category: 'chassis_structure', isSafety: false },
   front_left_pan_panel: { price: 0, nameEn: 'front left pan panel', nameAr: 'كرتيره صاج امامي شمال', partId: 'PT_0167', category: 'chassis_structure', isSafety: false },
   front_right_pan_panel: { price: 0, nameEn: 'front right pan panel', nameAr: 'كرتيره صاج امامي يمين', partId: 'PT_0168', category: 'chassis_structure', isSafety: false },
   rear_right_cross_member: { price: 0, nameEn: 'rear right cross member', nameAr: 'فرده شاسيه خلفية يمين', partId: 'PT_0169', category: 'chassis_structure', isSafety: false },
@@ -446,6 +460,7 @@ const PARTS_DATABASE = {
   rear_bumper_brackets: { price: 0, nameEn: 'rear bumper brackets', nameAr: 'قواعد اكصدام خلفي', partId: 'PT_0194', category: 'exterior', isSafety: false },
   front_right_apron: { price: 0, nameEn: 'front right apron', nameAr: 'كرتيره رفرف يمين', partId: 'PT_0195', category: 'exterior', isSafety: false },
   front_left_apron: { price: 0, nameEn: 'front left apron', nameAr: 'كرتيره رفرف شمال', partId: 'PT_0196', category: 'exterior', isSafety: false },
+  front_apron: { price: 0, nameEn: 'front apron', nameAr: 'كرتيره رفرف امامي', partId: 'PT_0321', category: 'exterior', isSafety: false },
   rear_floor_pan_and_spare_tire_well: { price: 0, nameEn: 'rear floor pan and spare tire well', nameAr: 'حله استبن', partId: 'PT_0197', category: 'chassis_structure', isSafety: false },
   trunk_floor: { price: 0, nameEn: 'trunk Floor', nameAr: 'حله استبن', partId: 'PT_0198', category: 'chassis_structure', isSafety: false },
   rear_frame_rail_left: { price: 0, nameEn: 'rear frame rail left', nameAr: 'سلاح رفرف خلفي شمال', partId: 'PT_0199', category: 'chassis_structure', isSafety: false },
@@ -497,7 +512,8 @@ const PARTS_DATABASE = {
   rear_right_wheel_hub_bearing: { price: 0, nameEn: 'Rear right wheel hub/bearing', nameAr: 'صره عجل خلفي يمين', partId: 'PT_0245', category: 'suspension', isSafety: false },
   rear_left_wheel_hub_bearing: { price: 0, nameEn: 'Rear left wheel hub/bearing', nameAr: 'صره عجل خلفي شمال', partId: 'PT_0246', category: 'suspension', isSafety: false },
   front_subframe_crossmember: { price: 0, nameEn: 'Front subframe/crossmember', nameAr: 'قنطره اماميه', partId: 'PT_0247', category: 'suspension', isSafety: false },
-  rear_subframe: { price: 0, nameEn: 'Rear subframe', nameAr: 'دنجل خلفي', partId: 'PT_0248', category: 'suspension', isSafety: false },
+  rear_subframe: { price: 0, nameEn: 'Rear subframe', nameAr: 'قنطره خلفي', partId: 'PT_0248', category: 'suspension', isSafety: false },
+  coolant_reservoir: { price: 0, nameEn: 'coolant reservoir', nameAr: 'قربه مياه تبريد', partId: 'PT_0322', category: 'mechanical', isSafety: false },
   front_right_door_panel_trim: { price: 0, nameEn: 'Front right door panel trim', nameAr: 'فرش باب امامي يمين', partId: 'PT_0249', category: 'interior', isSafety: false },
   front_left_door_panel_trim: { price: 0, nameEn: 'Front left door panel trim', nameAr: 'فرش باب امامي شمال', partId: 'PT_0250', category: 'interior', isSafety: false },
   rear_right_door_panel_trim: { price: 0, nameEn: 'Rear right door panel trim', nameAr: 'فرش باب خلفي يمين', partId: 'PT_0251', category: 'interior', isSafety: false },
@@ -3032,11 +3048,12 @@ DETECTION RULES:
 3. Parts with confidence < 0.70 go in "needs_check_parts".
 4. Use part names from the valid parts list above — use the EXACT snake_case key as written (e.g. "front_left_fender", "radiator_support").
 5. NEVER combine two parts into one entry with a slash, "/", "and", or "&" (e.g. do NOT write "Front Rail / Apron" or "Roof Panel / Header Rail"). If two parts are damaged, emit TWO separate entries — one per part.
-6. For paired parts (headlights, mirrors, doors), only report the SPECIFIC side that is damaged.
+6. For paired parts (headlights, mirrors, doors, fenders), only report the SPECIFIC side that is damaged. HOWEVER — if your analysis or reasoning describes BOTH sides as damaged, you MUST include BOTH sides as separate entries in the output. Never describe damage on both sides in your reasoning but only report one side in the JSON.
 7. Cross-reference multiple images to confirm damage when possible.
 8. If photo quality is "Retake needed", reduce all confidences by 0.15.
 9. Do NOT report both upper and lower bumper unless BOTH are clearly damaged — pick the specific section.
 10. If no damage is visible, return empty arrays — do NOT fabricate findings.
+11. GLASS RULE — MANDATORY: Door glass and door metal are SEPARATE parts. If you can see broken, shattered, cracked, or missing window glass on any door, you MUST report it as a separate entry using the correct window key (e.g. "front_right_door_window", "rear_left_door_window"). Do NOT merge glass damage into the door entry. A damaged door does NOT automatically imply broken glass — only report the glass if you can visually confirm it is broken or missing.
 
 LEFT/RIGHT CRITICAL RULE:
 - Always determine left/right from the DRIVER'S perspective sitting inside the car
@@ -3461,6 +3478,35 @@ async function runStage2(images, vehicleInfo, stage1Result, imageViews, imageAng
   result.damages = (result.damages || []).map(correctTrimDamageType);
   result.needs_check_parts = (result.needs_check_parts || []).map(correctTrimDamageType);
 
+  // ── Symmetric-part recovery: if reasoning mentions both/opposite sides but JSON only has one ──
+  const combinedReasoning = [preCheckReasoning, verifyReasoning].filter(Boolean).join(' ');
+  if (combinedReasoning) {
+    const mentionsBoth  = /both sides?|both fenders?|both doors?|both headlights?|both mirrors?|both wheels?|both tires?|both rails?/i.test(combinedReasoning);
+    const mentionsRight = /passenger.side|right.side|\bright\b|يمين/i.test(combinedReasoning);
+    const mentionsLeft  = /driver.side|left.side|\bleft\b|شمال/i.test(combinedReasoning);
+    const existingKeys  = new Set((result.damages || []).map(d => normalizePartName(d.part_name || '')));
+
+    for (const d of [...(result.damages || [])]) {
+      const key = normalizePartName(d.part_name || '');
+      if (!key) continue;
+      let opposite = null;
+      if      (key.includes('_left'))  opposite = key.replace(/_left/g,  '_right');
+      else if (key.includes('_right')) opposite = key.replace(/_right/g, '_left');
+      if (!opposite || !PARTS_DATABASE[opposite] || existingKeys.has(opposite)) continue;
+
+      const shouldAdd = mentionsBoth ||
+        (key.includes('_left')  && mentionsRight) ||
+        (key.includes('_right') && mentionsLeft);
+
+      if (shouldAdd) {
+        console.log(`  [Stage2 SYMMETRIC] Recovering "${opposite}" — mentioned in reasoning`);
+        appendLog(`  [Stage2 SYMMETRIC] Recovered "${opposite}" from reasoning`);
+        result.damages.push({ ...d, part_name: opposite, confidence: Math.min((d.confidence || 0.75), 0.75) });
+        existingKeys.add(opposite);
+      }
+    }
+  }
+
   console.log(`  Confirmed damages: ${result.damages.length}`);
   console.log(`  Needs check: ${(result.needs_check_parts || []).length}`);
   console.log(`  Safety flags: ${JSON.stringify(result.safety_flags || {})}`);
@@ -3620,13 +3666,27 @@ function combineStageResults(stage1, stage2, stage3, stage4) {
 
   // Safety flags conversion - always add airbag deployments as damages
   if (safetyFlags.airbag_deployment) {
-    console.log('🎯 Converting airbag_deployment safety flag to damage item');
-    damages.push({
-      partName: 'airbag_module', damageType: 'deployed',
-      description: 'Airbag deployment detected from safety assessment',
-      indicators: ['Airbag system deployed'], severityLevel: 'high',
-      confidence: 90, location: 'interior', visualEvidence: 'Airbag deployment flag'
-    });
+    console.log('🎯 Converting airbag_deployment safety flag to damage items');
+    // Add the specific deployed airbag parts, not just the control module
+    const airbagParts = [
+      { partName: 'steering_wheel_driver_airbag', description: 'Driver airbag deployed' },
+      { partName: 'steering_wheel_airbag',        description: 'Passenger airbag deployed' },
+      { partName: 'left_side_curtain_airbags',    description: 'Left curtain airbag deployed' },
+      { partName: 'right_side_curtain_airbags',   description: 'Right curtain airbag deployed' },
+      { partName: 'airbag_module',                description: 'Airbag control module — requires replacement after deployment' },
+    ];
+    // Only add parts not already detected by Gemini
+    const existingNames = new Set(damages.map(d => (d.partName || '').toLowerCase()));
+    for (const p of airbagParts) {
+      if (!existingNames.has(p.partName)) {
+        damages.push({
+          partName: p.partName, damageType: 'deployed',
+          description: p.description,
+          indicators: ['Airbag system deployed'], severityLevel: 'high',
+          confidence: 88, location: 'interior', visualEvidence: 'Airbag deployment flag'
+        });
+      }
+    }
   }
 
   // Safety flags vs damages validation (same logic as legacy parseAIResponse)
@@ -4099,7 +4159,20 @@ const PART_NAME_ALIASES = {
   'fl_door_hinge': 'front_left_door_hinge',
   'rr_door_hinge': 'rear_right_door_hinge',
   'rl_door_hinge': 'rear_left_door_hinge',
-  // Door windows
+  // Door windows — Gemini DAMAGE_DESCRIPTIONS keys + abbreviated forms
+  'window_front_left': 'front_left_door_window',
+  'window_front_right': 'front_right_door_window',
+  'window_rear_left': 'rear_left_door_window',
+  'window_rear_right': 'rear_right_door_window',
+  'front_door_window_left': 'front_left_door_window',
+  'front_door_window_right': 'front_right_door_window',
+  'rear_door_window_left': 'rear_left_door_window',
+  'rear_door_window_right': 'rear_right_door_window',
+  'door_glass_front_left': 'front_left_door_window',
+  'door_glass_front_right': 'front_right_door_window',
+  'door_glass_rear_left': 'rear_left_door_window',
+  'door_glass_rear_right': 'rear_right_door_window',
+
   'fl_door_window': 'front_left_door_window',
   'rl_door_window': 'rear_left_door_window',
   'fr_door_window': 'front_right_door_window',
@@ -4152,7 +4225,12 @@ const PART_NAME_ALIASES = {
   'rear_end_panel': 'rear_panel',
   // Structural component names (Stage 3 Gemini output normalization)
   'a_pillar': 'a_pillars',
-  'subframe': 'underbody_chassis',
+  'subframe': 'front_subframe_crossmember',
+  'front_subframe': 'front_subframe_crossmember',
+  'front_subframe_suspension_mounting': 'front_subframe_crossmember',
+  'subframe_suspension_mounting': 'front_subframe_crossmember',
+  'suspension_subframe': 'front_subframe_crossmember',
+  'front_subframe_mount': 'front_subframe_crossmember',
   'unibody': 'underbody_chassis',
   'crumple_zone': 'front_bumper_chassis_bar',
   // "Frame Rail" variants → DB keys are front_left_rail / front_right_rail
@@ -4251,11 +4329,236 @@ const PART_NAME_ALIASES = {
   'right_front_door_hinges': 'front_right_door_hinge',
   'front_impact_sensor': 'airbag_impact_sensors',
   'airbag_control_module': 'airbag_module',
-  'steering_wheel_airbag': 'steering_wheel_driver_airbag',
   'driver_airbag': 'steering_wheel_driver_airbag',
   'radiator_and_cooling_fan_assembly': 'cooling_fan_assembly',
   'trunk_latch': 'trunk_latch_and_striker',
   'bulkhead': 'front_bulkhead',
+
+  // ── Brake parts ──────────────────────────────────────────────────────────────
+  'brake_caliper':              'front_right_brake_caliper',
+  'front_brake_caliper':        'front_right_brake_caliper',
+  'rear_brake_caliper':         'rear_right_brake_caliper',
+  'brake_caliper_front_right':  'front_right_brake_caliper',
+  'brake_caliper_front_left':   'front_left_brake_caliper',
+  'brake_caliper_rear_right':   'rear_right_brake_caliper',
+  'brake_caliper_rear_left':    'rear_left_brake_caliper',
+  'brake_rotor':                'front_right_brake_rotor',
+  'brake_disc':                 'front_right_brake_rotor',
+  'front_brake_rotor':          'front_right_brake_rotor',
+  'rear_brake_rotor':           'rear_right_brake_rotor',
+  'front_brake_disc':           'front_right_brake_rotor',
+  'rear_brake_disc':            'rear_right_brake_rotor',
+  'brake_rotor_front_right':    'front_right_brake_rotor',
+  'brake_rotor_front_left':     'front_left_brake_rotor',
+  'brake_rotor_rear_right':     'rear_right_brake_rotor',
+  'brake_rotor_rear_left':      'rear_left_brake_rotor',
+  'brake_disc_front_right':     'front_right_brake_rotor',
+  'brake_disc_front_left':      'front_left_brake_rotor',
+  'brake_disc_rear_right':      'rear_right_brake_rotor',
+  'brake_disc_rear_left':       'rear_left_brake_rotor',
+  'brake_drum':                 'rear_right_brake_drum',
+  'brake_drum_rear_right':      'rear_right_brake_drum',
+  'brake_drum_rear_left':       'rear_left_brake_drum',
+  'brake_pad':                  'front_brake_pads',
+  'brake_pads':                 'front_brake_pads',
+  'front_brake_pad':            'front_brake_pads',
+  'rear_brake_pad':             'rear_brake_pads',
+  'brake_pad_front':            'front_brake_pads',
+  'brake_pad_rear':             'rear_brake_pads',
+  // ── Suspension / mechanical generic Gemini outputs ───────────────────────────
+  // Shock absorbers / struts / coil springs (generic → nearest assembly)
+  'shock_absorber':               'front_left_suspension_assembly',
+  'front_shock_absorber':         'front_left_suspension_assembly',
+  'rear_shock_absorber':          'rear_left_suspension_assembly',
+  'front_right_shock':            'front_right_suspension_assembly',
+  'front_left_shock':             'front_left_suspension_assembly',
+  'rear_right_shock':             'rear_right_suspension_assembly',
+  'rear_left_shock':              'rear_left_suspension_assembly',
+  'coil_spring':                  'front_left_suspension_assembly',
+  'spring':                       'front_left_suspension_assembly',
+  'strut_assembly':               'front_left_suspension_assembly',
+  'strut_mount':                  'front_left_suspension_assembly',
+  // Control arms (generic → suspension_control_arms)
+  'control_arm':                  'suspension_control_arms',
+  'lower_control_arm':            'suspension_control_arms',
+  'upper_control_arm':            'suspension_control_arms',
+  'front_right_control_arm_lower': 'front_right_control_arm',
+  'front_left_control_arm_lower':  'front_left_control_arm',
+  'rear_right_control_arm_lower':  'rear_right_control_arm',
+  'rear_left_control_arm_lower':   'rear_left_control_arm',
+  // Tie rods
+  'tie_rod':                      'tie_rods',
+  'tie_rod_end':                  'outer_tie_rod',
+  'outer_tie_rod_end':            'outer_tie_rod',
+  'inner_tie_rod_end':            'inner_tie_rod',
+  // Steering knuckle (generic)
+  'steering_knuckle':             'front_right_steering_knuckle',
+  'front_steering_knuckle':       'front_right_steering_knuckle',
+  'rear_steering_knuckle':        'rear_right_steering_knuckle',
+  // Sway bar / stabilizer
+  'sway_bar':                     'suspension_control_arms',
+  'stabilizer_bar':               'suspension_control_arms',
+  'anti_roll_bar':                'suspension_control_arms',
+  'sway_bar_link':                'suspension_control_arms',
+  'stabilizer_link':              'suspension_control_arms',
+  // Wheel hub / bearing (generic)
+  'wheel_bearing':                'front_right_wheel_hub_bearing',
+  'hub_bearing':                  'front_right_wheel_hub_bearing',
+  'hub_assembly':                 'front_right_wheel_hub_bearing',
+  'front_hub_bearing':            'front_right_wheel_hub_bearing',
+  'rear_hub_bearing':             'rear_right_wheel_hub_bearing',
+  // CV / driveshaft
+  'cv_axle':                      'driveshaft',
+  'cv_joint':                     'driveshaft',
+  'axle_shaft':                   'driveshaft',
+  'half_shaft':                   'driveshaft',
+  'drive_shaft':                  'driveshaft',
+  // Front carrier
+  'front_carrier_radiator_support': 'front_carrier',
+  'carrier':                        'front_carrier',
+  // ── DAMAGE_DESCRIPTIONS key → DB key (all 40 missing mappings) ──────────────
+  // Fog lights
+  'fog_light_left':  'front_left_foglight',
+  'fog_light_right': 'front_right_foglight',
+  // Wheels
+  'wheel_front_left':  'front_left_wheel',
+  'wheel_front_right': 'front_right_wheel',
+  'wheel_rear_left':   'rear_left_wheel',
+  'wheel_rear_right':  'rear_right_wheel',
+  // Tires
+  'tire_front_left':  'front_left_tire',
+  'tire_front_right': 'front_right_tire',
+  'tire_rear_left':   'rear_left_tire',
+  'tire_rear_right':  'rear_right_tire',
+  // Inner fender / liner
+  'inner_fender_left':  'front_left_fender_liner',
+  'inner_fender_right': 'front_right_fender_liner',
+  // Inner quarter panel
+  'inner_quarter_panel_left':  'left_quarter_panel',
+  'inner_quarter_panel_right': 'rear_right_quarter_panel',
+  // Frame rails (DAMAGE_DESCRIPTIONS order: rail_left/right)
+  'front_rail_left':  'front_left_rail',
+  'front_rail_right': 'front_right_rail',
+  'rear_rail_left':   'rear_frame_rail_left',
+  'rear_rail_right':  'rear_frame_rail_right',
+  'front_rail':            'front_left_rail',
+  'rear_rail':             'rear_frame_rail_left',
+  'rear_frame_rails':      'rear_frame_rail_left',
+  'rear_frame_rail':       'rear_frame_rail_left',
+  'front_rails_chassis_legs': 'front_chassis_rails',
+  'front_rails_chassis':      'front_chassis_rails',
+  'front_rail_chassis_leg':   'front_chassis_rails',
+  'front_rail_chassis':       'front_chassis_rails',
+  'chassis_legs':             'front_chassis_rails',
+  'suspension_mounting_points': 'suspension_control_arms',
+  'suspension_mount_points':    'suspension_control_arms',
+  // كمبرسور
+  'compressor':                 'ac_compressor',
+  'air_compressor':             'ac_compressor',
+  'ac_compressor_unit':         'ac_compressor',
+  'air_conditioning_compressor':'ac_compressor',
+  // دينامو
+  'dynamo':                     'alternator',
+  'generator':                  'alternator',
+  'alternator_generator':       'alternator',
+  // بطاريه
+  'car_battery':                'battery',
+  'vehicle_battery':            'battery',
+  'battery_unit':               'battery',
+  // قربه مساحات
+  'washer_reservoir':           'washer_fluid_reservoir',
+  'windshield_washer_tank':     'washer_fluid_reservoir',
+  'washer_tank':                'washer_fluid_reservoir',
+  'wiper_fluid_reservoir':      'washer_fluid_reservoir',
+  // قربه مياه تبريد
+  'coolant_tank':               'coolant_reservoir',
+  'expansion_tank':             'coolant_reservoir',
+  'overflow_tank':              'coolant_reservoir',
+  'coolant_overflow_reservoir': 'coolant_reservoir',
+  'coolant_overflow_tank':      'coolant_reservoir',
+  'radiator_coolant_reservoir': 'coolant_reservoir',
+  'coolant_bottle':             'coolant_reservoir',
+  // فتيس
+  'transmission':               'transmission_housing',
+  'gearbox':                    'transmission_housing',
+  'transmission_case':          'transmission_housing',
+  'gearbox_housing':            'transmission_housing',
+  'transmission_assembly':      'transmission_housing',
+  // مساعدين خلفي
+  'rear_shock_absorbers':       'rear_left_suspension_assembly',
+  'rear_struts':                'rear_left_suspension_assembly',
+  'rear_suspension_assembly':   'rear_left_suspension_assembly',
+  // قنطره خلفي
+  'rear_crossmember':           'rear_subframe',
+  'rear_subframe_crossmember':  'rear_subframe',
+  'rear_chassis_crossmember':   'rear_subframe',
+  'rear_frame_crossmember':     'rear_subframe',
+  // مقصات خلفي
+  'rear_control_arm':            'rear_right_control_arm',
+  'rear_control_arms':           'rear_suspension_control_arms',
+  'rear_suspension_control_arm': 'rear_suspension_control_arms',
+  'rear_lower_control_arm':      'rear_right_control_arm',
+  'rear_lower_control_arms':     'rear_suspension_control_arms',
+  'fender_support_apron':       'front_apron',
+  'fender_apron':             'front_apron',
+  'apron':                    'front_apron',
+  'front_apron_panel':        'front_apron',
+  'quarter_panels':           'left_quarter_panel',
+  'quarter_panel':         'left_quarter_panel',
+  'roof_rail':             'roof',
+  'roof_rails':            'roof',
+  'roof_frame':            'roof',
+  'trunk_floor_pan':       'trunk_floor',
+  'floor_pan':             'rear_floor_pan_and_spare_tire_well',
+  'trunk_floor_panel':     'trunk_floor',
+  // Suspension assemblies
+  'suspension_front_left':  'front_left_suspension_assembly',
+  'suspension_front_right': 'front_right_suspension_assembly',
+  'suspension_rear_left':   'rear_left_suspension_assembly',
+  'suspension_rear_right':  'rear_right_suspension_assembly',
+  'front_suspension':       'suspension_control_arms',
+  'rear_suspension':        'rear_left_suspension_assembly',
+  // Engine
+  'engine': 'engine_block',
+  // Parking sensors
+  'parking_sensor_front': 'front_parking_sensors',
+  'parking_sensor_rear':  'rear_parking_sensors',
+  'parking_sensors':      'front_parking_sensors',
+  // Exhaust
+  'exhaust_system': 'exhaust_rear_pipe',
+  'exhaust':        'exhaust_rear_pipe',
+  // Door handles
+  'door_handle_front_left':  'front_left_door_handle',
+  'door_handle_front_right': 'front_right_door_handle',
+  'door_handle_rear_left':   'rear_left_door_handle',
+  'door_handle_rear_right':  'rear_right_door_handle',
+  // Door trims
+  'door_trim_front_left':  'front_left_door_panel_trim',
+  'door_trim_front_right': 'front_right_door_panel_trim',
+  'door_trim_rear_left':   'rear_left_door_panel_trim',
+  'door_trim_rear_right':  'rear_right_door_panel_trim',
+  // Emblems
+  'front_emblem': 'front_car_logo',
+  'rear_emblem':  'trunk_emblems',
+  'emblem':       'front_car_logo',
+  // Grille nickel trim
+  'grille_nickel_trim':   'trim_nickel_grille',
+  'grille_chrome_trim':   'trim_nickel_grille',
+  // Rear nickel/chrome trim
+  'rear_nickel_trim_left':  'rear_left_door_chrome_trim',
+  'rear_nickel_trim_right': 'rear_right_door_chrome_trim',
+  'rear_chrome_trim':       'rear_bumper_chrome_trim',
+  // Underbody shield
+  'underbody_shield': 'engine_shield',
+  'splash_guard':     'engine_shield',
+  'skid_plate':       'engine_shield',
+  // Airbag (deployed state key)
+  'airbag_deployed': 'airbag_module',
+  // Seatbelt damage
+  'seatbelt_damage':           'front_left_seatbelt',
+  'seatbelt_pretensioner':     'front_left_seatbelt_pretensioner',
+  'seatbelt_pretensioner_left':  'front_left_seatbelt_pretensioner',
+  'seatbelt_pretensioner_right': 'front_right_seatbelt_pretensioner',
 };
 
 // ============================================================================
@@ -5156,10 +5459,6 @@ function enrichDamageData(rawAnalysis, vehicleInfo) {
       severityDecisionResult.categoryOverride = true;
     } else if (alwaysRepairCategories.includes(partCategory)) {
       // Structural/chassis parts (pillars, rails, frames) ALWAYS Repair, override all rules including buckled
-      severityDecisionResult.decision = 'Repair';
-      severityDecisionResult.categoryOverride = true;
-    } else if (isBuckledDamage) {
-      // Buckled body panels (hood, fender, door, trunk) → Repair via bodywork
       severityDecisionResult.decision = 'Repair';
       severityDecisionResult.categoryOverride = true;
     }

@@ -33,16 +33,14 @@ export function enrichAnalysisWithParts(analysisData, vehicleInfo) {
       severityLabel = 'Replace'
     } else if (alwaysRepair.includes(partCategory)) {
       severityLabel = 'Repair'
-    } else if (damageTypeLower.includes('buckl')) {
-      severityLabel = 'Repair'
     }
 
     const category = partInfo.category || 'exterior'
     const repair_subtype = getRepairSubtype(damageType, category, severityLabel)
 
     return {
-      part_name_en: partInfo.nameEn || partNameEn || 'Unknown Part',
-      part_name_ar: partInfo.nameAr || partNameAr || null,
+      part_name_en: partInfo.nameEn || null,
+      part_name_ar: partInfo.nameAr || null,
       damage_type: damageType || 'unknown',
       description: part.description || part.visualEvidence || '',
       confidence: (part.confidence > 1 ? part.confidence / 100 : part.confidence) || 0.5,

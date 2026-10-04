@@ -19,7 +19,6 @@ import adminRoutes from './routes/admin.js';
 import publicRoutes from './routes/public.js';
 import whatsappRoutes from './routes/whatsapp.js';
 import { notifyWorkshopAnalysisAsync } from './lib/telegram-notify.js';
-import { enrichAnalysisWithParts } from './lib/analysisPipeline.js';
 // Use SHARED module from wreck-vision - SINGLE SOURCE OF TRUTH
 import pkg from '@gfast/analysis-core';
 const { runAnalysisPipeline, enrichDamageData, PARTS_DATABASE, DAMAGE_TYPE_INDEX, PART_NAME_ALIASES } = pkg;
@@ -110,9 +109,17 @@ app.post('/api/analysis', async (req, res, next) => {
       console.log(`     [${i}] ${nc.partName || nc.part_name_en} - confidence: ${nc.confidence} (${typeof nc.confidence})`);
     });
 
-    // Transform Gemini output to workshop format with PARTS_DATABASE enrichment
-    // Apply: severity mapping, LEFT/RIGHT rules, part database lookup, pricing
-    const enriched = enrichAnalysisWithParts(analysisData, vehicleInfo);
+    // Enrich with parts DB — identical to consumer app (nameEn/nameAr/severityDecision)
+    const enriched = enrichDamageData(analysisData, vehicleInfo);
+
+    // Drop parts with no Arabic taxonomy name — strict parts DB only
+    const beforeFilter = enriched.damages || [];
+    const dropped = beforeFilter.filter(d => !d.nameAr || d.nameAr.trim() === '');
+    if (dropped.length > 0) {
+      console.log(`\n🔴 DROPPED PARTS (no Arabic mapping) — ${dropped.length} parts:`);
+      dropped.forEach(d => console.log(`   ✗ nameEn="${d.nameEn || ''}" | partType="${d.partType || ''}" | isUnmapped=${d.isUnmapped}`));
+    }
+    enriched.damages = beforeFilter.filter(d => d.nameAr && d.nameAr.trim() !== '');
 
     return res.json({
       success: true,

@@ -184,7 +184,7 @@ router.get('/fnol-report/:id', async (req, res, next) => {
  * Returns signed URLs valid for 1 year (effectively permanent for the FNOL lifetime).
  * Public endpoint — auth is via broker link_token passed in body.
  */
-router.post('/upload-docs', upload.array('docs', 10), async (req, res, next) => {
+router.post('/upload-docs', upload.array('docs', 30), async (req, res, next) => {
   try {
     const { broker_id } = req.body;
     const files = req.files || [];

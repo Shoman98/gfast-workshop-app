@@ -21,7 +21,7 @@ interface Report {
   damage_images: string[]
 }
 
-const partName = (d: any) => d.part_name_ar || d.part_name_en || d.nameAr || d.nameEn || d.partName || d.part || 'قطعة غير محددة'
+const partName = (d: any) => d.part_name_ar || d.nameAr || ''
 
 export default function FnolReport() {
   const { id = '' } = useParams()
@@ -95,15 +95,26 @@ export default function FnolReport() {
     replaceable = damages.filter(d => isReplace(d))
     needsCheck  = a.needs_check_parts || []
   }
+  // Strip any needsCheck part that already appears in repairable or replaceable
+  const confirmedArNames = new Set([...repairable, ...replaceable].map((d: any) => (d.part_name_ar || d.nameAr || '').trim()).filter(Boolean))
+  const seenNeedsCheck = new Set<string>()
+  needsCheck = needsCheck.filter((d: any) => {
+    const key = (d.part_name_ar || d.nameAr || '').trim()
+    if (!key || confirmedArNames.has(key) || seenNeedsCheck.has(key)) return false
+    seenNeedsCheck.add(key)
+    return true
+  })
   const photos = [...(report.general_images || []), ...(report.damage_images || [])]
 
-  const PartList = ({ items, sectionKey, title, color, dot }: { items: any[]; sectionKey: string; title: string; color: string; dot: string }) => {
+  const PartList = ({ items, sectionKey, title, color, indicator, subtitle }: { items: any[]; sectionKey: string; title: string; color: string; indicator: string; subtitle?: string }) => {
+    items = items.filter(d => !!(d.part_name_ar || d.nameAr))
     if (items.length === 0) return null
     const includedCount = items.filter((_, i) => !removed.has(sectionKey + i)).length
     return (
       // When every part is removed, hide the whole section from print only.
       <div style={card} className={includedCount === 0 ? 'gf-removed' : undefined}>
         <div style={{ padding: '13px 18px', borderBottom: '1px solid #f1f5f9', fontWeight: 700, fontSize: '.95rem', color }}>{title} ({includedCount})</div>
+        {subtitle && <div style={{ padding: '8px 18px 0', fontSize: '.82rem', color: '#6b7280', lineHeight: 1.5 }}>{subtitle}</div>}
         <ul style={{ listStyle: 'none', margin: 0, padding: '6px 0' }}>
           {items.map((d, i) => {
             const key = sectionKey + i
@@ -112,7 +123,7 @@ export default function FnolReport() {
               <li key={i} className={isRemoved ? 'gf-removed' : undefined}
                 style={{ padding: '9px 18px', borderBottom: i < items.length - 1 ? '1px solid #f8fafc' : 'none', display: 'flex', alignItems: 'center', gap: 8, opacity: isRemoved ? 0.45 : 1 }}>
                 <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: '.92rem', color: '#111827', textDecoration: isRemoved ? 'line-through' : 'none' }}>
-                  <span style={{ color: dot }}>●</span> {partName(d)}
+                  <span style={{ color }}>{indicator}</span> {partName(d)}
                 </span>
                 <button className="gf-no-print" onClick={() => toggle(key)}
                   style={{ flexShrink: 0, padding: '3px 10px', borderRadius: 999, border: `1px solid ${isRemoved ? '#16a34a' : '#fecaca'}`, background: isRemoved ? '#f0fdf4' : '#fef2f2', color: isRemoved ? '#15803d' : '#dc2626', fontSize: '.72rem', fontWeight: 700, cursor: 'pointer' }}>
@@ -167,9 +178,9 @@ export default function FnolReport() {
         <div style={{ ...card, padding: 30, textAlign: 'center', color: '#9ca3af' }}>لم يتم رصد أضرار في الصور.</div>
       ) : (
         <>
-          <PartList items={repairable}  sectionKey="r" title="🔧 قطع قابلة للإصلاح"       color="#15803d" dot="#16a34a" />
-          <PartList items={replaceable} sectionKey="p" title="🔩 قطع تحتاج استبدال"        color="#b91c1c" dot="#dc2626" />
-          <PartList items={needsCheck}  sectionKey="n" title="🔍 قطع تحتاج فحص ميداني"    color="#92400e" dot="#d97706" />
+          <PartList items={repairable}  sectionKey="r" title="🔧 قطع قابلة للإصلاح (موصى به)"  color="#15803d" indicator="✓" />
+          <PartList items={replaceable} sectionKey="p" title="🔩 قطع تحتاج استبدال (موصى به)"  color="#b91c1c" indicator="●" />
+          <PartList items={needsCheck}  sectionKey="n" title="🔍 قطع تحتاج فحص"               color="#92400e" indicator="?" subtitle="هذه القطع قد تكون سليمة ويُنصح بفحصها في المركز." />
         </>
       )}
 
