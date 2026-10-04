@@ -3037,6 +3037,7 @@ DETECTION RULES:
 8. If photo quality is "Retake needed", reduce all confidences by 0.15.
 9. Do NOT report both upper and lower bumper unless BOTH are clearly damaged — pick the specific section.
 10. If no damage is visible, return empty arrays — do NOT fabricate findings.
+11. ONE ENTRY PER PART — STRICTLY ENFORCED: Each part_name must appear AT MOST ONCE in "damages" and AT MOST ONCE in "needs_check_parts". If the same part appears in multiple photos or from different angles, combine all observations into a SINGLE entry with the most complete description. Do NOT create separate entries for the same part seen in different photos. If you find yourself writing the same part_name twice, STOP — merge them into one entry keeping the highest confidence and combining the descriptions.
 
 LEFT/RIGHT CRITICAL RULE:
 - Always determine left/right from the DRIVER'S perspective sitting inside the car
