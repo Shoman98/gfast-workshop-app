@@ -83,13 +83,17 @@ export default function FnolReport() {
   // Part names only — no descriptions. Prefer the pre-grouped broker_report.
   const a = report.analysis_result || {}
   const rep = a.broker_report
-  let repairable: any[] = [], replaceable: any[] = []
+  let repairable: any[] = [], replaceable: any[] = [], needsCheck: any[] = []
   if (rep) {
-    repairable = rep.repairable || []; replaceable = rep.replaceable || []
+    repairable  = rep.repairable  || []
+    replaceable = rep.replaceable || []
+    needsCheck  = rep.needsCheck  || []
   } else {
     const damages: any[] = a.damages || []
     const isReplace = (d: any) => (d.severity_label ?? d.severityDecision ?? (d.severityIndex >= 4 ? 'Replace' : 'Repair')) === 'Replace'
-    repairable = damages.filter(d => !isReplace(d)); replaceable = damages.filter(d => isReplace(d))
+    repairable  = damages.filter(d => !isReplace(d))
+    replaceable = damages.filter(d => isReplace(d))
+    needsCheck  = a.needs_check_parts || []
   }
   const photos = [...(report.general_images || []), ...(report.damage_images || [])]
 
@@ -159,12 +163,13 @@ export default function FnolReport() {
       )}
 
       {/* Part names (no descriptions) */}
-      {repairable.length === 0 && replaceable.length === 0 ? (
+      {repairable.length === 0 && replaceable.length === 0 && needsCheck.length === 0 ? (
         <div style={{ ...card, padding: 30, textAlign: 'center', color: '#9ca3af' }}>لم يتم رصد أضرار في الصور.</div>
       ) : (
         <>
-          <PartList items={repairable}  sectionKey="r" title="🔧 قطع قابلة للإصلاح" color="#15803d" dot="#16a34a" />
-          <PartList items={replaceable} sectionKey="p" title="🔩 قطع تحتاج استبدال"  color="#b91c1c" dot="#dc2626" />
+          <PartList items={repairable}  sectionKey="r" title="🔧 قطع قابلة للإصلاح"       color="#15803d" dot="#16a34a" />
+          <PartList items={replaceable} sectionKey="p" title="🔩 قطع تحتاج استبدال"        color="#b91c1c" dot="#dc2626" />
+          <PartList items={needsCheck}  sectionKey="n" title="🔍 قطع تحتاج فحص ميداني"    color="#92400e" dot="#d97706" />
         </>
       )}
 
