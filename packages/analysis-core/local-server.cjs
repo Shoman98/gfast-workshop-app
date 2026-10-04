@@ -3461,6 +3461,55 @@ async function runStage2(images, vehicleInfo, stage1Result, imageViews, imageAng
   result.damages = (result.damages || []).map(correctTrimDamageType);
   result.needs_check_parts = (result.needs_check_parts || []).map(correctTrimDamageType);
 
+  // --- Deduplication: same part_name in same array → keep highest confidence ---
+  function dedupeByPartName(arr, label) {
+    const map = new Map();
+    for (const item of arr) {
+      const key = (item.part_name || '').toLowerCase().trim().replace(/\s+/g, '_');
+      if (!map.has(key)) {
+        map.set(key, item);
+      } else {
+        const existing = map.get(key);
+        const existingConf = existing.confidence || 0;
+        const newConf = item.confidence || 0;
+        if (newConf > existingConf) {
+          const merged = { ...item };
+          if (item.description && existing.description && item.description !== existing.description) {
+            merged.description = `${item.description}; ${existing.description}`;
+          }
+          map.set(key, merged);
+        } else if (existing.description && item.description && existing.description !== item.description) {
+          map.set(key, { ...existing, description: `${existing.description}; ${item.description}` });
+        }
+        console.log(`  [Stage2 DEDUP ${label}] Merged duplicate "${item.part_name}" (kept highest confidence ${Math.max(existingConf, newConf)})`);
+        appendLog(`  [Stage2 DEDUP] Merged duplicate "${item.part_name}" in ${label}`);
+      }
+    }
+    return Array.from(map.values());
+  }
+
+  const beforeDamages = result.damages.length;
+  const beforeNeeds = (result.needs_check_parts || []).length;
+  result.damages = dedupeByPartName(result.damages, 'damages');
+  result.needs_check_parts = dedupeByPartName(result.needs_check_parts || [], 'needs_check');
+
+  // Remove from needs_check if already in damages
+  const confirmedKeys = new Set(result.damages.map(d => (d.part_name || '').toLowerCase().trim().replace(/\s+/g, '_')));
+  result.needs_check_parts = result.needs_check_parts.filter(p => {
+    const key = (p.part_name || '').toLowerCase().trim().replace(/\s+/g, '_');
+    if (confirmedKeys.has(key)) {
+      console.log(`  [Stage2 DEDUP] Removed "${p.part_name}" from needs_check — already in damages`);
+      appendLog(`  [Stage2 DEDUP] Removed "${p.part_name}" from needs_check (exists in damages)`);
+      return false;
+    }
+    return true;
+  });
+
+  const dedupRemoved = (beforeDamages - result.damages.length) + (beforeNeeds - result.needs_check_parts.length);
+  if (dedupRemoved > 0) {
+    console.log(`  [Stage2 DEDUP] Removed/merged ${dedupRemoved} duplicate entries`);
+  }
+
   console.log(`  Confirmed damages: ${result.damages.length}`);
   console.log(`  Needs check: ${(result.needs_check_parts || []).length}`);
   console.log(`  Safety flags: ${JSON.stringify(result.safety_flags || {})}`);
