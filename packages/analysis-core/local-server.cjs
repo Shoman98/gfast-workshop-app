@@ -2316,9 +2316,10 @@ VALIDATION RULES (MANDATORY):
 ---------------------------------------
 - Any part with confidence < 0.70 MUST be listed ONLY in "needs_check_parts".
 - No part with confidence < 0.70 may appear in "damages".
-- Any damage description containing words such as:
-  "likely", "possible", "may", "unclear", "not sure"
-  MUST be listed ONLY in "needs_check_parts".
+- Any damage description containing uncertainty words such as:
+  English: "likely", "possible", "may", "unclear", "not sure", "probably", "potential", "suspect"
+  Arabic: "احتمال", "يحتمل", "قد يكون", "ربما", "من المحتمل", "يُشتبه", "غير واضح", "يبدو أن"
+  MUST be listed ONLY in "needs_check_parts" — NEVER in "damages".
 - Parts listed in "needs_check_parts" MUST NOT be duplicated in "damages".
 - Parts listed in "damages" MUST have confidence >= 0.70 and assertive wording. SELF-CHECK RULE:
 - Before final output, verify that no part violates the confidence thresholds.
@@ -3461,6 +3462,32 @@ async function runStage2(images, vehicleInfo, stage1Result, imageViews, imageAng
   }
   result.damages = (result.damages || []).map(correctTrimDamageType);
   result.needs_check_parts = (result.needs_check_parts || []).map(correctTrimDamageType);
+
+  // --- Uncertainty language check: move parts with hedging language from damages → needs_check ---
+  const UNCERTAINTY_WORDS = [
+    // Arabic
+    'احتمال', 'يحتمل', 'قد يكون', 'ربما', 'من المحتمل', 'يُشتبه', 'غير واضح', 'يبدو أن',
+    // English
+    'likely', 'possible', 'may ', 'probably', 'potential', 'suspect', 'unclear', 'not sure', 'might',
+  ];
+
+  function hasUncertainLanguage(item) {
+    const desc = (item.description || '').toLowerCase();
+    const reason = (item.reason_for_uncertainty || '').toLowerCase();
+    return UNCERTAINTY_WORDS.some(w => desc.includes(w) || reason.includes(w));
+  }
+
+  const movedToNeedsCheck = [];
+  result.damages = (result.damages || []).filter(d => {
+    if (hasUncertainLanguage(d)) {
+      console.log(`  [Stage2 UNCERTAIN] Moving "${d.part_name}" from damages → needs_check (uncertain language in description)`);
+      appendLog(`  [Stage2 UNCERTAIN] Moved "${d.part_name}" to needs_check — uncertain language detected`);
+      movedToNeedsCheck.push({ ...d, reason_for_uncertainty: 'Description contains uncertain/speculative language' });
+      return false;
+    }
+    return true;
+  });
+  result.needs_check_parts = [...(result.needs_check_parts || []), ...movedToNeedsCheck];
 
   // --- Deduplication: same part_name + same side → keep highest confidence ---
   // Extract side from description so c_pillar_left ≠ c_pillar_right
