@@ -3614,7 +3614,7 @@ async function runStage4(stage1Result, stage2Result) {
 
 function combineStageResults(stage1, stage2, stage3, stage4) {
   const confirmedDamages = stage2.damages || [];
-  const needsCheckParts = stage2.needs_check_parts || [];
+  let needsCheckParts = stage2.needs_check_parts || [];
   const safetyFlags = stage2.safety_flags || {};
   const vehicleDetails = stage1.vehicleDetails || {};
 
@@ -3739,16 +3739,20 @@ function combineStageResults(stage1, stage2, stage3, stage4) {
     // Only include chassis-zone parts if a chassis/undercarriage image was actually provided
     const chassisOnlyParts = new Set(['front_chassis_rails', 'rear_chassis', 'rear_subframe', 'front_subframe_crossmember']);
     const hasChassissImage = (stage1?.visibleAreas || []).some(a => a === 'front_chassis_rails' || a === 'rear_chassis');
-    const filteredStructural = structuralDamages.filter(d => {
+    const confirmedStructural = [];
+    const needsCheckStructural = [];
+    for (const d of structuralDamages) {
       const key = (d.partName || '').toLowerCase();
       if (chassisOnlyParts.has(key) && !hasChassissImage) {
-        console.log(`  [Stage3 FILTER] Excluded "${d.partName}" — no chassis-view image provided`);
-        return false;
+        console.log(`  [Stage3 FILTER] Moving "${d.partName}" to needs_check — no chassis-view image, needs physical inspection`);
+        needsCheckStructural.push({ ...d, confidence: 0.65, reason_for_uncertainty: 'Inferred from exterior damage — no chassis image provided, requires physical inspection' });
+      } else {
+        confirmedStructural.push(d);
       }
-      return true;
-    });
-    damages = [...damages, ...filteredStructural];
-    console.log(`  Converted ${filteredStructural.length} structural concerns to damage items (${structuralDamages.length - filteredStructural.length} chassis-only excluded)`);
+    }
+    damages = [...damages, ...confirmedStructural];
+    needsCheckParts = [...(needsCheckParts || []), ...needsCheckStructural];
+    console.log(`  Converted ${confirmedStructural.length} structural concerns to damage items, ${needsCheckStructural.length} moved to needs_check`);
   }
 
   // Structural concerns are now part of the damages array — clear to avoid duplicate display
