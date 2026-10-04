@@ -19,6 +19,7 @@ import adminRoutes from './routes/admin.js';
 import publicRoutes from './routes/public.js';
 import whatsappRoutes from './routes/whatsapp.js';
 import { notifyWorkshopAnalysisAsync } from './lib/telegram-notify.js';
+import { enrichAnalysisWithParts } from './lib/analysisPipeline.js';
 // Use SHARED module from wreck-vision - SINGLE SOURCE OF TRUTH
 import pkg from '@gfast/analysis-core';
 const { runAnalysisPipeline, enrichDamageData, PARTS_DATABASE, DAMAGE_TYPE_INDEX, PART_NAME_ALIASES } = pkg;
@@ -109,17 +110,16 @@ app.post('/api/analysis', async (req, res, next) => {
       console.log(`     [${i}] ${nc.partName || nc.part_name_en} - confidence: ${nc.confidence} (${typeof nc.confidence})`);
     });
 
-    // Enrich with parts DB — identical to consumer app (nameEn/nameAr/severityDecision)
-    const enriched = enrichDamageData(analysisData, vehicleInfo);
+    // Workshop enrichment: uses part_name_ar/part_name_en/severity_label (workshop UI field names)
+    const enriched = enrichAnalysisWithParts(analysisData, vehicleInfo);
 
-    // Drop parts with no Arabic taxonomy name — strict parts DB only
-    const beforeFilter = enriched.damages || [];
-    const dropped = beforeFilter.filter(d => !d.nameAr || d.nameAr.trim() === '');
+    // Drop logging for gap discovery
+    const allDmg = enriched.damages || [];
+    const dropped = allDmg.filter(d => !d.part_name_ar || d.part_name_ar.trim() === '');
     if (dropped.length > 0) {
       console.log(`\n🔴 DROPPED PARTS (no Arabic mapping) — ${dropped.length} parts:`);
-      dropped.forEach(d => console.log(`   ✗ nameEn="${d.nameEn || ''}" | partType="${d.partType || ''}" | isUnmapped=${d.isUnmapped}`));
+      dropped.forEach(d => console.log(`   ✗ nameEn="${d.part_name_en || ''}" | isUnmapped=${d.isUnmapped}`));
     }
-    enriched.damages = beforeFilter.filter(d => d.nameAr && d.nameAr.trim() !== '');
 
     return res.json({
       success: true,
