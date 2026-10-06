@@ -19,6 +19,7 @@ import adminRoutes from './routes/admin.js';
 import publicRoutes from './routes/public.js';
 import whatsappRoutes from './routes/whatsapp.js';
 import customerRoutes from './routes/customer.js';
+import claimsRoutes from './routes/claims.js';
 import { notifyWorkshopAnalysisAsync } from './lib/telegram-notify.js';
 import { enrichAnalysisWithParts } from './lib/analysisPipeline.js';
 // Use SHARED module from wreck-vision - SINGLE SOURCE OF TRUTH
@@ -60,6 +61,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/broker', brokerRoutes);
 app.use('/api/customer', customerRoutes);
+app.use('/api/claims', claimsRoutes);
 app.use('/api/whatsapp/webhook', whatsappRoutes);
 
 // Analysis route - Real Gemini Vision Analysis (with fallback to mock if API unavailable)

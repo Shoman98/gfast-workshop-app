@@ -190,6 +190,14 @@ export default function PolicyDetailPage() {
           </div>
         )}
 
+        {/* Report claim button */}
+        {pd && policy.status === 'extracted' && (
+          <button onClick={() => navigate(`/customer/policy/${id}/claim`)}
+            style={{ padding: '10px 20px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: '.88rem', cursor: 'pointer', marginBottom: 24, width: '100%' }}>
+            🔴 تقديم مطالبة تأمينية
+          </button>
+        )}
+
         {pd && (
           <>
             {/* Policy Info */}
