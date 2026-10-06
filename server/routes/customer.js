@@ -10,6 +10,10 @@ import multer from 'multer';
 import { generateCustomerToken, requireCustomer } from '../middleware/auth.js';
 import { createClient } from '@supabase/supabase-js';
 import pkg from '@gfast/analysis-core';
+import { fromBuffer } from 'pdf2pic';
+import { createWriteStream, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 const { callGeminiRaw } = pkg;
 
 const router = express.Router();
@@ -196,8 +200,36 @@ async function extractPolicyData(policyId, ownerId, pdfBuffer) {
   await supabase.from('policies').update({ status: 'extracting' }).eq('id', policyId);
 
   try {
-    // Convert PDF pages to base64 images for Gemini via inline data
-    const pdfBase64 = pdfBuffer.toString('base64');
+    // Convert PDF to JPEG image (Gemini supports images, not PDFs directly)
+    console.log(`[PDF Extract] Converting PDF to image for ${policyId}...`);
+    const tmpDir = tmpdir();
+    const options = {
+      density: 100,
+      saveFilename: 'page',
+      savePath: tmpDir,
+      format: 'jpeg',
+      width: 1200,
+      height: 1600,
+    };
+
+    let imageBase64;
+    try {
+      const result = await fromBuffer(pdfBuffer, options);
+      if (result && result[0]) {
+        const imagePath = result[0].path;
+        const fs = await import('fs').then(m => m.promises);
+        const imageBuffer = await fs.readFile(imagePath);
+        imageBase64 = imageBuffer.toString('base64');
+        // Cleanup temp file
+        rmSync(imagePath, { force: true });
+      } else {
+        throw new Error('No pages extracted from PDF');
+      }
+    } catch (pdfErr) {
+      console.warn(`[PDF Extract] PDF conversion failed, using fallback: ${pdfErr.message}`);
+      // Fallback: use PDF as base64 anyway (might work with some PDFs)
+      imageBase64 = pdfBuffer.toString('base64');
+    }
 
     const prompt = `You are an Arabic insurance policy data extraction specialist.
 
@@ -287,7 +319,7 @@ Set fields to null if not found in the document. Do NOT invent data.`;
       contents: [{
         parts: [
           { text: prompt },
-          { inline_data: { mime_type: 'application/pdf', data: pdfBase64 } }
+          { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } }
         ]
       }],
       generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
