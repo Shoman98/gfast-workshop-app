@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { apiUrl } from '@/lib/api'
 import { authenticateInsurance } from '@/mock/insurance'
 
-type Role = 'workshop' | 'insurance' | 'broker'
+type Role = 'workshop' | 'insurance' | 'broker' | 'customer'
 
 type Branch = { branch_id: string; branch_name: string; city?: string; phone?: string }
 type WorkshopChoice = { workshop_id: string; workshop_name: string; city?: string }
@@ -31,6 +31,12 @@ export default function LoginPage() {
   // Broker fields
   const [brokerEmail, setBrokerEmail] = useState('')
   const [brokerPassword, setBrokerPassword] = useState('')
+
+  // Customer fields
+  const [customerEmail, setCustomerEmail] = useState('')
+  const [customerPassword, setCustomerPassword] = useState('')
+  const [customerMode, setCustomerMode] = useState<'login' | 'register'>('login')
+  const [customerName, setCustomerName] = useState('')
 
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -162,6 +168,30 @@ export default function LoginPage() {
     navigate('/insurance/dashboard')
   }
 
+  const handleCustomerAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    if (!customerEmail || !customerPassword) { setError('يرجى إدخال البريد الإلكتروني وكلمة المرور'); return }
+    setLoading(true)
+    try {
+      const endpoint = customerMode === 'register' ? '/api/customer/auth/register' : '/api/customer/auth/login'
+      const body: any = { email: customerEmail.trim(), password: customerPassword }
+      if (customerMode === 'register' && customerName) body.full_name = customerName
+      const response = await fetch(apiUrl(endpoint), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.token) { setError(data.error || 'بيانات غير صحيحة'); setLoading(false); return }
+      localStorage.setItem('customer_session', JSON.stringify({ token: data.token, customer: data.customer }))
+      navigate('/customer/dashboard')
+    } catch (err) {
+      setError((err as Error).message)
+      setLoading(false)
+    }
+  }
+
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '0.75rem 1rem',
@@ -195,11 +225,12 @@ export default function LoginPage() {
         <div style={{ backgroundColor: 'white', borderRadius: '1.25rem', boxShadow: '0 24px 48px rgba(0,0,0,.2)', overflow: 'hidden' }}>
 
           {/* Role selector */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', borderBottom: '1px solid #e5e7eb' }}>
             {([
               { key: 'workshop' as Role, label: 'مركز خدمة', icon: '🔧' },
               { key: 'insurance' as Role, label: 'شركة تأمين', icon: '🏦' },
               { key: 'broker' as Role, label: 'وسيط تأمين', icon: '🤝' },
+              { key: 'customer' as Role, label: 'مالك السيارة', icon: '🚗' },
             ]).map(({ key, label, icon }) => (
               <button
                 key={key}
@@ -419,6 +450,46 @@ export default function LoginPage() {
                   style={{ padding: '0.875rem', background: loading ? '#9ca3af' : '#3F3D9E', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 700, fontSize: '1rem', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '0.25rem' }}
                 >
                   {loading ? 'جاري الدخول...' : '🤝 دخول'}
+                </button>
+              </form>
+            )}
+
+            {/* ── Car Owner ── */}
+            {role === 'customer' && (
+              <form onSubmit={handleCustomerAuth} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {/* Toggle login / register */}
+                <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 8, padding: 3, gap: 3 }}>
+                  {(['login', 'register'] as const).map(m => (
+                    <button key={m} type="button" onClick={() => { setCustomerMode(m); setError('') }}
+                      style={{ flex: 1, padding: '7px', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: '.85rem', cursor: 'pointer', background: customerMode === m ? '#fff' : 'transparent', color: customerMode === m ? '#1e3a8a' : '#94a3b8', boxShadow: customerMode === m ? '0 1px 3px rgba(0,0,0,.1)' : 'none', transition: 'all .15s' }}>
+                      {m === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب'}
+                    </button>
+                  ))}
+                </div>
+
+                {customerMode === 'register' && (
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>الاسم الكامل</label>
+                    <input style={inputStyle} type="text" placeholder="محمد أحمد" value={customerName}
+                      onChange={e => setCustomerName(e.target.value)} disabled={loading}
+                      onFocus={e => (e.target.style.borderColor = '#2563eb')} onBlur={e => (e.target.style.borderColor = '#d1d5db')} />
+                  </div>
+                )}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>البريد الإلكتروني</label>
+                  <input style={inputStyle} type="email" placeholder="you@email.com" value={customerEmail}
+                    onChange={e => setCustomerEmail(e.target.value)} disabled={loading}
+                    onFocus={e => (e.target.style.borderColor = '#2563eb')} onBlur={e => (e.target.style.borderColor = '#d1d5db')} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>كلمة المرور</label>
+                  <input style={inputStyle} type="password" placeholder="••••••••" value={customerPassword}
+                    onChange={e => setCustomerPassword(e.target.value)} disabled={loading}
+                    onFocus={e => (e.target.style.borderColor = '#2563eb')} onBlur={e => (e.target.style.borderColor = '#d1d5db')} />
+                </div>
+                <button type="submit" disabled={loading}
+                  style={{ padding: '0.875rem', background: loading ? '#9ca3af' : '#1e3a8a', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: 700, fontSize: '1rem', cursor: loading ? 'not-allowed' : 'pointer', marginTop: '0.25rem' }}>
+                  {loading ? 'جاري...' : customerMode === 'login' ? '🚗 دخول' : '🚗 إنشاء حساب'}
                 </button>
               </form>
             )}

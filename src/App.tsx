@@ -25,6 +25,10 @@ import BrokerAssessment from '@/pages/BrokerAssessment'
 import FnolReport from '@/pages/FnolReport'
 import BrokerClaim from '@/pages/BrokerClaim'
 import BrokerProtectedRoute from '@/components/BrokerProtectedRoute'
+import CustomerProtectedRoute from '@/components/CustomerProtectedRoute'
+import CustomerDashboard from '@/pages/CustomerDashboard'
+import PolicyUploadPage from '@/pages/PolicyUploadPage'
+import PolicyDetailPage from '@/pages/PolicyDetailPage'
 
 function useTokenRefresh() {
   useEffect(() => {
@@ -107,6 +111,13 @@ export default function App() {
         <Route element={<BrokerProtectedRoute />}>
           <Route path="/broker/dashboard" element={<BrokerDashboard />} />
           <Route path="/broker/case/:caseId" element={<BrokerCaseDetail />} />
+        </Route>
+
+        {/* Customer (car owner) routes */}
+        <Route element={<CustomerProtectedRoute />}>
+          <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+          <Route path="/customer/policy/upload" element={<PolicyUploadPage />} />
+          <Route path="/customer/policy/:id" element={<PolicyDetailPage />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

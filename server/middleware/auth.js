@@ -112,3 +112,26 @@ export function requireBroker(req, res, next) {
   req.broker_id = decoded.broker_id;
   next();
 }
+
+// ── Customer (car owner) auth ─────────────────────────────────────────────────
+
+export function generateCustomerToken(customerId) {
+  return jwt.sign(
+    { customer_id: customerId, scope: 'customer' },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+}
+
+export function requireCustomer(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+  const decoded = verifyToken(authHeader.substring(7));
+  if (!decoded || decoded.scope !== 'customer') {
+    return res.status(401).json({ error: 'Invalid or expired customer token' });
+  }
+  req.customer_id = decoded.customer_id;
+  next();
+}
