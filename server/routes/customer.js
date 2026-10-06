@@ -10,10 +10,7 @@ import multer from 'multer';
 import { generateCustomerToken, requireCustomer } from '../middleware/auth.js';
 import { createClient } from '@supabase/supabase-js';
 import pkg from '@gfast/analysis-core';
-import { fromBuffer } from 'pdf2pic';
-import { createWriteStream, rmSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { PDFParse } from 'pdf-parse';
 const { callGeminiRaw } = pkg;
 
 const router = express.Router();
@@ -200,35 +197,21 @@ async function extractPolicyData(policyId, ownerId, pdfBuffer) {
   await supabase.from('policies').update({ status: 'extracting' }).eq('id', policyId);
 
   try {
-    // Convert PDF to JPEG image (Gemini supports images, not PDFs directly)
-    console.log(`[PDF Extract] Converting PDF to image for ${policyId}...`);
-    const tmpDir = tmpdir();
-    const options = {
-      density: 100,
-      saveFilename: 'page',
-      savePath: tmpDir,
-      format: 'jpeg',
-      width: 1200,
-      height: 1600,
-    };
-
-    let imageBase64;
+    // Extract text from PDF using pdf-parse
+    console.log(`[PDF Extract] Extracting text from PDF for ${policyId}...`);
+    let pdfText = '';
     try {
-      const result = await fromBuffer(pdfBuffer, options);
-      if (result && result[0]) {
-        const imagePath = result[0].path;
-        const fs = await import('fs').then(m => m.promises);
-        const imageBuffer = await fs.readFile(imagePath);
-        imageBase64 = imageBuffer.toString('base64');
-        // Cleanup temp file
-        rmSync(imagePath, { force: true });
-      } else {
-        throw new Error('No pages extracted from PDF');
-      }
+      const parser = new PDFParse(pdfBuffer);
+      const pdfData = await parser.getText();
+      pdfText = pdfData.text || '';
+      console.log(`[PDF Extract] Extracted ${pdfText.length} chars from PDF`);
     } catch (pdfErr) {
-      console.warn(`[PDF Extract] PDF conversion failed, using fallback: ${pdfErr.message}`);
-      // Fallback: use PDF as base64 anyway (might work with some PDFs)
-      imageBase64 = pdfBuffer.toString('base64');
+      console.warn(`[PDF Extract] PDF text extraction failed: ${pdfErr.message}`);
+      pdfText = '';
+    }
+
+    if (!pdfText || pdfText.length < 100) {
+      throw new Error('Could not extract sufficient text from PDF. Ensure the PDF is readable and contains actual text (not just images).');
     }
 
     const prompt = `You are an Arabic insurance policy data extraction specialist.
@@ -313,13 +296,16 @@ Return ONLY valid JSON — no markdown, no explanation.
   "police_damage_consistent": true/false/null
 }
 
-Set fields to null if not found in the document. Do NOT invent data.`;
+Set fields to null if not found in the document. Do NOT invent data.
+
+**PDF Text Content:**
+${pdfText.substring(0, 5000)}
+`;
 
     const requestBody = {
       contents: [{
         parts: [
-          { text: prompt },
-          { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } }
+          { text: prompt }
         ]
       }],
       generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
