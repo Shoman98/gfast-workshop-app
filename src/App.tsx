@@ -31,6 +31,8 @@ import PolicyUploadPage from '@/pages/PolicyUploadPage'
 import PolicyDetailPage from '@/pages/PolicyDetailPage'
 import DamageFlowPage from '@/pages/DamageFlowPage'
 import ClaimAnalysisResultsPage from '@/pages/ClaimAnalysisResultsPage'
+import InsurerClaimsListPage from '@/pages/InsurerClaimsListPage'
+import InsurerClaimDetailPage from '@/pages/InsurerClaimDetailPage'
 
 function useTokenRefresh() {
   useEffect(() => {
@@ -123,6 +125,10 @@ export default function App() {
           <Route path="/customer/policy/:policyId/damage-flow" element={<DamageFlowPage />} />
           <Route path="/customer/policy/:policyId/damage-results" element={<ClaimAnalysisResultsPage />} />
         </Route>
+
+        {/* Insurer routes (claims management) */}
+        <Route path="/insurer/:insurerId/claims" element={<InsurerClaimsListPage />} />
+        <Route path="/claims/:claimId" element={<InsurerClaimDetailPage />} />
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>

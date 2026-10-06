@@ -327,4 +327,101 @@ router.post('/:id/recheck', requireCustomer, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── Insurer/Broker Claims ────────────────────────────────────────────────
+
+/**
+ * POST /api/claims/from-fnol
+ * Create claim from FNOL submission for insurer/broker view
+ * Body: { fnol_id, fnol_data, policy_id, policy_data, driver_id, driver_data, insurer_id, broker_id }
+ */
+router.post('/from-fnol', async (req, res, next) => {
+  try {
+    const { fnol_id, fnol_data, policy_id, policy_data, driver_id, driver_data, insurer_id, broker_id } = req.body;
+    if (!fnol_id || !insurer_id) return res.status(400).json({ error: 'fnol_id and insurer_id required' });
+
+    // Create driver if needed
+    let driver_id_final = driver_id;
+    if (driver_data && !driver_id) {
+      const { data: driver, error: dErr } = await supabase.from('drivers')
+        .insert({ name: driver_data.name, license_number: driver_data.license, dob: driver_data.dob })
+        .select().single();
+      if (!dErr && driver) driver_id_final = driver.id;
+    }
+
+    // Create claim
+    const { data: claim, error } = await supabase.from('claims')
+      .insert({
+        fnol_id,
+        policy_id,
+        driver_id: driver_id_final,
+        insurer_id,
+        broker_id,
+        claim_type: fnol_data?.claim_type || 'accident',
+        description: fnol_data?.description,
+        status: 'reported',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Store FNOL + policy + driver data as JSON
+    await supabase.from('claims')
+      .update({
+        raw_fnol_data: fnol_data,
+        raw_policy_data: policy_data,
+        raw_driver_data: driver_data,
+      })
+      .eq('id', claim.id);
+
+    res.json({ success: true, claim_id: claim.id });
+  } catch (err) { next(err); }
+});
+
+/**
+ * GET /api/insurer/:insurer_id/claims - List claims for insurer
+ */
+router.get('/insurer/:insurer_id/claims', async (req, res, next) => {
+  try {
+    const { data: claims } = await supabase.from('claims')
+      .select('*, claim_triage(verdict, ineligibility_reasons)')
+      .eq('insurer_id', req.params.insurer_id)
+      .order('created_at', { ascending: false });
+    res.json({ claims: claims || [] });
+  } catch (err) { next(err); }
+});
+
+/**
+ * GET /api/broker/:broker_id/claims - List claims for broker
+ */
+router.get('/broker/:broker_id/claims', async (req, res, next) => {
+  try {
+    const { data: claims } = await supabase.from('claims')
+      .select('*, claim_triage(verdict, ineligibility_reasons)')
+      .eq('broker_id', req.params.broker_id)
+      .order('created_at', { ascending: false });
+    res.json({ claims: claims || [] });
+  } catch (err) { next(err); }
+});
+
+/**
+ * GET /api/claims/detail/:id - Full claim detail with FNOL + policy + fraud + driver + police
+ */
+router.get('/detail/:id', async (req, res, next) => {
+  try {
+    const { data: claim } = await supabase.from('claims')
+      .select(`
+        *,
+        policy_data(*),
+        driver:driver_id(*),
+        claim_triage(*),
+        claim_documents(*)
+      `)
+      .eq('id', req.params.id)
+      .single();
+    if (!claim) return res.status(404).json({ error: 'Claim not found' });
+    res.json({ claim });
+  } catch (err) { next(err); }
+});
+
 export default router;
