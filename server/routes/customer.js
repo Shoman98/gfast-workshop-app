@@ -328,10 +328,26 @@ Set fields to null if not found in the document. Do NOT invent data.`;
     const rawResponse = await callGeminiRaw(requestBody);
     const text = rawResponse?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    // Parse JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON found in Gemini response');
-    const extracted = JSON.parse(jsonMatch[0]);
+    console.log(`[PDF Extract] Gemini response (first 500 chars): ${text.substring(0, 500)}`);
+
+    // Parse JSON from response (handle markdown code blocks)
+    let extracted;
+    try {
+      // Try 1: Extract from markdown json block (```json ... ```)
+      const markdownMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (markdownMatch) {
+        extracted = JSON.parse(markdownMatch[1].trim());
+      } else {
+        // Try 2: Extract raw JSON object
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('No JSON found in Gemini response');
+        extracted = JSON.parse(jsonMatch[0]);
+      }
+    } catch (parseErr) {
+      console.error(`[PDF Extract] JSON parse failed: ${parseErr.message}`);
+      console.error(`[PDF Extract] Raw text: ${text.substring(0, 1000)}`);
+      throw new Error(`Failed to parse Gemini response as JSON: ${parseErr.message}`);
+    }
 
     // Update policy with extracted info
     await supabase.from('policies').update({
