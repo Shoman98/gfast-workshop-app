@@ -29,8 +29,8 @@ import CustomerProtectedRoute from '@/components/CustomerProtectedRoute'
 import CustomerDashboard from '@/pages/CustomerDashboard'
 import PolicyUploadPage from '@/pages/PolicyUploadPage'
 import PolicyDetailPage from '@/pages/PolicyDetailPage'
-import ReportClaimPage from '@/pages/ReportClaimPage'
-import ClaimTriagePage from '@/pages/ClaimTriagePage'
+import DamageFlowPage from '@/pages/DamageFlowPage'
+import ClaimAnalysisResultsPage from '@/pages/ClaimAnalysisResultsPage'
 
 function useTokenRefresh() {
   useEffect(() => {
@@ -120,8 +120,8 @@ export default function App() {
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
           <Route path="/customer/policy/upload" element={<PolicyUploadPage />} />
           <Route path="/customer/policy/:id" element={<PolicyDetailPage />} />
-          <Route path="/customer/policy/:policyId/claim" element={<ReportClaimPage />} />
-          <Route path="/customer/claim/:id" element={<ClaimTriagePage />} />
+          <Route path="/customer/policy/:policyId/damage-flow" element={<DamageFlowPage />} />
+          <Route path="/customer/policy/:policyId/damage-results" element={<ClaimAnalysisResultsPage />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
